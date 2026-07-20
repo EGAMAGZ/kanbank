@@ -4,6 +4,7 @@
     "npm:@open-cells/core@^1.1.2": "1.1.2",
     "npm:@open-cells/element-controller@^1.0.4": "1.0.4",
     "npm:@open-cells/page-controller@^1.0.4": "1.0.4",
+    "npm:dexie@^4.4.4": "4.4.4",
     "npm:lit@3": "3.3.3",
     "npm:typescript@^5.4.5": "5.9.3",
     "npm:vite@^7.3.1": "7.3.6"
@@ -303,6 +304,9 @@
     "@types/trusted-types@2.0.7": {
       "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="
     },
+    "dexie@4.4.4": {
+      "integrity": "sha512-jIwsYI8Os2hgnqc6O49YwFDKGc5v5QjGx0wPVp543ip1F53VFAKMLthV2pQosQcVTv3eAskTWYspOx195PM0FQ=="
+    },
     "esbuild@0.28.1": {
       "integrity": "sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==",
       "optionalDependencies": [
@@ -470,6 +474,7 @@
         "npm:@open-cells/core@^1.1.2",
         "npm:@open-cells/element-controller@^1.0.4",
         "npm:@open-cells/page-controller@^1.0.4",
+        "npm:dexie@^4.4.4",
         "npm:lit@3",
         "npm:typescript@^5.4.5",
         "npm:vite@^7.3.1"
