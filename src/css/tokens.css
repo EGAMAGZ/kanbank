@@ -1,0 +1,59 @@
+:root {
+  /* Palette — 3 flat colors + black + white */
+  --color-bg: #FAFBFC;
+  --color-surface: #F1F3F5;
+  --color-border: #E5E7EB;
+  --color-text: #0A0A0A;
+  --color-text-2: #6B7280;
+  --color-text-3: #9CA3AF;
+  --color-accent: #2563EB;
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-error: #DC2626;
+  --color-success: #059669;
+  --color-warning: #D97706;
+
+  /* Spacing — airy scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 3rem;
+  --text-4xl: 4rem;
+  --text-5xl: 5.5rem;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-loose: 1.7;
+
+  /* Brutalist primitives */
+  --border-thin: 1px solid var(--color-border);
+  --border-brutal: 2px solid var(--color-black);
+  --border-brutal-thick: 3px solid var(--color-black);
+  --shadow-brutal: 4px 4px 0 var(--color-black);
+  --shadow-brutal-md: 6px 6px 0 var(--color-black);
+  --shadow-brutal-lg: 8px 8px 0 var(--color-black);
+
+  /* Grid */
+  --gutter: 40px;
+  --gutter-lg: 64px;
+  --max-width: 1200px;
+
+  /* Transitions */
+  --ease-brutal: 0.12s ease-out;
+}

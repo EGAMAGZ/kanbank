@@ -7,15 +7,21 @@ export class TaskEditor extends LitElement {
   @state() private taskTitle = '';
 
   static styles = css`
-    :host { display: block; margin-top: 8px; }
+    :host { display: block; margin-top: var(--space-sm); }
     input {
-      width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid #000;
+      box-sizing: border-box;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      outline: none;
+      background: var(--color-white);
+    }
+    input:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
     }
   `;
-
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
 
   private handleSubmit(e: KeyboardEvent): void {
     if (e.key === 'Enter' && this.taskTitle.trim()) {

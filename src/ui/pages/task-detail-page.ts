@@ -53,69 +53,287 @@ export class TaskDetailPage extends LitElement {
   @state() private editingCommentText = '';
 
   static styles = css`
-    :host { display: block; max-width: 720px; margin: 0 auto; padding: 24px; }
-    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-    .header .back { cursor: pointer; color: #0066cc; font-size: 18px; }
-    .header h1 { margin: 0; flex: 1; font-size: 24px; }
-    .header .actions { display: flex; gap: 8px; }
-    .btn-edit, .btn-delete {
-      padding: 4px 10px; border: 2px solid #000; border-radius: 4px;
-      cursor: pointer; font-size: 12px; font-weight: bold; background: #fff;
+    :host {
+      display: block;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--gutter-lg);
     }
-    .btn-delete { color: #cc0000; }
-    .btn-edit:hover { background: #f0f0f0; }
-    .btn-delete:hover { background: #fff0f0; }
-    .section { margin-bottom: 24px; }
-    .section h3 { margin: 0 0 8px; font-size: 16px; }
-    .description { margin-bottom: 16px; }
-    .edit-form input, .edit-form textarea {
-      width: 100%; padding: 8px; border: 2px solid #000; border-radius: 4px;
-      box-sizing: border-box; font-family: inherit; font-size: 14px;
+
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-3xl);
     }
-    .edit-form textarea { min-height: 120px; resize: vertical; margin-top: 8px; }
-    .edit-form .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+
+    .header .back {
+      cursor: pointer;
+      color: var(--color-text-2);
+      font-size: 20px;
+      margin-top: var(--space-md);
+      transition: color var(--ease-brutal);
+    }
+
+    .header .back:hover {
+      color: var(--color-text);
+    }
+
+    /* Anchor title — THE raw gesture of this view */
+    .anchor-title {
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
+      padding: var(--space-xl) var(--space-xl) var(--space-lg);
+      background: var(--color-white);
+      flex: 1;
+    }
+
+    .anchor-title h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-3xl);
+      letter-spacing: -0.04em;
+      line-height: var(--leading-tight);
+    }
+
+    .header .actions {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .btn-edit,
+    .btn-delete {
+      padding: var(--space-xs) var(--space-md);
+      border: 2px solid var(--color-black);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      background: var(--color-white);
+      font-family: var(--font-body);
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
+    }
+
+    .btn-edit {
+      box-shadow: 3px 3px 0 var(--color-black);
+    }
+
+    .btn-edit:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-edit:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
+    .btn-delete {
+      color: var(--color-error);
+      box-shadow: none;
+    }
+
+    .btn-delete:hover {
+      background: #fef2f2;
+    }
+
+    .section {
+      margin-bottom: var(--space-3xl);
+    }
+
+    .section h3 {
+      margin: 0 0 var(--space-lg);
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+
+    /* Description — no container, just flowing text */
+    .description {
+      margin-bottom: var(--space-2xl);
+      font-size: var(--text-base);
+      line-height: var(--leading-loose);
+      color: var(--color-text);
+    }
+
+    /* Edit form */
+    .edit-form input,
+    .edit-form textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid var(--color-black);
+      box-sizing: border-box;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      outline: none;
+      background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
+    }
+
+    .edit-form input:focus,
+    .edit-form textarea:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
+    .edit-form textarea {
+      min-height: 120px;
+      resize: vertical;
+      margin-top: var(--space-sm);
+    }
+
+    .edit-form .btn-row {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+
     .btn {
-      padding: 6px 14px; border: 2px solid #000; border-radius: 4px;
-      cursor: pointer; font-size: 13px; font-weight: bold; background: #0066cc;
-      color: white;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid var(--color-black);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: var(--font-body);
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
-    .btn-cancel { background: #fff; color: #000; }
-    .btn:hover { opacity: 0.9; }
+
+    .btn-primary {
+      box-shadow: 3px 3px 0 var(--color-black);
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+
+    .btn-primary:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-primary:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
+    .btn-cancel {
+      box-shadow: none;
+      background: var(--color-white);
+      color: var(--color-text);
+    }
+
+    .btn-cancel:hover {
+      background: var(--color-surface);
+    }
+
+    /* Comments — thin border-bottom only, no card wrapper */
     .comment {
-      padding: 12px 0; border-bottom: 1px solid #eee;
+      padding: var(--space-lg) 0;
     }
-    .comment-header { display: flex; justify-content: space-between; align-items: center; }
-    .comment .date { font-size: 12px; color: #999; }
-    .comment-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+    .comment + .comment {
+      border-top: 1px solid var(--color-border);
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .comment .date {
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+    }
+
+    .comment-actions {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+
     .comment-actions button {
-      font-size: 11px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 3px;
-      background: #fff; cursor: pointer;
+      font-size: var(--text-xs);
+      padding: 2px var(--space-sm);
+      border: none;
+      background: none;
+      color: var(--color-text-2);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-weight: 500;
     }
-    .comment-actions button:hover { background: #f5f5f5; }
+
+    .comment-actions button:hover {
+      color: var(--color-text);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     .comment-edit textarea {
-      width: 100%; min-height: 80px; padding: 8px; border: 2px solid #000;
-      border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 13px;
-      margin-top: 8px;
+      width: 100%;
+      min-height: 80px;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid var(--color-black);
+      box-sizing: border-box;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      margin-top: var(--space-sm);
+      outline: none;
+      background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
-    .comment-edit .btn-row { display: flex; gap: 8px; margin-top: 8px; }
-    .comment-error { color: #cc0000; font-size: 12px; margin-top: 4px; }
+
+    .comment-edit textarea:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
+    .comment-edit .btn-row {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+
+    .comment-error {
+      color: var(--color-error);
+      font-size: var(--text-sm);
+      margin-top: var(--space-sm);
+    }
+
     .add-comment textarea {
-      width: 100%; min-height: 80px; padding: 8px; border: 2px solid #000;
-      border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 13px;
+      width: 100%;
+      min-height: 80px;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid var(--color-black);
+      box-sizing: border-box;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      outline: none;
+      background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
+
+    .add-comment textarea:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
     .preview-toggle {
-      font-size: 12px; color: #0066cc; cursor: pointer; margin-top: 4px;
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      cursor: pointer;
+      margin-top: var(--space-sm);
       display: inline-block;
     }
-    .preview-toggle:hover { text-decoration: underline; }
+
+    .preview-toggle:hover {
+      text-decoration: underline;
+    }
+
     .preview-box {
-      margin-top: 8px; padding: 12px; border: 1px solid #eee; border-radius: 4px;
+      margin-top: var(--space-sm);
+      padding: var(--space-md);
+      border: 1px solid var(--color-border);
     }
   `;
-
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
 
   async onPageEnter(): Promise<void> {
     await this.loadTask();
@@ -249,8 +467,8 @@ export class TaskDetailPage extends LitElement {
   }
 
   render() {
-    if (this.error) return html`<div style="color:#cc0000;">Error: ${this.error}</div>`;
-    if (!this.task) return html`<div>Loading...</div>`;
+    if (this.error) return html`<div style="color:var(--color-error);">Error: ${this.error}</div>`;
+    if (!this.task) return html`<div style="color:var(--color-text-3);">Loading...</div>`;
 
     return html`
       <div class="header">
@@ -269,12 +487,14 @@ export class TaskDetailPage extends LitElement {
               </div>
             ` : ''}
             <div class="btn-row">
-              <button class="btn" @click="${this.saveEditTask}">Save</button>
+              <button class="btn btn-primary" @click="${this.saveEditTask}">Save</button>
               <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
             </div>
           </div>
         ` : html`
-          <h1>${this.task.title}</h1>
+          <div class="anchor-title">
+            <h1>${this.task.title}</h1>
+          </div>
           <div class="actions">
             <button class="btn-edit" @click="${this.startEditTask}">Edit</button>
             <button class="btn-delete" @click="${this.handleDeleteTask}">Delete</button>
@@ -301,7 +521,7 @@ export class TaskDetailPage extends LitElement {
               <div class="comment-edit">
                 <textarea .value="${this.editingCommentText}" @input="${(e: Event) => { this.editingCommentText = (e.target as HTMLTextAreaElement).value; }}"></textarea>
                 <div class="btn-row">
-                  <button class="btn" @click="${() => this.saveEditComment(c)}">Save</button>
+                  <button class="btn btn-primary" @click="${() => this.saveEditComment(c)}">Save</button>
                   <button class="btn btn-cancel" @click="${this.cancelEditComment}">Cancel</button>
                 </div>
               </div>
@@ -331,7 +551,7 @@ export class TaskDetailPage extends LitElement {
           @input="${(e: Event) => { this.newComment = (e.target as HTMLTextAreaElement).value; }}"
           @keydown="${(e: KeyboardEvent) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) this.handleAddComment(); }}"
         ></textarea>
-        <button class="btn" style="margin-top:8px;" @click="${this.handleAddComment}">Add Comment</button>
+        <button class="btn btn-primary" style="margin-top:var(--space-sm);" @click="${this.handleAddComment}">Add Comment</button>
       </div>
     `;
   }

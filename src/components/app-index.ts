@@ -40,9 +40,9 @@ export class AppIndex extends LitElement {
 
   render() {
     return html`
-      <nav style="padding: 12px 24px; border-bottom: 1px solid #ddd; display: flex; gap: 16px; align-items: center;">
-        <strong style="cursor: pointer;" @click="${() => this.elementController.navigate('home')}">Kanbank</strong>
-        <span style="cursor: pointer; color: #666;" @click="${() => this.elementController.navigate('settings')}">Settings</span>
+      <nav>
+        <strong class="logo" @click="${() => this.elementController.navigate('home')}">Kanbank</strong>
+        <span class="nav-link" @click="${() => this.elementController.navigate('settings')}">Settings</span>
       </nav>
       <main role="main" tabindex="-1">
         <slot></slot>

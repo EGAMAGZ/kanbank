@@ -17,7 +17,6 @@ export declare class TaskDetailPage extends LitElement {
     private editingCommentId;
     private editingCommentText;
     static styles: import("lit").CSSResult;
-    protected createRenderRoot(): HTMLElement | DocumentFragment;
     onPageEnter(): Promise<void>;
     private loadTask;
     private goBack;

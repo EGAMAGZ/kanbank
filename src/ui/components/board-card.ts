@@ -8,17 +8,36 @@ export class BoardCard extends LitElement {
 
   static styles = css`
     :host {
-      display: block; border: 1px solid #ddd; border-radius: 8px;
-      padding: 16px; cursor: pointer; transition: box-shadow 0.2s;
+      display: block;
+      border: 2px solid #000;
+      box-shadow: 6px 6px 0 #000;
+      padding: var(--space-lg);
+      cursor: pointer;
+      background: var(--color-white);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
-    :host(:hover) { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h3 { margin: 0 0 8px; }
-    p { margin: 0; color: #666; font-size: 14px; }
+    :host(:hover) {
+      transform: translate(3px, 3px);
+      box-shadow: 3px 3px 0 #000;
+    }
+    :host(:active) {
+      transform: translate(6px, 6px);
+      box-shadow: 0 0 0 #000;
+    }
+    h3 {
+      margin: 0 0 var(--space-sm);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-xl);
+      letter-spacing: -0.03em;
+    }
+    p {
+      margin: 0;
+      color: var(--color-text-2);
+      font-size: var(--text-sm);
+      line-height: var(--leading-normal);
+    }
   `;
-
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
 
   render() {
     return html`

@@ -1,0 +1,9 @@
+export declare const brutalCard: import("lit").CSSResult;
+export declare const brutalCardLg: import("lit").CSSResult;
+export declare const brutalButton: import("lit").CSSResult;
+export declare const brutalButtonHover: import("lit").CSSResult;
+export declare const brutalInput: import("lit").CSSResult;
+export declare const brutalInputFocus: import("lit").CSSResult;
+export declare const headingDisplay: import("lit").CSSResult;
+export declare const textMuted: import("lit").CSSResult;
+export declare const textSmall: import("lit").CSSResult;

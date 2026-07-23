@@ -8,23 +8,41 @@ export class ImageUpload extends LitElement {
   static styles = css`
     :host { display: block; }
     .trigger {
-      display: inline-flex; align-items: center; gap: 4px;
-      color: #0066cc; cursor: pointer; font-size: 13px; margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-accent);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      margin-top: var(--space-sm);
     }
-    .trigger:hover { text-decoration: underline; }
+    .trigger:hover { text-decoration: underline; text-underline-offset: 3px; }
     input[type="file"] { display: none; }
     .previews {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
     }
     .preview-item {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px; border: 1px solid #ddd; border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm);
+      border: 2px solid #000;
     }
     .preview-item img {
-      width: 50px; height: 50px; object-fit: cover; border-radius: 4px;
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
     }
     .preview-item .remove {
-      cursor: pointer; color: #cc0000; font-size: 16px; padding: 0 2px;
+      cursor: pointer;
+      color: var(--color-error);
+      font-size: var(--text-lg);
+      padding: 0 var(--space-xs);
+      line-height: 1;
     }
   `;
 
@@ -74,7 +92,7 @@ export class ImageUpload extends LitElement {
         </div>
       ` : ''}
       <label class="trigger">
-        🖼️ Attach image${this.previewUrls.length ? 's' : ''}
+        Attach image${this.previewUrls.length ? 's' : ''}
         <input type="file" accept="image/*" multiple @change="${this.onFileChange}" />
       </label>
     `;

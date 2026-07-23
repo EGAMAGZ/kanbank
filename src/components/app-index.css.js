@@ -1,19 +1,3 @@
-/*
- * Copyright 2024 Bilbao Vizcaya Argentaria, S.A.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { css } from 'lit';
 
 export const styles = css`
@@ -23,6 +7,44 @@ export const styles = css`
     height: 100%;
     box-sizing: border-box;
   }
+
+  nav {
+    padding: var(--space-lg) var(--gutter-lg);
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-xl);
+    letter-spacing: -0.04em;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: color var(--ease-brutal);
+  }
+
+  .logo:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .nav-link {
+    font-size: var(--text-sm);
+    color: var(--color-text-2);
+    cursor: pointer;
+    font-weight: 500;
+    transition: color var(--ease-brutal);
+  }
+
+  .nav-link:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
   main {
     flex: 1;
     position: relative;
@@ -41,4 +63,4 @@ export const styles = css`
   main ::slotted([state="active"]) {
     visibility: visible;
   }
-  `;
+`;

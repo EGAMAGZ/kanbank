@@ -15,32 +15,68 @@ export class ImageGallery extends LitElement {
   static styles = css`
     :host { display: block; }
     .grid {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
     }
     .thumb-wrap {
-      position: relative; width: 80px; height: 80px;
-      border-radius: 4px; overflow: hidden;
-      border: 1px solid #ddd; cursor: pointer; flex-shrink: 0;
+      position: relative;
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      border: 2px solid #000;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: box-shadow 0.1s;
     }
-    .thumb-wrap:hover { box-shadow: 0 0 0 2px #0066cc; }
-    .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-wrap:hover {
+      box-shadow: 3px 3px 0 #000;
+    }
+    .thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .thumb-wrap .remove {
-      position: absolute; top: 2px; right: 2px;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: rgba(0,0,0,0.6); color: white;
-      border: none; cursor: pointer; font-size: 12px;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.15s;
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s;
     }
-    .thumb-wrap:hover .remove { opacity: 1; }
+    .thumb-wrap:hover .remove {
+      opacity: 1;
+    }
     .preview-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7); display: flex; align-items: center;
-      justify-content: center; z-index: 200; cursor: pointer;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      cursor: pointer;
     }
     .preview-overlay img {
-      max-width: 90vw; max-height: 90vh; border-radius: 4px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      max-width: 90vw;
+      max-height: 90vh;
+      border: 2px solid #000;
+      box-shadow: 8px 8px 0 #000;
     }
   `;
 

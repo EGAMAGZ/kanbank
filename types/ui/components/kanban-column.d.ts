@@ -7,6 +7,5 @@ export declare class KanbanColumn extends LitElement {
     taskCount: number;
     dragOver: boolean;
     static styles: import("lit").CSSResult;
-    protected createRenderRoot(): HTMLElement | DocumentFragment;
     render(): import("lit").TemplateResult<1>;
 }

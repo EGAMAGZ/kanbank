@@ -12,17 +12,31 @@ export class KanbanColumn extends LitElement {
 
   static styles = css`
     :host {
-      display: block; min-width: 280px; max-width: 320px; flex-shrink: 0;
-      background: #f5f5f5; border-radius: 8px; padding: 12px;
+      display: block;
+      min-width: 280px;
+      max-width: 320px;
+      flex-shrink: 0;
+      padding: var(--space-md);
     }
-    :host(.drag-over) { background: #e0e7ff; }
-    .header { font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; }
-    .count { color: #666; font-weight: normal; }
-  `;
 
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
+    :host(.drag-over) {
+      background: var(--color-surface);
+    }
+
+    .header {
+      font-family: var(--font-display);
+      font-weight: 800;
+      margin-bottom: var(--space-md);
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: -0.02em;
+    }
+
+    .count {
+      color: var(--color-text-2);
+      font-weight: 500;
+    }
+  `;
 
   render() {
     return html`

@@ -12,8 +12,10 @@ export class SettingsPage extends LitElement {
 
   render() {
     return html`
-      <h1>Settings</h1>
-      <p>Settings page - coming soon.</p>
+      <div style="padding: var(--space-xl) var(--space-lg); max-width: 720px; margin: 0 auto;">
+        <h1 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); letter-spacing: -0.04em; margin-bottom: var(--space-lg);">Settings</h1>
+        <p style="color: var(--color-text-3); font-size: var(--text-lg);">Coming soon.</p>
+      </div>
     `;
   }
 }
