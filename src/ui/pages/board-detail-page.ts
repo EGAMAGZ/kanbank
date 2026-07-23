@@ -35,11 +35,6 @@ export class BoardDetailPage extends LitElement {
 
   @state() private expandedColumnId: string | null = null;
 
-  @state() private newTaskTitle = '';
-  @state() private newTaskDescription = '';
-  @state() private newTaskStateId = '';
-  @state() private taskError: string | null = null;
-
   @state() private dragOverStateId = '';
 
   @state() private newColumnTitle = '';
@@ -82,11 +77,11 @@ export class BoardDetailPage extends LitElement {
 
     .columns {
       display: flex; gap: 8px; padding: 16px 24px; align-items: stretch;
-      height: calc(100vh - 52px); overflow-x: auto; overflow-y: hidden;
+      min-height: calc(100vh - 52px); overflow-x: auto; overflow-y: auto;
     }
 
     .column-bar {
-      width: 52px; min-width: 52px; max-width: 52px; height: 100%;
+      width: 52px; min-width: 52px; max-width: 52px; height: calc(100vh - 84px);
       background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
       display: flex; flex-direction: column; align-items: center;
       padding: 8px 4px; cursor: pointer; position: relative; overflow: hidden;
@@ -116,7 +111,7 @@ export class BoardDetailPage extends LitElement {
     }
 
     .column-expanded {
-      width: 288px; min-width: 288px; max-width: 320px; flex-shrink: 0; height: 100%;
+      width: 288px; min-width: 288px; max-width: 320px; flex-shrink: 0;
       background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
       padding: 12px; display: flex; flex-direction: column; overflow: hidden;
     }
@@ -158,20 +153,6 @@ export class BoardDetailPage extends LitElement {
       flex: 1; overflow-y: auto; min-height: 0;
     }
 
-    .add-task { flex-shrink: 0; padding-top: 8px; border-top: 1px solid #ddd; }
-    .add-task input, .add-task textarea {
-      width: 100%; padding: 8px; border: 2px solid #000; border-radius: 4px;
-      box-sizing: border-box; font-size: 13px; font-family: inherit;
-    }
-    .add-task textarea { min-height: 60px; resize: vertical; margin-top: 6px; }
-    .add-task .btn-row { display: flex; gap: 6px; margin-top: 6px; }
-    .add-task .preview-toggle {
-      font-size: 12px; color: #0066cc; cursor: pointer; margin-top: 4px;
-      display: inline-block;
-    }
-    .add-task .preview-box {
-      margin-top: 6px; padding: 8px; border: 1px solid #eee; border-radius: 4px;
-    }
     .btn {
       padding: 6px 14px; border: 2px solid #000; border-radius: 4px;
       cursor: pointer; font-size: 13px; font-weight: bold;
@@ -179,7 +160,6 @@ export class BoardDetailPage extends LitElement {
     .btn-primary { background: #0066cc; color: white; }
     .btn-cancel { background: #fff; color: #000; }
     .btn:hover { opacity: 0.9; }
-    .task-error { color: #cc0000; font-size: 12px; margin-top: 4px; }
 
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -208,7 +188,7 @@ export class BoardDetailPage extends LitElement {
     }
     .modal-card .modal-error { color: #cc0000; font-size: 12px; margin-top: 8px; }
     .add-task-btn {
-      display: block; width: 100%; padding: 10px; margin-top: 8px;
+      display: block; width: 100%; padding: 10px; margin-bottom: 8px; flex-shrink: 0;
       border: 2px dashed #0066cc; border-radius: 4px; background: none;
       color: #0066cc; font-size: 13px; font-weight: bold; cursor: pointer;
     }
@@ -300,25 +280,6 @@ export class BoardDetailPage extends LitElement {
       if (nextState && nextState.id !== this.getMandatoryOrder().maybe) {
         this.expandedColumnId = nextState.id;
       }
-    }
-  }
-
-  private async handleCreateTask(stateId: string): Promise<void> {
-    if (!this.newTaskTitle.trim() || !this.detail) return;
-    try {
-      this.taskError = null;
-      await createTask.execute({
-        boardId: this.detail.board.id,
-        stateId,
-        title: this.newTaskTitle.trim(),
-        description: this.newTaskDescription.trim() || undefined,
-      });
-      this.newTaskTitle = '';
-      this.newTaskDescription = '';
-      this.newTaskStateId = '';
-      await this.loadBoard();
-    } catch (e) {
-      this.taskError = e instanceof Error ? e.message : 'Failed to create task';
     }
   }
 
@@ -514,6 +475,10 @@ export class BoardDetailPage extends LitElement {
           </div>
         </div>
 
+        ${state.id === mandatory.maybe ? html`
+          <button class="add-task-btn" @click="${() => this.openTaskModal()}">+ Add task</button>
+        ` : ''}
+
         <div class="column-tasks">
           ${stateTasks.map(task => {
             const days = inactiveDays(task.lastActivityAt);
@@ -531,46 +496,6 @@ export class BoardDetailPage extends LitElement {
             `;
           })}
         </div>
-
-        ${state.id === mandatory.maybe ? html`
-          <button class="add-task-btn" @click="${() => this.openTaskModal()}">+ Add task</button>
-        ` : html`
-          <div class="add-task">
-            <input
-              type="text"
-              placeholder="Task title..."
-              .value="${this.newTaskStateId === state.id ? this.newTaskTitle : ''}"
-              @focus="${() => { this.newTaskStateId = state.id; }}"
-              @input="${(e: Event) => { this.newTaskTitle = (e.target as HTMLInputElement).value; }}"
-              @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.handleCreateTask(state.id); }
-              }}"
-            />
-            ${this.newTaskStateId === state.id ? html`
-              <textarea
-                placeholder="Description (markdown)..."
-                .value="${this.newTaskDescription}"
-                @input="${(e: Event) => { this.newTaskDescription = (e.target as HTMLTextAreaElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleCreateTask(state.id); }
-                }}"
-              ></textarea>
-              ${this.newTaskDescription.trim() ? html`
-                <span class="preview-toggle" @click="${() => {
-                  const el = this.renderRoot.querySelector(`[data-preview="${state.id}"]`) as HTMLElement;
-                  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                }}">Preview</span>
-                <div class="preview-box" data-preview="${state.id}" style="display:none;">
-                  <markdown-viewer .content="${this.newTaskDescription}"></markdown-viewer>
-                </div>
-              ` : ''}
-              <div class="btn-row">
-                <button class="btn btn-primary" @click="${() => this.handleCreateTask(state.id)}">Add</button>
-              </div>
-              ${this.taskError && this.newTaskStateId === state.id ? html`<div class="task-error">${this.taskError}</div>` : ''}
-            ` : ''}
-          </div>
-        `}
       </div>
     `;
   }
