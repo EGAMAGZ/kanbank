@@ -18,6 +18,14 @@ export const routes: RouteDefinition[] = [
     },
   },
   {
+    path: '/task/:id',
+    name: 'task-detail',
+    component: 'task-detail-page',
+    action: async () => {
+      await import('../ui/pages/task-detail-page.js');
+    },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: 'settings-page',

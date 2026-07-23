@@ -22,7 +22,7 @@ export class DeleteStateUseCase {
     }
 
     const states = await this.stateRepo.findByBoard(state.boardId);
-    const defaultState = states.find(s => s.isDefault && s.title === 'Not now');
+    const defaultState = states.find(s => s.isDefault && s.title === 'Maybe?');
     if (!defaultState) {
       throw new InvalidStateTransitionError('No default state found to move tasks to');
     }
