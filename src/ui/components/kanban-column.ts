@@ -16,12 +16,13 @@ export class KanbanColumn extends LitElement {
       min-width: 280px;
       max-width: 320px;
       flex-shrink: 0;
-      background: var(--color-bg);
       padding: var(--space-md);
     }
+
     :host(.drag-over) {
-      background: rgba(37, 99, 235, 0.06);
+      background: var(--color-surface);
     }
+
     .header {
       font-family: var(--font-display);
       font-weight: 800;
@@ -30,6 +31,7 @@ export class KanbanColumn extends LitElement {
       justify-content: space-between;
       letter-spacing: -0.02em;
     }
+
     .count {
       color: var(--color-text-2);
       font-weight: 500;

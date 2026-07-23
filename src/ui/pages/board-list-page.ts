@@ -24,96 +24,107 @@ export class BoardListPage extends LitElement {
   static styles = css`
     :host {
       display: block;
-      padding: var(--space-2xl) var(--space-xl);
+      padding: var(--space-3xl) var(--gutter-lg) var(--space-2xl);
       max-width: var(--max-width);
       margin: 0 auto;
     }
 
+    /* Title — breaks the grid, floats in whitespace */
     .page-title {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: var(--text-4xl);
+      font-size: var(--text-5xl);
       letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin-bottom: var(--space-xl);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-3xl);
+      max-width: 14ch;
     }
 
+    /* New board button — brutal anchor, the single raw gesture */
     .new-board-btn {
       display: inline-block;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
-      box-shadow: 4px 4px 0 #000;
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal);
       background: var(--color-accent);
-      color: #fff;
+      color: var(--color-white);
       font-family: var(--font-body);
       font-size: var(--text-sm);
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.1s, box-shadow 0.1s;
-      margin-bottom: var(--space-xl);
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      margin-bottom: var(--space-2xl);
     }
 
     .new-board-btn:hover {
       transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
     }
 
+    .new-board-btn:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
+    /* Bento grid — generous gutters, asymmetric */
     .board-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
-      gap: var(--space-lg);
+      gap: var(--gutter);
       align-items: start;
     }
 
+    /* Anchor card — the ONE brutal container */
     .board-item-anchor {
       grid-column: span 5;
-      border: 2px solid #000;
-      box-shadow: 6px 6px 0 #000;
-      padding: var(--space-lg);
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
+      padding: var(--space-xl);
       cursor: pointer;
       background: var(--color-white);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .board-item-anchor:hover {
       transform: translate(3px, 3px);
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 var(--color-black);
     }
 
     .board-item-anchor:active {
       transform: translate(6px, 6px);
-      box-shadow: 0 0 0 #000;
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .board-item-anchor h3 {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: var(--text-xl);
+      font-size: var(--text-2xl);
       letter-spacing: -0.03em;
-      margin-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
+      line-height: var(--leading-snug);
     }
 
     .board-item-anchor p {
       margin: 0;
       color: var(--color-text-2);
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       line-height: var(--leading-normal);
     }
 
+    /* Minimal board — typography only, no container */
     .board-item-minimal {
       grid-column: span 3;
       padding: var(--space-sm) 0;
       cursor: pointer;
-      border: none;
-      background: none;
     }
 
     .board-item-minimal h3 {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: var(--text-base);
+      font-size: var(--text-lg);
       letter-spacing: -0.02em;
       margin: 0 0 var(--space-xs);
+      transition: color var(--ease-brutal);
     }
 
     .board-item-minimal:hover h3 {
@@ -123,13 +134,14 @@ export class BoardListPage extends LitElement {
     .board-item-minimal p {
       margin: 0;
       color: var(--color-text-3);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       line-height: var(--leading-normal);
     }
 
+    /* Create form — dashed border, no shadow */
     .create-form {
       grid-column: span 4;
-      padding: var(--space-md);
+      padding: var(--space-lg);
       border: 2px dashed var(--color-border);
     }
 
@@ -138,12 +150,13 @@ export class BoardListPage extends LitElement {
       display: block;
       width: 100%;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       font-family: var(--font-body);
       font-size: var(--text-sm);
       margin-bottom: var(--space-sm);
       outline: none;
       background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
 
     .create-form input:focus,
@@ -163,20 +176,25 @@ export class BoardListPage extends LitElement {
 
     .btn-create {
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
-      box-shadow: 3px 3px 0 #000;
+      border: 2px solid var(--color-black);
+      box-shadow: 3px 3px 0 var(--color-black);
       background: var(--color-text);
-      color: #fff;
+      color: var(--color-white);
       font-family: var(--font-body);
       font-size: var(--text-sm);
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-create:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-create:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .btn-cancel {
@@ -195,14 +213,14 @@ export class BoardListPage extends LitElement {
 
     .empty {
       grid-column: 1 / -1;
-      padding: var(--space-2xl) 0;
-      text-align: center;
+      padding: var(--space-3xl) 0;
     }
 
     .empty p {
       color: var(--color-text-3);
       font-size: var(--text-lg);
       margin: 0;
+      max-width: 32ch;
     }
   `;
 

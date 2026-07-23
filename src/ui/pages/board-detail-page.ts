@@ -58,10 +58,10 @@ export class BoardDetailPage extends LitElement {
     }
 
     .board-header {
-      padding: var(--space-lg) var(--space-xl);
+      padding: var(--space-2xl) var(--gutter-lg) var(--space-xl);
       display: flex;
-      align-items: center;
-      gap: var(--space-md);
+      align-items: baseline;
+      gap: var(--space-lg);
       flex-wrap: wrap;
     }
 
@@ -70,15 +70,17 @@ export class BoardDetailPage extends LitElement {
       flex: 1;
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: var(--text-2xl);
+      font-size: var(--text-4xl);
       letter-spacing: -0.04em;
+      line-height: var(--leading-tight);
     }
 
     .board-header .back {
       cursor: pointer;
       color: var(--color-text-2);
       font-size: 20px;
-      transition: color 0.1s;
+      transition: color var(--ease-brutal);
+      align-self: center;
     }
 
     .board-header .back:hover {
@@ -94,7 +96,7 @@ export class BoardDetailPage extends LitElement {
       background: none;
       font-weight: 700;
       font-family: var(--font-body);
-      transition: background 0.1s;
+      transition: background var(--ease-brutal);
     }
 
     .add-column-btn:hover {
@@ -109,10 +111,11 @@ export class BoardDetailPage extends LitElement {
 
     .column-form input[type="text"] {
       padding: var(--space-xs) var(--space-sm);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       font-size: var(--text-sm);
       font-family: var(--font-body);
       outline: none;
+      transition: box-shadow var(--ease-brutal);
     }
 
     .column-form input[type="text"]:focus {
@@ -122,27 +125,27 @@ export class BoardDetailPage extends LitElement {
     .column-form input[type="color"] {
       width: 32px;
       height: 32px;
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       cursor: pointer;
       padding: 2px;
     }
 
     .column-form .btn-sm {
       padding: var(--space-xs) var(--space-sm);
-      border: 2px solid #000;
-      box-shadow: 3px 3px 0 #000;
+      border: 2px solid var(--color-black);
+      box-shadow: 3px 3px 0 var(--color-black);
       cursor: pointer;
       background: var(--color-text);
-      color: #fff;
+      color: var(--color-white);
       font-size: var(--text-sm);
       font-weight: 700;
       font-family: var(--font-body);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .column-form .btn-sm:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
     }
 
     .column-form .cancel {
@@ -154,23 +157,25 @@ export class BoardDetailPage extends LitElement {
       font-family: var(--font-body);
     }
 
+    /* Columns area — generous horizontal padding */
     .columns {
       display: flex;
       gap: var(--space-lg);
-      padding: var(--space-lg) var(--space-xl);
+      padding: 0 var(--gutter-lg) var(--space-2xl);
       align-items: stretch;
-      min-height: calc(100vh - 80px);
+      min-height: calc(100vh - 160px);
       overflow-x: auto;
       overflow-y: auto;
     }
 
+    /* Column bar — brutal border + shadow (interactive, justified) */
     .column-bar {
       width: 56px;
       min-width: 56px;
       max-width: 56px;
-      height: calc(100vh - 120px);
-      background: var(--color-bg);
-      border: 2px solid #000;
+      height: calc(100vh - 200px);
+      background: var(--color-white);
+      border: 2px solid var(--color-black);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -178,22 +183,22 @@ export class BoardDetailPage extends LitElement {
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: box-shadow 0.15s, transform 0.15s;
+      transition: box-shadow var(--ease-brutal), transform var(--ease-brutal);
     }
 
     .column-bar:hover {
       transform: translateY(-2px);
-      box-shadow: 4px 4px 0 #000;
+      box-shadow: var(--shadow-brutal);
     }
 
     .column-bar:active {
       transform: translateY(2px);
-      box-shadow: 0 0 0 #000;
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .column-bar.active {
       background: var(--color-text);
-      color: #fff;
+      color: var(--color-white);
     }
 
     .column-bar .fill {
@@ -201,20 +206,19 @@ export class BoardDetailPage extends LitElement {
       bottom: 0;
       left: 0;
       right: 0;
-      background: var(--color-accent);
       transition: height 0.3s ease;
       z-index: 0;
     }
 
     .column-bar.active .fill {
-      background: var(--color-accent);
+      background: var(--color-accent) !important;
     }
 
     .column-bar .badge {
       width: 32px;
       height: 32px;
-      background: #fff;
-      border: 2px solid #000;
+      background: var(--color-white);
+      border: 2px solid var(--color-black);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -226,7 +230,7 @@ export class BoardDetailPage extends LitElement {
 
     .column-bar.active .badge {
       background: var(--color-accent);
-      color: #fff;
+      color: var(--color-white);
     }
 
     .column-bar .bar-label {
@@ -247,28 +251,29 @@ export class BoardDetailPage extends LitElement {
       margin-top: auto;
     }
 
+    /* Expanded column — the anchor panel */
     .column-expanded {
-      width: 300px;
-      min-width: 300px;
-      max-width: 340px;
+      width: 320px;
+      min-width: 320px;
+      max-width: 360px;
       flex-shrink: 0;
       background: var(--color-white);
-      border: 2px solid #000;
-      box-shadow: 6px 6px 0 #000;
-      padding: var(--space-md);
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
+      padding: var(--space-lg);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .column-expanded.drag-over {
-      background: rgba(37, 99, 235, 0.06);
-      box-shadow: 6px 6px 0 var(--color-accent);
+      background: rgba(37, 99, 235, 0.04);
+      box-shadow: var(--shadow-brutal-md), inset 0 0 0 2px var(--color-accent);
     }
 
     .column-header {
       font-weight: 700;
-      margin-bottom: var(--space-md);
+      margin-bottom: var(--space-lg);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -276,7 +281,7 @@ export class BoardDetailPage extends LitElement {
 
     .column-header .col-title {
       font-family: var(--font-display);
-      font-size: var(--text-base);
+      font-size: var(--text-lg);
       font-weight: 800;
       letter-spacing: -0.02em;
     }
@@ -294,7 +299,7 @@ export class BoardDetailPage extends LitElement {
       font-size: var(--text-base);
       padding: 2px var(--space-xs);
       color: var(--color-text-2);
-      transition: color 0.1s;
+      transition: color var(--ease-brutal);
     }
 
     .column-header .col-actions button:hover {
@@ -314,7 +319,7 @@ export class BoardDetailPage extends LitElement {
       border: none;
       padding: 0 var(--space-xs);
       color: var(--color-text-2);
-      transition: color 0.1s;
+      transition: color var(--ease-brutal);
     }
 
     .collapse-btn:hover {
@@ -324,11 +329,12 @@ export class BoardDetailPage extends LitElement {
     .state-edit-input {
       font-size: var(--text-base);
       font-weight: 700;
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       padding: var(--space-xs) var(--space-sm);
       width: 140px;
       font-family: var(--font-body);
       outline: none;
+      transition: box-shadow var(--ease-brutal);
     }
 
     .state-edit-input:focus {
@@ -338,30 +344,28 @@ export class BoardDetailPage extends LitElement {
     .state-edit-color {
       width: 28px;
       height: 28px;
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       cursor: pointer;
       padding: 2px;
       margin-left: var(--space-xs);
     }
 
+    /* Task items — pure typography, spacing does the work */
     .task-item {
-      padding: var(--space-sm) 0;
-      margin-bottom: var(--space-xs);
+      padding: var(--space-md) 0;
       cursor: grab;
-      border-bottom: 1px solid var(--color-border);
-      transition: background 0.1s;
+      transition: background var(--ease-brutal);
     }
 
-    .task-item:last-child {
-      border-bottom: none;
+    .task-item + .task-item {
+      border-top: 1px solid var(--color-border);
     }
 
     .task-item:hover {
-      background: var(--color-bg);
-      margin-left: calc(var(--space-xs) * -1);
-      margin-right: calc(var(--space-xs) * -1);
-      padding-left: var(--space-xs);
-      padding-right: var(--space-xs);
+      background: var(--color-surface);
+      margin: 0 calc(var(--space-md) * -1);
+      padding-left: var(--space-md);
+      padding-right: var(--space-md);
     }
 
     .task-item:active {
@@ -369,9 +373,10 @@ export class BoardDetailPage extends LitElement {
     }
 
     .task-item .title {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       margin-bottom: 2px;
       font-weight: 500;
+      line-height: var(--leading-snug);
     }
 
     .task-item .inactive {
@@ -386,7 +391,7 @@ export class BoardDetailPage extends LitElement {
     .image-indicator {
       font-size: 11px;
       color: var(--color-text-2);
-      margin-top: 2px;
+      margin-top: var(--space-xs);
     }
 
     .column-tasks {
@@ -397,35 +402,41 @@ export class BoardDetailPage extends LitElement {
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
       font-family: var(--font-body);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-primary {
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 var(--color-black);
       background: var(--color-accent);
-      color: white;
+      color: var(--color-white);
     }
 
     .btn-primary:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-primary:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .btn-cancel {
       box-shadow: none;
-      background: #fff;
+      background: var(--color-white);
       color: var(--color-text);
     }
 
     .btn-cancel:hover {
-      background: var(--color-bg);
+      background: var(--color-surface);
     }
 
+    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -438,8 +449,8 @@ export class BoardDetailPage extends LitElement {
 
     .modal-card {
       background: var(--color-white);
-      border: 2px solid #000;
-      box-shadow: 8px 8px 0 #000;
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal-lg);
       padding: var(--space-xl);
       width: 500px;
       max-height: 80vh;
@@ -466,12 +477,13 @@ export class BoardDetailPage extends LitElement {
     .modal-card textarea {
       width: 100%;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       box-sizing: border-box;
       font-size: var(--text-sm);
       font-family: var(--font-body);
       outline: none;
       background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
 
     .modal-card input:focus,
@@ -529,7 +541,7 @@ export class BoardDetailPage extends LitElement {
       font-weight: 700;
       font-family: var(--font-body);
       cursor: pointer;
-      transition: background 0.1s;
+      transition: background var(--ease-brutal);
     }
 
     .add-task-btn:hover {

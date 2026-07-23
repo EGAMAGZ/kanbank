@@ -10,29 +10,35 @@ export class TaskCard extends LitElement {
   static styles = css`
     :host {
       display: block;
-      padding: var(--space-sm) 0;
+      padding: var(--space-md) 0;
       cursor: grab;
-      border-bottom: 1px solid var(--color-border);
-      transition: background 0.1s;
+      transition: background var(--ease-brutal);
     }
+
     :host(:last-child) {
       border-bottom: none;
     }
+
     :host(:hover) {
-      background: var(--color-bg);
+      background: var(--color-surface);
     }
+
     :host(:active) {
       cursor: grabbing;
     }
+
     .title {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       font-weight: 500;
+      line-height: var(--leading-snug);
       margin-bottom: 2px;
     }
+
     .inactive {
       font-size: var(--text-xs);
       color: var(--color-text-3);
     }
+
     .inactive.stale {
       color: var(--color-warning);
     }

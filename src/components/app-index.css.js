@@ -9,8 +9,7 @@ export const styles = css`
   }
 
   nav {
-    padding: var(--space-lg) var(--space-xl);
-    border-bottom: 2px solid #000;
+    padding: var(--space-lg) var(--gutter-lg);
     display: flex;
     gap: var(--space-lg);
     align-items: center;
@@ -24,10 +23,12 @@ export const styles = css`
     letter-spacing: -0.04em;
     cursor: pointer;
     color: var(--color-text);
+    transition: color var(--ease-brutal);
   }
 
   .logo:hover {
     color: var(--color-accent);
+    text-decoration: none;
   }
 
   .nav-link {
@@ -35,6 +36,7 @@ export const styles = css`
     color: var(--color-text-2);
     cursor: pointer;
     font-weight: 500;
+    transition: color var(--ease-brutal);
   }
 
   .nav-link:hover {

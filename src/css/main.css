@@ -5,10 +5,10 @@ body {
   height: 100%;
   margin: 0;
   font-family: var(--font-body);
-  font-size: var(--text-base);
+  font-size: 17px;
   line-height: var(--leading-loose);
   color: var(--color-text);
-  background: var(--color-white);
+  background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -34,6 +34,7 @@ a {
 
 a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 button {
@@ -43,4 +44,9 @@ button {
 
 input, textarea {
   font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-white);
 }

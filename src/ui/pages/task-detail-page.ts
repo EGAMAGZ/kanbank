@@ -55,45 +55,37 @@ export class TaskDetailPage extends LitElement {
   static styles = css`
     :host {
       display: block;
-      max-width: 720px;
+      max-width: 780px;
       margin: 0 auto;
-      padding: var(--space-xl) var(--space-lg);
+      padding: var(--space-2xl) var(--gutter-lg);
     }
 
     .header {
       display: flex;
       align-items: flex-start;
-      gap: var(--space-md);
-      margin-bottom: var(--space-2xl);
+      gap: var(--space-lg);
+      margin-bottom: var(--space-3xl);
     }
 
     .header .back {
       cursor: pointer;
       color: var(--color-text-2);
       font-size: 20px;
-      margin-top: var(--space-sm);
-      transition: color 0.1s;
+      margin-top: var(--space-md);
+      transition: color var(--ease-brutal);
     }
 
     .header .back:hover {
       color: var(--color-text);
     }
 
-    .header h1 {
-      margin: 0;
-      flex: 1;
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-3xl);
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-    }
-
+    /* Anchor title — THE raw gesture of this view */
     .anchor-title {
-      border: 2px solid #000;
-      box-shadow: 6px 6px 0 #000;
-      padding: var(--space-lg);
+      border: 2px solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
+      padding: var(--space-xl) var(--space-xl) var(--space-lg);
       background: var(--color-white);
+      flex: 1;
     }
 
     .anchor-title h1 {
@@ -102,34 +94,39 @@ export class TaskDetailPage extends LitElement {
       font-weight: 800;
       font-size: var(--text-3xl);
       letter-spacing: -0.04em;
-      line-height: 1.1;
+      line-height: var(--leading-tight);
     }
 
     .header .actions {
       display: flex;
       gap: var(--space-sm);
-      margin-top: var(--space-sm);
+      margin-top: var(--space-md);
     }
 
     .btn-edit,
     .btn-delete {
       padding: var(--space-xs) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
-      background: #fff;
+      background: var(--color-white);
       font-family: var(--font-body);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-edit {
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 var(--color-black);
     }
 
     .btn-edit:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-edit:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .btn-delete {
@@ -142,11 +139,11 @@ export class TaskDetailPage extends LitElement {
     }
 
     .section {
-      margin-bottom: var(--space-2xl);
+      margin-bottom: var(--space-3xl);
     }
 
     .section h3 {
-      margin: 0 0 var(--space-md);
+      margin: 0 0 var(--space-lg);
       font-family: var(--font-display);
       font-size: var(--text-lg);
       font-weight: 800;
@@ -154,23 +151,26 @@ export class TaskDetailPage extends LitElement {
       color: var(--color-text);
     }
 
+    /* Description — no container, just flowing text */
     .description {
-      margin-bottom: var(--space-xl);
+      margin-bottom: var(--space-2xl);
       font-size: var(--text-base);
       line-height: var(--leading-loose);
       color: var(--color-text);
     }
 
+    /* Edit form */
     .edit-form input,
     .edit-form textarea {
       width: 100%;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       box-sizing: border-box;
       font-family: var(--font-body);
       font-size: var(--text-sm);
       outline: none;
       background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
 
     .edit-form input:focus,
@@ -192,42 +192,47 @@ export class TaskDetailPage extends LitElement {
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
       font-family: var(--font-body);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-primary {
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 var(--color-black);
       background: var(--color-accent);
-      color: white;
+      color: var(--color-white);
     }
 
     .btn-primary:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-primary:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .btn-cancel {
       box-shadow: none;
-      background: #fff;
+      background: var(--color-white);
       color: var(--color-text);
     }
 
     .btn-cancel:hover {
-      background: var(--color-bg);
+      background: var(--color-surface);
     }
 
+    /* Comments — thin border-bottom only, no card wrapper */
     .comment {
-      padding: var(--space-md) 0;
-      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-lg) 0;
     }
 
-    .comment:last-child {
-      border-bottom: none;
+    .comment + .comment {
+      border-top: 1px solid var(--color-border);
     }
 
     .comment-header {
@@ -268,13 +273,14 @@ export class TaskDetailPage extends LitElement {
       width: 100%;
       min-height: 80px;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       box-sizing: border-box;
       font-family: var(--font-body);
       font-size: var(--text-sm);
       margin-top: var(--space-sm);
       outline: none;
       background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
 
     .comment-edit textarea:focus {
@@ -297,12 +303,13 @@ export class TaskDetailPage extends LitElement {
       width: 100%;
       min-height: 80px;
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid #000;
+      border: 2px solid var(--color-black);
       box-sizing: border-box;
       font-family: var(--font-body);
       font-size: var(--text-sm);
       outline: none;
       background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
     }
 
     .add-comment textarea:focus {
@@ -485,7 +492,7 @@ export class TaskDetailPage extends LitElement {
             </div>
           </div>
         ` : html`
-          <div class="anchor-title" style="flex:1;">
+          <div class="anchor-title">
             <h1>${this.task.title}</h1>
           </div>
           <div class="actions">
