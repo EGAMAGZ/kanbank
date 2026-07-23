@@ -1,8 +1,6 @@
-@import url('./home.css');
-@import url('./second.css');
-
 html,
 body {
   height: 100%;
   margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
 }

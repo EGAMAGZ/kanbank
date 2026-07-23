@@ -1,0 +1,38 @@
+import { LitElement } from 'lit';
+import { PageController } from '@open-cells/page-controller';
+import '../../ui/components/markdown-viewer.js';
+import '../../ui/components/image-gallery.js';
+import '../../ui/components/image-upload.js';
+export declare class TaskDetailPage extends LitElement {
+    pageController: PageController;
+    params: Record<string, string>;
+    private task;
+    private comments;
+    private error;
+    private editingTask;
+    private editTitle;
+    private editDescription;
+    private newComment;
+    private commentError;
+    private editingCommentId;
+    private editingCommentText;
+    static styles: import("lit").CSSResult;
+    protected createRenderRoot(): HTMLElement | DocumentFragment;
+    onPageEnter(): Promise<void>;
+    private loadTask;
+    private goBack;
+    private startEditTask;
+    private cancelEditTask;
+    private saveEditTask;
+    private handleDeleteTask;
+    private handleAttachTaskImage;
+    private handleDetachTaskImage;
+    private handleAddComment;
+    private startEditComment;
+    private cancelEditComment;
+    private saveEditComment;
+    private handleDeleteComment;
+    private handleAttachCommentImage;
+    private handleDetachCommentImage;
+    render(): import("lit").TemplateResult<1>;
+}

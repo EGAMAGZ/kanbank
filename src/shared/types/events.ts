@@ -1,0 +1,17 @@
+export type DomainEventName =
+  | 'board.created'
+  | 'board.updated'
+  | 'board.deleted'
+  | 'state.created'
+  | 'state.updated'
+  | 'state.deleted'
+  | 'state.reordered'
+  | 'task.created'
+  | 'task.updated'
+  | 'task.deleted'
+  | 'task.moved'
+  | 'task.activity.updated'
+  | 'comment.created'
+  | 'comment.updated'
+  | 'comment.deleted'
+  | 'image.added';
