@@ -8,9 +8,11 @@ export declare class BoardDetailPage extends LitElement {
     private expandedColumnId;
     private dragOverStateId;
     private newColumnTitle;
+    private newColumnColor;
     private showColumnForm;
     private editingStateId;
     private editingStateTitle;
+    private editingStateColor;
     private showTaskModal;
     private modalTitle;
     private modalDescription;

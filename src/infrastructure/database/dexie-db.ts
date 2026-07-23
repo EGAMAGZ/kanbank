@@ -26,3 +26,9 @@ db.version(1).stores({
   comments: '++id, taskId',
   images: '++id',
 });
+
+db.version(2).stores({}).upgrade(tx => {
+  return tx.table('states').toCollection().modify(s => {
+    s.color = s.color ?? '#0066cc';
+  });
+});

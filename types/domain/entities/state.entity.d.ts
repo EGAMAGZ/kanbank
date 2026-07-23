@@ -3,12 +3,14 @@ export interface State extends Timestamped, WithOrder {
     id: Id<'State'>;
     boardId: Id<'Board'>;
     title: string;
+    color: string;
     isDefault: boolean;
 }
 export interface CreateStateData {
     id: Id<'State'>;
     boardId: Id<'Board'>;
     title: string;
+    color: string;
     order: number;
     isDefault: boolean;
     createdAt: string;

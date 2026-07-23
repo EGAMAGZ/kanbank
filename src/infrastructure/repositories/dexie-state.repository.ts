@@ -17,7 +17,7 @@ export class DexieStateRepository implements StateRepository {
     return state.id;
   }
 
-  async update(id: Id<'State'>, changes: Partial<Pick<State, 'title' | 'order' | 'updatedAt'>>): Promise<void> {
+  async update(id: Id<'State'>, changes: Partial<Pick<State, 'title' | 'color' | 'order' | 'updatedAt'>>): Promise<void> {
     await db.states.update(id, changes);
   }
 

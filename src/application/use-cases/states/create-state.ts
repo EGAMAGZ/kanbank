@@ -24,6 +24,7 @@ export class CreateStateUseCase {
       id: stateId,
       boardId: parsed.data.boardId as any,
       title: parsed.data.title,
+      color: parsed.data.color ?? '#0066cc',
       order,
       isDefault: false,
       createdAt: now,

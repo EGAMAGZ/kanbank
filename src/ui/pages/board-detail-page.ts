@@ -38,10 +38,12 @@ export class BoardDetailPage extends LitElement {
   @state() private dragOverStateId = '';
 
   @state() private newColumnTitle = '';
+  @state() private newColumnColor = '#0066cc';
   @state() private showColumnForm = false;
 
   @state() private editingStateId: string | null = null;
   @state() private editingStateTitle = '';
+  @state() private editingStateColor = '#0066cc';
 
   @state() private showTaskModal = false;
   @state() private modalTitle = '';
@@ -64,8 +66,12 @@ export class BoardDetailPage extends LitElement {
     }
     .add-column-btn:hover { background: #f0f7ff; }
     .column-form { display: flex; gap: 6px; align-items: center; }
-    .column-form input {
+    .column-form input[type="text"] {
       padding: 4px 8px; border: 2px solid #000; border-radius: 4px; font-size: 13px;
+    }
+    .column-form input[type="color"] {
+      width: 28px; height: 28px; border: 2px solid #000; border-radius: 4px;
+      cursor: pointer; padding: 1px;
     }
     .column-form .btn-sm {
       padding: 4px 10px; border: 2px solid #000; border-radius: 4px; cursor: pointer;
@@ -135,6 +141,10 @@ export class BoardDetailPage extends LitElement {
     .state-edit-input {
       font-size: 15px; font-weight: bold; border: 2px solid #000; border-radius: 3px;
       padding: 2px 6px; width: 120px;
+    }
+    .state-edit-color {
+      width: 24px; height: 24px; border: 2px solid #000; border-radius: 3px;
+      cursor: pointer; padding: 1px; margin-left: 4px;
     }
 
     .task-card {
@@ -321,9 +331,11 @@ export class BoardDetailPage extends LitElement {
       await createState.execute({
         boardId: this.detail.board.id,
         title: this.newColumnTitle.trim(),
+        color: this.newColumnColor,
         order,
       });
       this.newColumnTitle = '';
+      this.newColumnColor = '#0066cc';
       this.showColumnForm = false;
       await this.loadBoard();
     } catch (e) {
@@ -334,14 +346,16 @@ export class BoardDetailPage extends LitElement {
   private startEditState(state: State): void {
     this.editingStateId = state.id;
     this.editingStateTitle = state.title;
+    this.editingStateColor = state.color;
   }
 
   private async saveEditState(state: State): Promise<void> {
     if (!this.editingStateTitle.trim()) return;
     try {
-      await updateState.execute(state.id, { title: this.editingStateTitle.trim() });
+      await updateState.execute(state.id, { title: this.editingStateTitle.trim(), color: this.editingStateColor });
       this.editingStateId = null;
       this.editingStateTitle = '';
+      this.editingStateColor = '#0066cc';
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to update state';
@@ -351,6 +365,7 @@ export class BoardDetailPage extends LitElement {
   private cancelEditState(): void {
     this.editingStateId = null;
     this.editingStateTitle = '';
+    this.editingStateColor = '#0066cc';
   }
 
   private async handleDeleteState(state: State): Promise<void> {
@@ -424,7 +439,7 @@ export class BoardDetailPage extends LitElement {
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="fill" style="height: ${isNotNow ? '100' : pct}%; ${isNotNow ? 'background:#cc6600' : ''}"></div>
+        <div class="fill" style="height: ${isNotNow ? '100' : pct}%; ${isNotNow ? 'background:#cc6600' : `background:${state.color}`}"></div>
         <div class="badge">${count}</div>
         <div class="bar-label">${state.title}</div>
         ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ''}
@@ -444,22 +459,31 @@ export class BoardDetailPage extends LitElement {
     return html`
       <div
         class="column-expanded ${this.dragOverStateId === state.id ? 'drag-over' : ''}"
+        style="border-top: 3px solid ${state.color};"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
         <div class="column-header">
           ${this.editingStateId === state.id ? html`
-            <input
-              class="state-edit-input"
-              type="text"
-              .value="${this.editingStateTitle}"
-              @input="${(e: Event) => { this.editingStateTitle = (e.target as HTMLInputElement).value; }}"
-              @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter') this.saveEditState(state);
-                if (e.key === 'Escape') this.cancelEditState();
-              }}"
-            />
+            <div style="display:flex;align-items:center;gap:4px;">
+              <input
+                class="state-edit-input"
+                type="text"
+                .value="${this.editingStateTitle}"
+                @input="${(e: Event) => { this.editingStateTitle = (e.target as HTMLInputElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') this.saveEditState(state);
+                  if (e.key === 'Escape') this.cancelEditState();
+                }}"
+              />
+              <input
+                class="state-edit-color"
+                type="color"
+                .value="${this.editingStateColor}"
+                @input="${(e: Event) => { this.editingStateColor = (e.target as HTMLInputElement).value; }}"
+              />
+            </div>
           ` : html`
             <span class="col-title">${state.title}</span>
           `}
@@ -526,6 +550,11 @@ export class BoardDetailPage extends LitElement {
                 if (e.key === 'Enter') this.handleCreateState();
                 if (e.key === 'Escape') { this.showColumnForm = false; this.newColumnTitle = ''; }
               }}"
+            />
+            <input
+              type="color"
+              .value="${this.newColumnColor}"
+              @input="${(e: Event) => { this.newColumnColor = (e.target as HTMLInputElement).value; }}"
             />
             <button class="btn-sm" @click="${this.handleCreateState}">Add</button>
             <button class="cancel" @click="${() => { this.showColumnForm = false; this.newColumnTitle = ''; }}">Cancel</button>
