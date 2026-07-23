@@ -20,6 +20,7 @@
     "noImplicitAny": true,
     "emitDeclarationOnly": true,
     "skipLibCheck": true,
+    "rootDir": "./src",
     "outDir": "./types",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
