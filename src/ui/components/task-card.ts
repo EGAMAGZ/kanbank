@@ -9,19 +9,34 @@ export class TaskCard extends LitElement {
 
   static styles = css`
     :host {
-      display: block; background: white; border: 1px solid #ddd; border-radius: 6px;
-      padding: 10px; margin-bottom: 8px; cursor: grab; transition: box-shadow 0.2s;
+      display: block;
+      padding: var(--space-sm) 0;
+      cursor: grab;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.1s;
     }
-    :host(:active) { cursor: grabbing; }
-    :host(:hover) { box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    .title { font-size: 14px; margin-bottom: 4px; }
-    .inactive { font-size: 12px; color: #999; }
-    .inactive.stale { color: #cc6600; }
+    :host(:last-child) {
+      border-bottom: none;
+    }
+    :host(:hover) {
+      background: var(--color-bg);
+    }
+    :host(:active) {
+      cursor: grabbing;
+    }
+    .title {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    .inactive {
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+    }
+    .inactive.stale {
+      color: var(--color-warning);
+    }
   `;
-
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
 
   render() {
     const days = inactiveDays(this.task.lastActivityAt);

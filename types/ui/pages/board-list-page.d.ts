@@ -7,7 +7,6 @@ export declare class BoardListPage extends LitElement {
     private newTitle;
     private newDescription;
     static styles: import("lit").CSSResult;
-    protected createRenderRoot(): HTMLElement | DocumentFragment;
     connectedCallback(): Promise<void>;
     private loadBoards;
     private handleCreate;

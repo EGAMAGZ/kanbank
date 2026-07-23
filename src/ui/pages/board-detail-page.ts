@@ -38,12 +38,12 @@ export class BoardDetailPage extends LitElement {
   @state() private dragOverStateId = '';
 
   @state() private newColumnTitle = '';
-  @state() private newColumnColor = '#0066cc';
+  @state() private newColumnColor = '#2563EB';
   @state() private showColumnForm = false;
 
   @state() private editingStateId: string | null = null;
   @state() private editingStateTitle = '';
-  @state() private editingStateColor = '#0066cc';
+  @state() private editingStateColor = '#2563EB';
 
   @state() private showTaskModal = false;
   @state() private modalTitle = '';
@@ -53,156 +53,488 @@ export class BoardDetailPage extends LitElement {
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
+
     .board-header {
-      padding: 12px 24px; border-bottom: 2px solid #000;
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: var(--space-lg) var(--space-xl);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      flex-wrap: wrap;
     }
-    .board-header h1 { margin: 0; flex: 1; font-size: 22px; }
-    .board-header .back { cursor: pointer; color: #0066cc; font-size: 18px; }
+
+    .board-header h1 {
+      margin: 0;
+      flex: 1;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-2xl);
+      letter-spacing: -0.04em;
+    }
+
+    .board-header .back {
+      cursor: pointer;
+      color: var(--color-text-2);
+      font-size: 20px;
+      transition: color 0.1s;
+    }
+
+    .board-header .back:hover {
+      color: var(--color-text);
+    }
+
     .add-column-btn {
-      font-size: 13px; color: #0066cc; cursor: pointer; border: 2px dashed #0066cc;
-      padding: 4px 12px; border-radius: 4px; background: none; font-weight: bold;
+      font-size: var(--text-sm);
+      color: var(--color-accent);
+      cursor: pointer;
+      border: 2px dashed var(--color-accent);
+      padding: var(--space-xs) var(--space-md);
+      background: none;
+      font-weight: 700;
+      font-family: var(--font-body);
+      transition: background 0.1s;
     }
-    .add-column-btn:hover { background: #f0f7ff; }
-    .column-form { display: flex; gap: 6px; align-items: center; }
+
+    .add-column-btn:hover {
+      background: rgba(37, 99, 235, 0.06);
+    }
+
+    .column-form {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
     .column-form input[type="text"] {
-      padding: 4px 8px; border: 2px solid #000; border-radius: 4px; font-size: 13px;
+      padding: var(--space-xs) var(--space-sm);
+      border: 2px solid #000;
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
+      outline: none;
     }
+
+    .column-form input[type="text"]:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
     .column-form input[type="color"] {
-      width: 28px; height: 28px; border: 2px solid #000; border-radius: 4px;
-      cursor: pointer; padding: 1px;
+      width: 32px;
+      height: 32px;
+      border: 2px solid #000;
+      cursor: pointer;
+      padding: 2px;
     }
+
     .column-form .btn-sm {
-      padding: 4px 10px; border: 2px solid #000; border-radius: 4px; cursor: pointer;
-      background: #0066cc; color: white; font-size: 13px; font-weight: bold;
+      padding: var(--space-xs) var(--space-sm);
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+      cursor: pointer;
+      background: var(--color-text);
+      color: #fff;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: var(--font-body);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
+
+    .column-form .btn-sm:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 #000;
+    }
+
     .column-form .cancel {
-      background: none; color: #666; border: none; cursor: pointer; font-size: 13px;
+      background: none;
+      color: var(--color-text-2);
+      border: none;
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
     }
 
     .columns {
-      display: flex; gap: 8px; padding: 16px 24px; align-items: stretch;
-      min-height: calc(100vh - 52px); overflow-x: auto; overflow-y: auto;
+      display: flex;
+      gap: var(--space-lg);
+      padding: var(--space-lg) var(--space-xl);
+      align-items: stretch;
+      min-height: calc(100vh - 80px);
+      overflow-x: auto;
+      overflow-y: auto;
     }
 
     .column-bar {
-      width: 52px; min-width: 52px; max-width: 52px; height: calc(100vh - 84px);
-      background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 8px 4px; cursor: pointer; position: relative; overflow: hidden;
+      width: 56px;
+      min-width: 56px;
+      max-width: 56px;
+      height: calc(100vh - 120px);
+      background: var(--color-bg);
+      border: 2px solid #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-sm) var(--space-xs);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
       transition: box-shadow 0.15s, transform 0.15s;
     }
-    .column-bar:hover { transform: translateY(-2px); box-shadow: 4px 4px 0 #000; }
-    .column-bar.active { background: #000; color: #fff; }
+
+    .column-bar:hover {
+      transform: translateY(-2px);
+      box-shadow: 4px 4px 0 #000;
+    }
+
+    .column-bar:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 0 #000;
+    }
+
+    .column-bar.active {
+      background: var(--color-text);
+      color: #fff;
+    }
+
     .column-bar .fill {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      background: #0066cc; border-radius: 0 0 2px 2px;
-      transition: height 0.3s ease; z-index: 0;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--color-accent);
+      transition: height 0.3s ease;
+      z-index: 0;
     }
-    .column-bar.active .fill { background: #ffd700; }
+
+    .column-bar.active .fill {
+      background: var(--color-accent);
+    }
+
     .column-bar .badge {
-      width: 28px; height: 28px; background: #fff; border: 2px solid #000;
-      border-radius: 4px; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: bold; z-index: 1; flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: #fff;
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      z-index: 1;
+      flex-shrink: 0;
     }
-    .column-bar.active .badge { background: #ffd700; }
+
+    .column-bar.active .badge {
+      background: var(--color-accent);
+      color: #fff;
+    }
+
     .column-bar .bar-label {
-      writing-mode: vertical-rl; text-orientation: mixed;
-      font-size: 11px; font-weight: bold; z-index: 1; margin-top: 8px;
-      text-transform: uppercase; letter-spacing: 0.5px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-size: 11px;
+      font-weight: 700;
+      z-index: 1;
+      margin-top: var(--space-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
     .column-bar .bar-pct {
-      font-size: 10px; font-weight: bold; z-index: 1; margin-top: auto;
+      font-size: 10px;
+      font-weight: 700;
+      z-index: 1;
+      margin-top: auto;
     }
 
     .column-expanded {
-      width: 288px; min-width: 288px; max-width: 320px; flex-shrink: 0;
-      background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
-      padding: 12px; display: flex; flex-direction: column; overflow: hidden;
+      width: 300px;
+      min-width: 300px;
+      max-width: 340px;
+      flex-shrink: 0;
+      background: var(--color-white);
+      border: 2px solid #000;
+      box-shadow: 6px 6px 0 #000;
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .column-expanded.drag-over { background: #e0e7ff; }
+
+    .column-expanded.drag-over {
+      background: rgba(37, 99, 235, 0.06);
+      box-shadow: 6px 6px 0 var(--color-accent);
+    }
+
     .column-header {
-      font-weight: bold; margin-bottom: 12px;
-      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .column-header .col-title { font-size: 15px; }
-    .column-header .col-actions { display: flex; gap: 4px; align-items: center; }
+
+    .column-header .col-title {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .column-header .col-actions {
+      display: flex;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
     .column-header .col-actions button {
-      background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: var(--text-base);
+      padding: 2px var(--space-xs);
+      color: var(--color-text-2);
+      transition: color 0.1s;
     }
-    .column-header .col-actions button:hover { background: #e0e0e0; border-radius: 3px; }
-    .column-count { color: #666; font-weight: normal; font-size: 13px; }
+
+    .column-header .col-actions button:hover {
+      color: var(--color-text);
+    }
+
+    .column-count {
+      color: var(--color-text-2);
+      font-weight: 500;
+      font-size: var(--text-sm);
+    }
+
     .collapse-btn {
-      cursor: pointer; font-size: 16px; background: none; border: none; padding: 0 4px;
+      cursor: pointer;
+      font-size: var(--text-lg);
+      background: none;
+      border: none;
+      padding: 0 var(--space-xs);
+      color: var(--color-text-2);
+      transition: color 0.1s;
     }
-    .collapse-btn:hover { background: #e0e0e0; border-radius: 3px; }
+
+    .collapse-btn:hover {
+      color: var(--color-text);
+    }
 
     .state-edit-input {
-      font-size: 15px; font-weight: bold; border: 2px solid #000; border-radius: 3px;
-      padding: 2px 6px; width: 120px;
-    }
-    .state-edit-color {
-      width: 24px; height: 24px; border: 2px solid #000; border-radius: 3px;
-      cursor: pointer; padding: 1px; margin-left: 4px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      border: 2px solid #000;
+      padding: var(--space-xs) var(--space-sm);
+      width: 140px;
+      font-family: var(--font-body);
+      outline: none;
     }
 
-    .task-card {
-      background: white; border: 2px solid #000; border-radius: 4px;
-      padding: 10px; margin-bottom: 8px; cursor: grab;
-      transition: box-shadow 0.15s;
+    .state-edit-input:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
     }
-    .task-card:active { cursor: grabbing; }
-    .task-card:hover { box-shadow: 3px 3px 0 #000; }
-    .task-card .title { font-size: 14px; margin-bottom: 4px; font-weight: 500; }
-    .task-card .inactive { font-size: 12px; color: #999; }
-    .task-card .inactive.stale { color: #cc6600; }
-    .image-indicator { font-size: 11px; color: #666; margin-top: 2px; }
+
+    .state-edit-color {
+      width: 28px;
+      height: 28px;
+      border: 2px solid #000;
+      cursor: pointer;
+      padding: 2px;
+      margin-left: var(--space-xs);
+    }
+
+    .task-item {
+      padding: var(--space-sm) 0;
+      margin-bottom: var(--space-xs);
+      cursor: grab;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.1s;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-item:hover {
+      background: var(--color-bg);
+      margin-left: calc(var(--space-xs) * -1);
+      margin-right: calc(var(--space-xs) * -1);
+      padding-left: var(--space-xs);
+      padding-right: var(--space-xs);
+    }
+
+    .task-item:active {
+      cursor: grabbing;
+    }
+
+    .task-item .title {
+      font-size: var(--text-sm);
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .task-item .inactive {
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+    }
+
+    .task-item .inactive.stale {
+      color: var(--color-warning);
+    }
+
+    .image-indicator {
+      font-size: 11px;
+      color: var(--color-text-2);
+      margin-top: 2px;
+    }
 
     .column-tasks {
-      flex: 1; overflow-y: auto; min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     .btn {
-      padding: 6px 14px; border: 2px solid #000; border-radius: 4px;
-      cursor: pointer; font-size: 13px; font-weight: bold;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid #000;
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: var(--font-body);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
-    .btn-primary { background: #0066cc; color: white; }
-    .btn-cancel { background: #fff; color: #000; }
-    .btn:hover { opacity: 0.9; }
+
+    .btn-primary {
+      box-shadow: 3px 3px 0 #000;
+      background: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    .btn-cancel {
+      box-shadow: none;
+      background: #fff;
+      color: var(--color-text);
+    }
+
+    .btn-cancel:hover {
+      background: var(--color-bg);
+    }
 
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center; z-index: 200;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
     }
+
     .modal-card {
-      background: white; border: 2px solid #000; border-radius: 4px;
-      padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto;
+      background: var(--color-white);
+      border: 2px solid #000;
+      box-shadow: 8px 8px 0 #000;
+      padding: var(--space-xl);
+      width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
-    .modal-card h2 { margin: 0 0 16px; font-size: 18px; }
-    .modal-card label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-    .modal-card input, .modal-card textarea {
-      width: 100%; padding: 8px; border: 2px solid #000; border-radius: 4px;
-      box-sizing: border-box; font-size: 13px; font-family: inherit;
+
+    .modal-card h2 {
+      margin: 0 0 var(--space-lg);
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 800;
+      letter-spacing: -0.03em;
     }
-    .modal-card textarea { min-height: 120px; resize: vertical; margin-top: 2px; }
+
+    .modal-card label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      margin-bottom: var(--space-xs);
+      color: var(--color-text);
+    }
+
+    .modal-card input,
+    .modal-card textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 2px solid #000;
+      box-sizing: border-box;
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
+      outline: none;
+      background: var(--color-white);
+    }
+
+    .modal-card input:focus,
+    .modal-card textarea:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
+    .modal-card textarea {
+      min-height: 120px;
+      resize: vertical;
+      margin-top: var(--space-xs);
+    }
+
     .modal-card .preview-toggle {
-      font-size: 12px; color: #0066cc; cursor: pointer; margin-top: 4px;
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      cursor: pointer;
+      margin-top: var(--space-sm);
       display: inline-block;
     }
+
+    .modal-card .preview-toggle:hover {
+      text-decoration: underline;
+    }
+
     .modal-card .preview-box {
-      margin-top: 6px; padding: 8px; border: 1px solid #eee; border-radius: 4px;
+      margin-top: var(--space-sm);
+      padding: var(--space-md);
+      border: 1px solid var(--color-border);
     }
+
     .modal-card .modal-btn-row {
-      display: flex; gap: 6px; margin-top: 16px; justify-content: flex-end;
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-lg);
+      justify-content: flex-end;
     }
-    .modal-card .modal-error { color: #cc0000; font-size: 12px; margin-top: 8px; }
+
+    .modal-card .modal-error {
+      color: var(--color-error);
+      font-size: var(--text-sm);
+      margin-top: var(--space-md);
+    }
+
     .add-task-btn {
-      display: block; width: 100%; padding: 10px; margin-bottom: 8px; flex-shrink: 0;
-      border: 2px dashed #0066cc; border-radius: 4px; background: none;
-      color: #0066cc; font-size: 13px; font-weight: bold; cursor: pointer;
+      display: block;
+      width: 100%;
+      padding: var(--space-md);
+      margin-bottom: var(--space-sm);
+      flex-shrink: 0;
+      border: 2px dashed var(--color-accent);
+      background: none;
+      color: var(--color-accent);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: background 0.1s;
     }
-    .add-task-btn:hover { background: #f0f7ff; }
+
+    .add-task-btn:hover {
+      background: rgba(37, 99, 235, 0.06);
+    }
   `;
 
   async connectedCallback(): Promise<void> {
@@ -335,7 +667,7 @@ export class BoardDetailPage extends LitElement {
         order,
       });
       this.newColumnTitle = '';
-      this.newColumnColor = '#0066cc';
+      this.newColumnColor = '#2563EB';
       this.showColumnForm = false;
       await this.loadBoard();
     } catch (e) {
@@ -355,7 +687,7 @@ export class BoardDetailPage extends LitElement {
       await updateState.execute(state.id, { title: this.editingStateTitle.trim(), color: this.editingStateColor });
       this.editingStateId = null;
       this.editingStateTitle = '';
-      this.editingStateColor = '#0066cc';
+      this.editingStateColor = '#2563EB';
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to update state';
@@ -365,7 +697,7 @@ export class BoardDetailPage extends LitElement {
   private cancelEditState(): void {
     this.editingStateId = null;
     this.editingStateTitle = '';
-    this.editingStateColor = '#0066cc';
+    this.editingStateColor = '#2563EB';
   }
 
   private async handleDeleteState(state: State): Promise<void> {
@@ -439,7 +771,7 @@ export class BoardDetailPage extends LitElement {
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="fill" style="height: ${isNotNow ? '100' : pct}%; ${isNotNow ? 'background:#cc6600' : `background:${state.color}`}"></div>
+        <div class="fill" style="height: ${isNotNow ? '100' : pct}%; ${isNotNow ? 'background:var(--color-warning)' : `background:${state.color}`}"></div>
         <div class="badge">${count}</div>
         <div class="bar-label">${state.title}</div>
         ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ''}
@@ -466,7 +798,7 @@ export class BoardDetailPage extends LitElement {
       >
         <div class="column-header">
           ${this.editingStateId === state.id ? html`
-            <div style="display:flex;align-items:center;gap:4px;">
+            <div style="display:flex;align-items:center;gap:var(--space-xs);">
               <input
                 class="state-edit-input"
                 type="text"
@@ -508,7 +840,7 @@ export class BoardDetailPage extends LitElement {
             const days = inactiveDays(task.lastActivityAt);
             return html`
               <div
-                class="task-card"
+                class="task-item"
                 draggable="true"
                 @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
                 @click="${() => this.selectTask(task)}"
@@ -525,8 +857,8 @@ export class BoardDetailPage extends LitElement {
   }
 
   render() {
-    if (this.error) return html`<div style="padding:24px;color:#cc0000;">Error: ${this.error}</div>`;
-    if (!this.detail) return html`<div>Loading...</div>`;
+    if (this.error) return html`<div style="padding:var(--space-xl);color:var(--color-error);">Error: ${this.error}</div>`;
+    if (!this.detail) return html`<div style="padding:var(--space-xl);color:var(--color-text-3);">Loading...</div>`;
 
     const { board } = this.detail;
     const sorted = this.getSortedStates();
@@ -585,7 +917,7 @@ export class BoardDetailPage extends LitElement {
                 if (e.key === 'Enter') { e.preventDefault(); this.handleModalCreate(maybeState.id, 'close'); }
               }}"
             />
-            <label for="modal-desc" style="margin-top:12px;">Description (markdown)</label>
+            <label for="modal-desc" style="margin-top:var(--space-md);">Description (markdown)</label>
             <textarea
               id="modal-desc"
               placeholder="Description (optional)..."
