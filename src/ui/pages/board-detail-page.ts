@@ -25,8 +25,10 @@ const addComment = new AddCommentUseCase(commentRepo, taskRepo);
 @customElement('board-detail-page')
 export class BoardDetailPage extends LitElement {
   pageController = new PageController(this);
+  params: Record<string, string> = {};
 
   @state() private detail: BoardDetail | null = null;
+  @state() private error: string | null = null;
   @state() private selectedTask: Task | null = null;
   @state() private comments: Comment[] = [];
   @state() private newTaskTitle = '';
@@ -92,10 +94,14 @@ export class BoardDetailPage extends LitElement {
   }
 
   private async loadBoard(): Promise<void> {
-    const params = (this.pageController as any).params as { id?: string } | undefined;
-    const id = params?.id;
+    const id = this.params?.id;
     if (!id) return;
-    this.detail = await getBoard.execute(id as any);
+    try {
+      this.error = null;
+      this.detail = await getBoard.execute(id as any);
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'Failed to load board';
+    }
   }
 
   private async handleCreateTask(stateId: string): Promise<void> {
@@ -161,6 +167,7 @@ export class BoardDetailPage extends LitElement {
   }
 
   render() {
+    if (this.error) return html`<div style="padding:24px;color:#cc0000;">Error: ${this.error}</div>`;
     if (!this.detail) return html`<div>Loading...</div>`;
 
     const { board, states, tasks, taskCounts } = this.detail;
