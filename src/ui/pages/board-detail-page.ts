@@ -48,6 +48,11 @@ export class BoardDetailPage extends LitElement {
   @state() private editingStateId: string | null = null;
   @state() private editingStateTitle = '';
 
+  @state() private showTaskModal = false;
+  @state() private modalTitle = '';
+  @state() private modalDescription = '';
+  @state() private modalError: string | null = null;
+
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
 
   static styles = css`
@@ -175,6 +180,39 @@ export class BoardDetailPage extends LitElement {
     .btn-cancel { background: #fff; color: #000; }
     .btn:hover { opacity: 0.9; }
     .task-error { color: #cc0000; font-size: 12px; margin-top: 4px; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-card {
+      background: white; border: 2px solid #000; border-radius: 4px;
+      padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto;
+    }
+    .modal-card h2 { margin: 0 0 16px; font-size: 18px; }
+    .modal-card label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+    .modal-card input, .modal-card textarea {
+      width: 100%; padding: 8px; border: 2px solid #000; border-radius: 4px;
+      box-sizing: border-box; font-size: 13px; font-family: inherit;
+    }
+    .modal-card textarea { min-height: 120px; resize: vertical; margin-top: 2px; }
+    .modal-card .preview-toggle {
+      font-size: 12px; color: #0066cc; cursor: pointer; margin-top: 4px;
+      display: inline-block;
+    }
+    .modal-card .preview-box {
+      margin-top: 6px; padding: 8px; border: 1px solid #eee; border-radius: 4px;
+    }
+    .modal-card .modal-btn-row {
+      display: flex; gap: 6px; margin-top: 16px; justify-content: flex-end;
+    }
+    .modal-card .modal-error { color: #cc0000; font-size: 12px; margin-top: 8px; }
+    .add-task-btn {
+      display: block; width: 100%; padding: 10px; margin-top: 8px;
+      border: 2px dashed #0066cc; border-radius: 4px; background: none;
+      color: #0066cc; font-size: 13px; font-weight: bold; cursor: pointer;
+    }
+    .add-task-btn:hover { background: #f0f7ff; }
   `;
 
   async connectedCallback(): Promise<void> {
@@ -235,7 +273,11 @@ export class BoardDetailPage extends LitElement {
     const maybeIdx = sorted.findIndex(s => s.id === this.getMandatoryOrder().maybe);
 
     if (e.key === 'Escape') {
-      this.expandedColumnId = null;
+      if (this.showTaskModal) {
+        this.closeTaskModal();
+      } else {
+        this.expandedColumnId = null;
+      }
       return;
     }
 
@@ -364,6 +406,46 @@ export class BoardDetailPage extends LitElement {
     this.expandedColumnId = this.expandedColumnId === stateId ? null : stateId;
   }
 
+  private openTaskModal(): void {
+    this.modalTitle = '';
+    this.modalDescription = '';
+    this.modalError = null;
+    this.showTaskModal = true;
+  }
+
+  private closeTaskModal(): void {
+    this.showTaskModal = false;
+    this.modalTitle = '';
+    this.modalDescription = '';
+    this.modalError = null;
+  }
+
+  private async handleModalCreate(stateId: string, mode: 'close' | 'another' | 'duplicate'): Promise<void> {
+    if (!this.modalTitle.trim() || !this.detail) return;
+    try {
+      this.modalError = null;
+      const description = this.modalDescription.trim() || undefined;
+      await createTask.execute({
+        boardId: this.detail.board.id,
+        stateId,
+        title: this.modalTitle.trim(),
+        description,
+      });
+      if (mode === 'close') {
+        this.closeTaskModal();
+      } else if (mode === 'another') {
+        this.modalTitle = '';
+        this.modalDescription = '';
+      } else {
+        this.modalTitle = '';
+        this.modalDescription = description ?? '';
+      }
+      await this.loadBoard();
+    } catch (e) {
+      this.modalError = e instanceof Error ? e.message : 'Failed to create task';
+    }
+  }
+
   private renderBar(state: State): unknown {
     if (!this.detail) return html``;
     const count = this.detail.taskCounts[state.id] ?? 0;
@@ -450,41 +532,45 @@ export class BoardDetailPage extends LitElement {
           })}
         </div>
 
-        <div class="add-task">
-          <input
-            type="text"
-            placeholder="Task title..."
-            .value="${this.newTaskStateId === state.id ? this.newTaskTitle : ''}"
-            @focus="${() => { this.newTaskStateId = state.id; }}"
-            @input="${(e: Event) => { this.newTaskTitle = (e.target as HTMLInputElement).value; }}"
-            @keydown="${(e: KeyboardEvent) => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.handleCreateTask(state.id); }
-            }}"
-          />
-          ${this.newTaskStateId === state.id ? html`
-            <textarea
-              placeholder="Description (markdown)..."
-              .value="${this.newTaskDescription}"
-              @input="${(e: Event) => { this.newTaskDescription = (e.target as HTMLTextAreaElement).value; }}"
+        ${state.id === mandatory.maybe ? html`
+          <button class="add-task-btn" @click="${() => this.openTaskModal()}">+ Add task</button>
+        ` : html`
+          <div class="add-task">
+            <input
+              type="text"
+              placeholder="Task title..."
+              .value="${this.newTaskStateId === state.id ? this.newTaskTitle : ''}"
+              @focus="${() => { this.newTaskStateId = state.id; }}"
+              @input="${(e: Event) => { this.newTaskTitle = (e.target as HTMLInputElement).value; }}"
               @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleCreateTask(state.id); }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.handleCreateTask(state.id); }
               }}"
-            ></textarea>
-            ${this.newTaskDescription.trim() ? html`
-              <span class="preview-toggle" @click="${() => {
-                const el = this.renderRoot.querySelector(`[data-preview="${state.id}"]`) as HTMLElement;
-                if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-              }}">Preview</span>
-              <div class="preview-box" data-preview="${state.id}" style="display:none;">
-                <markdown-viewer .content="${this.newTaskDescription}"></markdown-viewer>
+            />
+            ${this.newTaskStateId === state.id ? html`
+              <textarea
+                placeholder="Description (markdown)..."
+                .value="${this.newTaskDescription}"
+                @input="${(e: Event) => { this.newTaskDescription = (e.target as HTMLTextAreaElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleCreateTask(state.id); }
+                }}"
+              ></textarea>
+              ${this.newTaskDescription.trim() ? html`
+                <span class="preview-toggle" @click="${() => {
+                  const el = this.renderRoot.querySelector(`[data-preview="${state.id}"]`) as HTMLElement;
+                  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                }}">Preview</span>
+                <div class="preview-box" data-preview="${state.id}" style="display:none;">
+                  <markdown-viewer .content="${this.newTaskDescription}"></markdown-viewer>
+                </div>
+              ` : ''}
+              <div class="btn-row">
+                <button class="btn btn-primary" @click="${() => this.handleCreateTask(state.id)}">Add</button>
               </div>
+              ${this.taskError && this.newTaskStateId === state.id ? html`<div class="task-error">${this.taskError}</div>` : ''}
             ` : ''}
-            <div class="btn-row">
-              <button class="btn btn-primary" @click="${() => this.handleCreateTask(state.id)}">Add</button>
-            </div>
-            ${this.taskError && this.newTaskStateId === state.id ? html`<div class="task-error">${this.taskError}</div>` : ''}
-          ` : ''}
-        </div>
+          </div>
+        `}
       </div>
     `;
   }
@@ -525,10 +611,55 @@ export class BoardDetailPage extends LitElement {
       </div>
 
       <div class="columns">
-        ${leftStates.map(s => s.id === mandatory.first ? this.renderBar(s) : this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
+        ${leftStates.map(s => this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
         ${maybeState ? this.renderExpanded(maybeState) : ''}
-        ${rightStates.map(s => s.id === mandatory.last ? this.renderBar(s) : this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
+        ${rightStates.map(s => this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
       </div>
+
+      ${this.showTaskModal && maybeState ? html`
+        <div class="modal-overlay" @click="${() => this.closeTaskModal()}">
+          <div class="modal-card" @click="${(e: Event) => e.stopPropagation()}">
+            <h2>New task in Maybe?</h2>
+            <label for="modal-title">Title</label>
+            <input
+              id="modal-title"
+              type="text"
+              placeholder="Task title..."
+              .value="${this.modalTitle}"
+              @input="${(e: Event) => { this.modalTitle = (e.target as HTMLInputElement).value; }}"
+              @keydown="${(e: KeyboardEvent) => {
+                if (e.key === 'Enter') { e.preventDefault(); this.handleModalCreate(maybeState.id, 'close'); }
+              }}"
+            />
+            <label for="modal-desc" style="margin-top:12px;">Description (markdown)</label>
+            <textarea
+              id="modal-desc"
+              placeholder="Description (optional)..."
+              .value="${this.modalDescription}"
+              @input="${(e: Event) => { this.modalDescription = (e.target as HTMLTextAreaElement).value; }}"
+              @keydown="${(e: KeyboardEvent) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleModalCreate(maybeState.id, 'close'); }
+              }}"
+            ></textarea>
+            ${this.modalDescription.trim() ? html`
+              <span class="preview-toggle" @click="${() => {
+                const el = this.renderRoot.querySelector('[data-modal-preview]') as HTMLElement;
+                if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+              }}">Preview</span>
+              <div class="preview-box" data-modal-preview style="display:none;">
+                <markdown-viewer .content="${this.modalDescription}"></markdown-viewer>
+              </div>
+            ` : ''}
+            ${this.modalError ? html`<div class="modal-error">${this.modalError}</div>` : ''}
+            <div class="modal-btn-row">
+              <button class="btn btn-cancel" @click="${() => this.closeTaskModal()}">Cancel</button>
+              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'close')}">Create</button>
+              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'another')}">Create another one</button>
+              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'duplicate')}">Create and duplicate</button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 }
