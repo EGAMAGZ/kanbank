@@ -8,10 +8,12 @@ export class MarkdownViewer extends LitElement {
 
   static styles = css`
     :host { display: block; white-space: pre-wrap; font-size: 14px; }
-    :host(:host) h1, :host h2, :host h3 { margin: 16px 0 8px; }
+    :host h1, :host h2, :host h3 { margin: 16px 0 8px; }
     :host ul, :host ol { padding-left: 24px; }
     :host code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-size: 13px; }
     :host pre { background: #f0f0f0; padding: 12px; border-radius: 4px; overflow-x: auto; }
+    :host img { max-width: 100%; border-radius: 4px; margin: 8px 0; }
+    :host a { color: #0066cc; }
   `;
 
   protected createRenderRoot(): HTMLElement | DocumentFragment {
@@ -33,6 +35,7 @@ export class MarkdownViewer extends LitElement {
     html = html.replace(/^- \[ \] (.+)$/gm, '<li><input type="checkbox" disabled> $1</li>');
     html = html.replace(/^- \[x\] (.+)$/gm, '<li><input type="checkbox" checked disabled> $1</li>');
     html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     html = html.replace(/\n/g, '<br>');
 
     return html;
