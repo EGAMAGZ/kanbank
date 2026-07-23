@@ -77,11 +77,11 @@ export class BoardDetailPage extends LitElement {
 
     .columns {
       display: flex; gap: 8px; padding: 16px 24px; align-items: stretch;
-      min-height: calc(100vh - 60px); overflow-x: auto;
+      height: calc(100vh - 52px); overflow-x: auto; overflow-y: hidden;
     }
 
     .column-bar {
-      width: 52px; min-width: 52px; max-width: 52px;
+      width: 52px; min-width: 52px; max-width: 52px; height: 100%;
       background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
       display: flex; flex-direction: column; align-items: center;
       padding: 8px 4px; cursor: pointer; position: relative; overflow: hidden;
@@ -111,9 +111,9 @@ export class BoardDetailPage extends LitElement {
     }
 
     .column-expanded {
-      min-width: 288px; max-width: 320px; flex-shrink: 0;
+      width: 288px; min-width: 288px; max-width: 320px; flex-shrink: 0; height: 100%;
       background: #f5f5f5; border: 2px solid #000; border-radius: 4px;
-      padding: 12px; display: flex; flex-direction: column;
+      padding: 12px; display: flex; flex-direction: column; overflow: hidden;
     }
     .column-expanded.drag-over { background: #e0e7ff; }
     .column-header {
@@ -149,7 +149,11 @@ export class BoardDetailPage extends LitElement {
     .task-card .inactive.stale { color: #cc6600; }
     .image-indicator { font-size: 11px; color: #666; margin-top: 2px; }
 
-    .add-task { margin-top: auto; padding-top: 8px; }
+    .column-tasks {
+      flex: 1; overflow-y: auto; min-height: 0;
+    }
+
+    .add-task { flex-shrink: 0; padding-top: 8px; border-top: 1px solid #ddd; }
     .add-task input, .add-task textarea {
       width: 100%; padding: 8px; border: 2px solid #000; border-radius: 4px;
       box-sizing: border-box; font-size: 13px; font-family: inherit;
@@ -172,10 +176,6 @@ export class BoardDetailPage extends LitElement {
     .btn:hover { opacity: 0.9; }
     .task-error { color: #cc0000; font-size: 12px; margin-top: 4px; }
   `;
-
-  protected createRenderRoot(): HTMLElement | DocumentFragment {
-    return this;
-  }
 
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
@@ -432,21 +432,23 @@ export class BoardDetailPage extends LitElement {
           </div>
         </div>
 
-        ${stateTasks.map(task => {
-          const days = inactiveDays(task.lastActivityAt);
-          return html`
-            <div
-              class="task-card"
-              draggable="true"
-              @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
-              @click="${() => this.selectTask(task)}"
-            >
-              <div class="title">${task.title}</div>
-              ${task.images.length ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>` : ''}
-              ${days > 0 ? html`<div class="inactive ${days > 7 ? 'stale' : ''}">${days}d inactive</div>` : ''}
-            </div>
-          `;
-        })}
+        <div class="column-tasks">
+          ${stateTasks.map(task => {
+            const days = inactiveDays(task.lastActivityAt);
+            return html`
+              <div
+                class="task-card"
+                draggable="true"
+                @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
+                @click="${() => this.selectTask(task)}"
+              >
+                <div class="title">${task.title}</div>
+                ${task.images.length ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>` : ''}
+                ${days > 0 ? html`<div class="inactive ${days > 7 ? 'stale' : ''}">${days}d inactive</div>` : ''}
+              </div>
+            `;
+          })}
+        </div>
 
         <div class="add-task">
           <input
