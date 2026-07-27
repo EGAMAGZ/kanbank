@@ -3,8 +3,8 @@ import type { TaskRepository } from "../../../domain/repositories/task.repositor
 import { type UpdateCommentInput } from "../../dto/comment.dto.js";
 import type { Id } from "../../../shared/types/index.js";
 export declare class UpdateCommentUseCase {
-  private commentRepo;
-  private taskRepo;
-  constructor(commentRepo: CommentRepository, taskRepo: TaskRepository);
-  execute(id: Id<"Comment">, input: UpdateCommentInput): Promise<void>;
+    private commentRepo;
+    private taskRepo;
+    constructor(commentRepo: CommentRepository, taskRepo: TaskRepository);
+    execute(id: Id<"Comment">, input: UpdateCommentInput): Promise<void>;
 }

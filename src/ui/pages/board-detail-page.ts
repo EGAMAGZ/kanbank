@@ -1,4 +1,4 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, render } from "lit";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import {
@@ -7,6 +7,7 @@ import {
 } from "../../application/use-cases/boards/get-board.js";
 import { CreateTaskUseCase } from "../../application/use-cases/tasks/create-task.js";
 import { MoveTaskUseCase } from "../../application/use-cases/tasks/move-task.js";
+import { AutoDiscardCheckUseCase } from "../../application/use-cases/tasks/auto-discard-check.js";
 import { CreateStateUseCase } from "../../application/use-cases/states/create-state.js";
 import { UpdateStateUseCase } from "../../application/use-cases/states/update-state.js";
 import { DeleteStateUseCase } from "../../application/use-cases/states/delete-state.js";
@@ -25,6 +26,7 @@ const taskRepo = new DexieTaskRepository();
 const getBoard = new GetBoardUseCase(boardRepo, stateRepo, taskRepo);
 const createTask = new CreateTaskUseCase(taskRepo);
 const moveTask = new MoveTaskUseCase(taskRepo);
+const autoDiscardCheck = new AutoDiscardCheckUseCase(taskRepo, moveTask);
 const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
 const deleteState = new DeleteStateUseCase(stateRepo, taskRepo);
@@ -69,7 +71,14 @@ export class BoardDetailPage extends LitElement {
   @state()
   private modalError: string | null = null;
 
+  @state()
+  private pinnedTasks: Task[] = [];
+
+  @state()
+  private pinnedExpanded = false;
+
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
+  private pinnedOverlayEl: HTMLDivElement | null = null;
 
   static styles = css`
     :host {
@@ -566,6 +575,60 @@ export class BoardDetailPage extends LitElement {
     .add-task-btn:hover {
       background: rgba(37, 99, 235, 0.06);
     }
+
+    /* Due date on task cards */
+    .task-item .due-date {
+      font-size: 11px;
+      margin-top: var(--space-xs);
+      color: var(--color-text-2);
+    }
+
+    .task-item .due-date.overdue {
+      color: var(--color-error);
+      font-weight: 700;
+    }
+
+    .task-item .due-date.due-soon {
+      color: var(--color-warning);
+      font-weight: 600;
+    }
+
+    /* Gold task effect */
+    .task-item.gold {
+      background: linear-gradient(
+        135deg,
+        #f9e547 0%,
+        #f5c518 25%,
+        #e8b100 50%,
+        #f5c518 75%,
+        #f9e547 100%
+      );
+      background-size: 200% 200%;
+      animation: gold-shimmer 3s ease-in-out infinite;
+      border: 2px solid #b8860b;
+      margin: 0 calc(var(--space-md) * -1);
+      padding-left: var(--space-md);
+      padding-right: var(--space-md);
+    }
+
+    .task-item.gold:hover {
+      background: linear-gradient(
+        135deg,
+        #f9e547 0%,
+        #f5c518 25%,
+        #e8b100 50%,
+        #f5c518 75%,
+        #f9e547 100%
+      );
+      background-size: 200% 200%;
+      animation: gold-shimmer 1.5s ease-in-out infinite;
+    }
+
+    @keyframes gold-shimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
   `;
 
   async connectedCallback(): Promise<void> {
@@ -580,10 +643,15 @@ export class BoardDetailPage extends LitElement {
       document.removeEventListener("keydown", this.boundKeydown);
       this.boundKeydown = null;
     }
+    this.removePinnedOverlay();
   }
 
   async onPageEnter(): Promise<void> {
     await this.loadBoard();
+  }
+
+  updated(): void {
+    this.renderPinnedOverlay();
   }
 
   private async loadBoard(): Promise<void> {
@@ -592,9 +660,242 @@ export class BoardDetailPage extends LitElement {
     try {
       this.error = null;
       this.detail = await getBoard.execute(id as any);
+      this.pinnedTasks = await taskRepo.findPinned();
+
+      if (this.detail) {
+        const discarded = await autoDiscardCheck.execute(
+          this.detail.tasks,
+          this.detail.states,
+        );
+        if (discarded > 0) {
+          this.detail = await getBoard.execute(id as any);
+        }
+      }
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to load board";
     }
+  }
+
+  private removePinnedOverlay(): void {
+    if (this.pinnedOverlayEl) {
+      this.pinnedOverlayEl.remove();
+      this.pinnedOverlayEl = null;
+    }
+  }
+
+  private renderPinnedOverlay(): void {
+    if (this.pinnedTasks.length === 0) {
+      this.removePinnedOverlay();
+      return;
+    }
+
+    if (!this.pinnedOverlayEl) {
+      this.pinnedOverlayEl = document.createElement("div");
+      this.pinnedOverlayEl.id = "kanbank-pinned-overlay";
+      document.body.appendChild(this.pinnedOverlayEl);
+    }
+
+    const pinnedExpanded = this.pinnedExpanded;
+
+    const template = html`
+      <style>
+        #kanbank-pinned-overlay {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          z-index: 10000;
+          pointer-events: auto;
+        }
+        #kanbank-pinned-overlay .pk-stack {
+          cursor: pointer;
+          overflow: visible;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) {
+          position: relative;
+          width: 120px;
+          height: 160px;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100px;
+          height: 140px;
+          border: 2px solid #000;
+          background: #fff;
+          box-shadow: 3px 3px 0 #000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          transform-origin: bottom center;
+          cursor: pointer;
+          font-family: 'Space Grotesk', sans-serif;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(1) {
+          transform: rotate(-6deg) translateX(0px);
+          z-index: 1;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(2) {
+          transform: rotate(-1deg) translateX(8px);
+          z-index: 2;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(3) {
+          transform: rotate(4deg) translateX(16px);
+          z-index: 3;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(4) {
+          transform: rotate(9deg) translateX(24px);
+          z-index: 4;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(n+5) {
+          transform: rotate(14deg) translateX(32px);
+          z-index: 5;
+        }
+        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:hover {
+          transform: rotate(0deg) translateX(8px) translateY(-16px) !important;
+          box-shadow: 4px 6px 0 #000;
+          z-index: 10 !important;
+        }
+        #kanbank-pinned-overlay .pk-card .pk-icon {
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+        #kanbank-pinned-overlay .pk-card .pk-title {
+          font-size: 9px;
+          font-weight: 700;
+          text-align: center;
+          word-break: break-word;
+          line-height: 1.2;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 5;
+          -webkit-box-orient: vertical;
+        }
+        #kanbank-pinned-overlay .pk-card.pk-gold {
+          background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100, #f5c518, #f9e547);
+          background-size: 200% 200%;
+          animation: pk-gold-shimmer 3s ease-in-out infinite;
+        }
+        #kanbank-pinned-overlay .pk-stack.pk-expanded {
+          width: 240px;
+          max-height: 70vh;
+          overflow-y: auto;
+          background: transparent;
+          cursor: default;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding-bottom: 4px;
+        }
+        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar {
+          width: 6px;
+        }
+        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 3px;
+        }
+        #kanbank-pinned-overlay .pk-header {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          font-family: 'Space Grotesk', sans-serif;
+          color: #6b7280;
+        }
+        #kanbank-pinned-overlay .pk-header .pk-count {
+          background: #2563EB;
+          color: #fff;
+          font-size: 10px;
+          width: 18px;
+          height: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 2px;
+        }
+        #kanbank-pinned-overlay .pk-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        #kanbank-pinned-overlay .pk-item {
+          background: #fff;
+          border: 2px solid #000;
+          box-shadow: 3px 3px 0 #000;
+          padding: 10px 12px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-family: 'Space Grotesk', sans-serif;
+          transition: transform 0.12s, box-shadow 0.12s;
+        }
+        #kanbank-pinned-overlay .pk-item:hover {
+          transform: translate(-1px, -1px);
+          box-shadow: 4px 4px 0 #000;
+        }
+        #kanbank-pinned-overlay .pk-item.pk-gold-item {
+          background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100, #f5c518, #f9e547);
+          background-size: 200% 200%;
+          animation: pk-gold-shimmer 3s ease-in-out infinite;
+        }
+        @keyframes pk-gold-shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      </style>
+      <div
+        class="pk-stack ${pinnedExpanded ? "pk-expanded" : ""}"
+        @mouseenter=${() => { this.pinnedExpanded = true; }}
+        @mouseleave=${() => { this.pinnedExpanded = false; }}
+      >
+        ${pinnedExpanded
+          ? html`
+            <div class="pk-header">
+              <span>&#128204;</span>
+              <span class="pk-count">${this.pinnedTasks.length}</span>
+              <span>Pinned</span>
+            </div>
+            <div class="pk-list">
+              ${this.pinnedTasks.map(
+                (t) => html`
+                  <div class="pk-item ${t.isGold ? "pk-gold-item" : ""}"
+                    title="${t.title}"
+                    @click=${() => this.selectTask(t)}>
+                    ${t.isGold ? "&#11088; " : ""}${t.title}
+                  </div>
+                `,
+              )}
+            </div>
+          `
+          : html`
+            ${this.pinnedTasks.map(
+              (t) => html`
+                <div class="pk-card ${t.isGold ? "pk-gold" : ""}"
+                  title="${t.title}"
+                  @click=${() => this.selectTask(t)}>
+                  <span class="pk-icon">&#128204;</span>
+                  <span class="pk-title">${t.title}</span>
+                </div>
+              `,
+            )}
+          `}
+      </div>
+    `;
+
+    render(template, this.pinnedOverlayEl);
   }
 
   private getMandatoryOrder(): {
@@ -691,14 +992,20 @@ export class BoardDetailPage extends LitElement {
     const taskId = e.dataTransfer?.getData("text/plain");
     if (!taskId || !this.detail) return;
 
+    const targetState = this.detail.states.find((s) => s.id === stateId);
+    const targetIsNotNow = targetState?.title === "Not now";
+
     const tasksInColumn = this.detail.tasks.filter((t) =>
       t.stateId === stateId
     );
-    await moveTask.execute({
-      taskId,
-      newStateId: stateId,
-      order: tasksInColumn.length,
-    });
+    await moveTask.execute(
+      {
+        taskId,
+        newStateId: stateId,
+        order: tasksInColumn.length,
+      },
+      { targetIsNotNow },
+    );
     await this.loadBoard();
   }
 
@@ -1018,9 +1325,13 @@ export class BoardDetailPage extends LitElement {
         <div class="column-tasks">
           ${stateTasks.map((task) => {
             const days = inactiveDays(task.lastActivityAt);
+            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+            const isDueSoon = task.dueDate && !isOverdue &&
+              (new Date(task.dueDate).getTime() - Date.now()) <
+                3 * 24 * 60 * 60 * 1000;
             return html`
               <div
-                class="task-item"
+                class="task-item ${task.isGold ? "gold" : ""}"
                 draggable="true"
                 @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
                 @click="${() => this.selectTask(task)}"
@@ -1028,6 +1339,12 @@ export class BoardDetailPage extends LitElement {
                 <div class="title">${task.title}</div>
                 ${task.images.length
                   ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>`
+                  : ""}
+                ${task.dueDate
+                  ? html`<div class="due-date ${isOverdue ? "overdue" : ""} ${isDueSoon ? "due-soon" : ""}">
+                      Due: ${new Date(task.dueDate).toLocaleDateString()}
+                      ${isOverdue ? " (overdue)" : ""}
+                    </div>`
                   : ""}
                 ${days > 0
                   ? html`<div class="inactive ${

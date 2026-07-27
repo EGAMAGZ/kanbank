@@ -32,3 +32,16 @@ db.version(2).stores({}).upgrade((tx) => {
     s.color = s.color ?? "#0066cc";
   });
 });
+
+db.version(3).stores({}).upgrade((tx) => {
+  return tx.table("tasks").toCollection().modify((t) => {
+    t.pinned = false;
+    t.dueDate = null;
+    t.notNowSince = null;
+    t.isGold = false;
+  });
+});
+
+db.version(4).stores({
+  tasks: "++id, boardId, stateId, lastActivityAt, pinned, [boardId+stateId]",
+});

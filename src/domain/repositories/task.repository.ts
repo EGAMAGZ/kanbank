@@ -5,6 +5,7 @@ export interface TaskRepository {
   findByBoard(boardId: Id<"Board">): Promise<Task[]>;
   findByState(stateId: Id<"State">): Promise<Task[]>;
   findById(id: Id<"Task">): Promise<Task | undefined>;
+  findPinned(): Promise<Task[]>;
   create(task: Task): Promise<Id<"Task">>;
   update(
     id: Id<"Task">,
@@ -17,6 +18,10 @@ export interface TaskRepository {
         | "images"
         | "lastActivityAt"
         | "updatedAt"
+        | "pinned"
+        | "dueDate"
+        | "notNowSince"
+        | "isGold"
       >
     >,
   ): Promise<void>;

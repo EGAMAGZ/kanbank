@@ -25,14 +25,16 @@ export class UpdateTaskUseCase {
     }
 
     const now = toISODate();
-    await this.taskRepo.update(id, {
-      ...parsed.data,
-      stateId: parsed.data.stateId
-        ? (parsed.data.stateId as Id<"State">)
-        : undefined,
+    const { stateId, ...rest } = parsed.data;
+    const changes: Record<string, unknown> = {
+      ...rest,
       lastActivityAt: now,
       updatedAt: now,
-    });
+    };
+    if (stateId !== undefined) {
+      changes.stateId = stateId as Id<"State">;
+    }
+    await this.taskRepo.update(id, changes);
 
     eventBus.publish("task.updated", { id, ...parsed.data });
   }

@@ -7,10 +7,15 @@ import {
 import { toISODate } from "../../../shared/types/index.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 
+export interface MoveTaskOptions {
+  autoDiscard?: boolean;
+  targetIsNotNow?: boolean;
+}
+
 export class MoveTaskUseCase {
   constructor(private taskRepo: TaskRepository) {}
 
-  async execute(input: MoveTaskInput): Promise<void> {
+  async execute(input: MoveTaskInput, options?: MoveTaskOptions): Promise<void> {
     const parsed = MoveTaskSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -24,16 +29,27 @@ export class MoveTaskUseCase {
     }
 
     const now = toISODate();
+    const stateChanged = parsed.data.newStateId !== task.stateId;
+    const targetIsNotNow = options?.targetIsNotNow ?? false;
+
+    const taskUpdate: Record<string, unknown> = {
+      lastActivityAt: now,
+      updatedAt: now,
+    };
+
+    if (stateChanged && targetIsNotNow && options?.autoDiscard) {
+      taskUpdate.notNowSince = now;
+    } else if (stateChanged && !targetIsNotNow) {
+      taskUpdate.notNowSince = null;
+    }
+
     await this.taskRepo.move(
       parsed.data.taskId as any,
       parsed.data.newStateId as any,
       parsed.data.order,
     );
 
-    await this.taskRepo.update(parsed.data.taskId as any, {
-      lastActivityAt: now,
-      updatedAt: now,
-    });
+    await this.taskRepo.update(parsed.data.taskId as any, taskUpdate);
 
     eventBus.publish("task.moved", {
       taskId: parsed.data.taskId,
