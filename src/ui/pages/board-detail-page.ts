@@ -780,65 +780,75 @@ export class BoardDetailPage extends LitElement {
           animation: pk-gold-shimmer 3s ease-in-out infinite;
         }
         #kanbank-pinned-overlay .pk-stack.pk-expanded {
-          width: 260px;
-          max-height: 60vh;
+          width: 240px;
+          max-height: 70vh;
           overflow-y: auto;
-          background: #fff;
-          border: 2px solid #000;
-          border-left: none;
-          border-bottom: none;
-          box-shadow: 4px 4px 0 #000;
+          background: transparent;
           cursor: default;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding-bottom: 4px;
+        }
+        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar {
+          width: 6px;
+        }
+        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 3px;
         }
         #kanbank-pinned-overlay .pk-header {
           display: flex;
           align-items: center;
           gap: 4px;
-          padding: 8px 16px;
-          border-bottom: 1px solid #e5e7eb;
-          font-size: 14px;
+          padding: 8px 12px;
+          font-size: 12px;
           font-weight: 700;
           white-space: nowrap;
-          position: sticky;
-          top: 0;
-          background: #fff;
-          z-index: 1;
           font-family: 'Space Grotesk', sans-serif;
+          color: #6b7280;
         }
-        #kanbank-pinned-overlay .pk-count {
+        #kanbank-pinned-overlay .pk-header .pk-count {
           background: #2563EB;
           color: #fff;
           font-size: 10px;
-          width: 20px;
-          height: 20px;
-          display: flex;
+          width: 18px;
+          height: 18px;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
           border-radius: 2px;
-          flex-shrink: 0;
         }
         #kanbank-pinned-overlay .pk-list {
           list-style: none;
           margin: 0;
           padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
         }
         #kanbank-pinned-overlay .pk-item {
-          padding: 8px 16px;
+          background: #fff;
+          border: 2px solid #000;
+          box-shadow: 3px 3px 0 #000;
+          padding: 10px 12px;
           font-size: 12px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          border-bottom: 1px solid #e5e7eb;
-          transition: background 0.12s;
           font-family: 'Space Grotesk', sans-serif;
+          transition: transform 0.12s, box-shadow 0.12s;
         }
         #kanbank-pinned-overlay .pk-item:hover {
-          background: #f3f4f6;
+          transform: translate(-1px, -1px);
+          box-shadow: 4px 4px 0 #000;
         }
-        #kanbank-pinned-overlay .pk-item:last-child {
-          border-bottom: none;
+        #kanbank-pinned-overlay .pk-item.pk-gold-item {
+          background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100, #f5c518, #f9e547);
+          background-size: 200% 200%;
+          animation: pk-gold-shimmer 3s ease-in-out infinite;
         }
         @keyframes pk-gold-shimmer {
           0% { background-position: 0% 50%; }
@@ -858,16 +868,17 @@ export class BoardDetailPage extends LitElement {
               <span class="pk-count">${this.pinnedTasks.length}</span>
               <span>Pinned</span>
             </div>
-            <ul class="pk-list">
+            <div class="pk-list">
               ${this.pinnedTasks.map(
                 (t) => html`
-                  <li class="pk-item" title="${t.title}"
+                  <div class="pk-item ${t.isGold ? "pk-gold-item" : ""}"
+                    title="${t.title}"
                     @click=${() => this.selectTask(t)}>
                     ${t.isGold ? "&#11088; " : ""}${t.title}
-                  </li>
+                  </div>
                 `,
               )}
-            </ul>
+            </div>
           `
           : html`
             ${this.pinnedTasks.map(
