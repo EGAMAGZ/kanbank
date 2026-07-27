@@ -58,6 +58,7 @@ export class TaskDetailPage extends LitElement {
       max-width: 780px;
       margin: 0 auto;
       padding: var(--space-2xl) var(--gutter-lg);
+      overflow-y: auto;
     }
 
     .header {

@@ -27,6 +27,7 @@ export class BoardListPage extends LitElement {
       padding: var(--space-3xl) var(--gutter-lg) var(--space-2xl);
       max-width: var(--max-width);
       margin: 0 auto;
+      overflow-y: auto;
     }
 
     /* Title — breaks the grid, floats in whitespace */
