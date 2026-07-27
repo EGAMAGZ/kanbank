@@ -1,10 +1,10 @@
-import type { BoardRepository } from '../../../domain/repositories/board.repository.js';
-import type { StateRepository } from '../../../domain/repositories/state.repository.js';
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import type { CommentRepository } from '../../../domain/repositories/comment.repository.js';
-import { EntityNotFoundError } from '../../../domain/errors/domain-errors.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import type { Id } from '../../../shared/types/index.js';
+import type { BoardRepository } from "../../../domain/repositories/board.repository.js";
+import type { StateRepository } from "../../../domain/repositories/state.repository.js";
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
+import { EntityNotFoundError } from "../../../domain/errors/domain-errors.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import type { Id } from "../../../shared/types/index.js";
 
 export class DeleteBoardUseCase {
   constructor(
@@ -14,10 +14,10 @@ export class DeleteBoardUseCase {
     private commentRepo: CommentRepository,
   ) {}
 
-  async execute(id: Id<'Board'>): Promise<void> {
+  async execute(id: Id<"Board">): Promise<void> {
     const board = await this.boardRepo.findById(id);
     if (!board) {
-      throw new EntityNotFoundError('Board', id);
+      throw new EntityNotFoundError("Board", id);
     }
 
     const states = await this.stateRepo.findByBoard(id);
@@ -37,6 +37,6 @@ export class DeleteBoardUseCase {
 
     await this.boardRepo.delete(id);
 
-    eventBus.publish('board.deleted', { id });
+    eventBus.publish("board.deleted", { id });
   }
 }

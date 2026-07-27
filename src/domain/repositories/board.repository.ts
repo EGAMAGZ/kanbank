@@ -1,10 +1,13 @@
-import type { Id } from '../../shared/types/index.js';
-import type { Board } from '../entities/board.entity.js';
+import type { Id } from "../../shared/types/index.js";
+import type { Board } from "../entities/board.entity.js";
 
 export interface BoardRepository {
   findAll(): Promise<Board[]>;
-  findById(id: Id<'Board'>): Promise<Board | undefined>;
-  create(board: Board): Promise<Id<'Board'>>;
-  update(id: Id<'Board'>, changes: Partial<Pick<Board, 'title' | 'description' | 'updatedAt'>>): Promise<void>;
-  delete(id: Id<'Board'>): Promise<void>;
+  findById(id: Id<"Board">): Promise<Board | undefined>;
+  create(board: Board): Promise<Id<"Board">>;
+  update(
+    id: Id<"Board">,
+    changes: Partial<Pick<Board, "title" | "description" | "updatedAt">>,
+  ): Promise<void>;
+  delete(id: Id<"Board">): Promise<void>;
 }

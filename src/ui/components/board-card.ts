@@ -1,10 +1,11 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import type { Board } from '../../domain/entities/board.entity.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import type { Board } from "../../domain/entities/board.entity.js";
 
-@customElement('board-card')
+@customElement("board-card")
 export class BoardCard extends LitElement {
-  @property({ type: Object }) board!: Board;
+  @property({ type: Object })
+  board!: Board;
 
   static styles = css`
     :host {
@@ -42,7 +43,7 @@ export class BoardCard extends LitElement {
   render() {
     return html`
       <h3>${this.board.title}</h3>
-      ${this.board.description ? html`<p>${this.board.description}</p>` : ''}
+      ${this.board.description ? html`<p>${this.board.description}</p>` : ""}
     `;
   }
 }

@@ -1,24 +1,24 @@
-import { html, LitElement, css } from 'lit';
-import { PageController } from '@open-cells/page-controller';
-import { customElement, state } from 'lit/decorators.js';
-import { DexieTaskRepository } from '../../infrastructure/repositories/dexie-task.repository.js';
-import { DexieCommentRepository } from '../../infrastructure/repositories/dexie-comment.repository.js';
-import { DexieImageRepository } from '../../infrastructure/storage/image-storage.service.js';
-import { UpdateTaskUseCase } from '../../application/use-cases/tasks/update-task.js';
-import { DeleteTaskUseCase } from '../../application/use-cases/tasks/delete-task.js';
-import { AttachImageUseCase } from '../../application/use-cases/tasks/attach-image.js';
-import { DetachImageUseCase } from '../../application/use-cases/tasks/detach-image.js';
-import { AddCommentUseCase } from '../../application/use-cases/comments/add-comment.js';
-import { UpdateCommentUseCase } from '../../application/use-cases/comments/update-comment.js';
-import { DeleteCommentUseCase } from '../../application/use-cases/comments/delete-comment.js';
-import { AttachImageCommentUseCase } from '../../application/use-cases/comments/attach-image-comment.js';
-import { DetachImageCommentUseCase } from '../../application/use-cases/comments/detach-image-comment.js';
-import type { Task } from '../../domain/entities/task.entity.js';
-import type { Comment } from '../../domain/entities/comment.entity.js';
-import type { Id } from '../../shared/types/index.js';
-import '../../ui/components/markdown-viewer.js';
-import '../../ui/components/image-gallery.js';
-import '../../ui/components/image-upload.js';
+import { css, html, LitElement } from "lit";
+import { PageController } from "@open-cells/page-controller";
+import { customElement, state } from "lit/decorators.js";
+import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
+import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
+import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
+import { UpdateTaskUseCase } from "../../application/use-cases/tasks/update-task.js";
+import { DeleteTaskUseCase } from "../../application/use-cases/tasks/delete-task.js";
+import { AttachImageUseCase } from "../../application/use-cases/tasks/attach-image.js";
+import { DetachImageUseCase } from "../../application/use-cases/tasks/detach-image.js";
+import { AddCommentUseCase } from "../../application/use-cases/comments/add-comment.js";
+import { UpdateCommentUseCase } from "../../application/use-cases/comments/update-comment.js";
+import { DeleteCommentUseCase } from "../../application/use-cases/comments/delete-comment.js";
+import { AttachImageCommentUseCase } from "../../application/use-cases/comments/attach-image-comment.js";
+import { DetachImageCommentUseCase } from "../../application/use-cases/comments/detach-image-comment.js";
+import type { Task } from "../../domain/entities/task.entity.js";
+import type { Comment } from "../../domain/entities/comment.entity.js";
+import type { Id } from "../../shared/types/index.js";
+import "../../ui/components/markdown-viewer.js";
+import "../../ui/components/image-gallery.js";
+import "../../ui/components/image-upload.js";
 
 const taskRepo = new DexieTaskRepository();
 const commentRepo = new DexieCommentRepository();
@@ -30,27 +30,45 @@ const detachImage = new DetachImageUseCase(taskRepo, imageRepo);
 const addComment = new AddCommentUseCase(commentRepo, taskRepo);
 const updateComment = new UpdateCommentUseCase(commentRepo, taskRepo);
 const deleteComment = new DeleteCommentUseCase(commentRepo, taskRepo);
-const attachCommentImage = new AttachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
-const detachCommentImage = new DetachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
+const attachCommentImage = new AttachImageCommentUseCase(
+  commentRepo,
+  taskRepo,
+  imageRepo,
+);
+const detachCommentImage = new DetachImageCommentUseCase(
+  commentRepo,
+  taskRepo,
+  imageRepo,
+);
 
-@customElement('task-detail-page')
+@customElement("task-detail-page")
 export class TaskDetailPage extends LitElement {
   pageController = new PageController(this);
   params: Record<string, string> = {};
 
-  @state() private task: Task | null = null;
-  @state() private comments: Comment[] = [];
-  @state() private error: string | null = null;
+  @state()
+  private task: Task | null = null;
+  @state()
+  private comments: Comment[] = [];
+  @state()
+  private error: string | null = null;
 
-  @state() private editingTask = false;
-  @state() private editTitle = '';
-  @state() private editDescription = '';
+  @state()
+  private editingTask = false;
+  @state()
+  private editTitle = "";
+  @state()
+  private editDescription = "";
 
-  @state() private newComment = '';
-  @state() private commentError: string | null = null;
+  @state()
+  private newComment = "";
+  @state()
+  private commentError: string | null = null;
 
-  @state() private editingCommentId: string | null = null;
-  @state() private editingCommentText = '';
+  @state()
+  private editingCommentId: string | null = null;
+  @state()
+  private editingCommentText = "";
 
   static styles = css`
     :host {
@@ -345,20 +363,20 @@ export class TaskDetailPage extends LitElement {
     if (!id) return;
     try {
       this.error = null;
-      this.task = (await taskRepo.findById(id as Id<'Task'>)) ?? null;
+      this.task = (await taskRepo.findById(id as Id<"Task">)) ?? null;
       if (this.task) {
         this.comments = await commentRepo.findByTask(this.task.id);
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to load task';
+      this.error = e instanceof Error ? e.message : "Failed to load task";
     }
   }
 
   private goBack(): void {
     if (this.task) {
-      this.pageController.navigate('board-detail', { id: this.task.boardId });
+      this.pageController.navigate("board-detail", { id: this.task.boardId });
     } else {
-      this.pageController.navigate('home');
+      this.pageController.navigate("home");
     }
   }
 
@@ -383,16 +401,16 @@ export class TaskDetailPage extends LitElement {
       this.editingTask = false;
       await this.loadTask();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to update task';
+      this.error = e instanceof Error ? e.message : "Failed to update task";
     }
   }
 
   private async handleDeleteTask(): Promise<void> {
     if (!this.task) return;
-    if (!confirm('Delete this task and all its comments?')) return;
+    if (!confirm("Delete this task and all its comments?")) return;
     const boardId = this.task.boardId;
     await deleteTask.execute(this.task.id);
-    this.pageController.navigate('board-detail', { id: boardId });
+    this.pageController.navigate("board-detail", { id: boardId });
   }
 
   private async handleAttachTaskImage(e: Event): Promise<void> {
@@ -415,11 +433,16 @@ export class TaskDetailPage extends LitElement {
     if (!this.newComment.trim() || !this.task) return;
     try {
       this.commentError = null;
-      await addComment.execute({ taskId: this.task.id, markdown: this.newComment.trim() });
-      this.newComment = '';
+      await addComment.execute({
+        taskId: this.task.id,
+        markdown: this.newComment.trim(),
+      });
+      this.newComment = "";
       this.comments = await commentRepo.findByTask(this.task.id);
     } catch (e) {
-      this.commentError = e instanceof Error ? e.message : 'Failed to add comment';
+      this.commentError = e instanceof Error
+        ? e.message
+        : "Failed to add comment";
     }
   }
 
@@ -430,23 +453,27 @@ export class TaskDetailPage extends LitElement {
 
   private cancelEditComment(): void {
     this.editingCommentId = null;
-    this.editingCommentText = '';
+    this.editingCommentText = "";
   }
 
   private async saveEditComment(c: Comment): Promise<void> {
     if (!this.editingCommentText.trim()) return;
     try {
-      await updateComment.execute(c.id, { markdown: this.editingCommentText.trim() });
+      await updateComment.execute(c.id, {
+        markdown: this.editingCommentText.trim(),
+      });
       this.editingCommentId = null;
-      this.editingCommentText = '';
+      this.editingCommentText = "";
       this.comments = await commentRepo.findByTask(c.taskId);
     } catch (e) {
-      this.commentError = e instanceof Error ? e.message : 'Failed to update comment';
+      this.commentError = e instanceof Error
+        ? e.message
+        : "Failed to update comment";
     }
   }
 
   private async handleDeleteComment(c: Comment): Promise<void> {
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm("Delete this comment?")) return;
     await deleteComment.execute(c.id);
     this.comments = await commentRepo.findByTask(c.taskId);
   }
@@ -468,91 +495,150 @@ export class TaskDetailPage extends LitElement {
   }
 
   render() {
-    if (this.error) return html`<div style="color:var(--color-error);">Error: ${this.error}</div>`;
-    if (!this.task) return html`<div style="color:var(--color-text-3);">Loading...</div>`;
+    if (this.error) {
+      return html`<div style="color:var(--color-error);">Error: ${this.error}</div>`;
+    }
+    if (!this.task) {
+      return html`<div style="color:var(--color-text-3);">Loading...</div>`;
+    }
 
     return html`
       <div class="header">
         <span class="back" @click="${this.goBack}">&#8592;</span>
-        ${this.editingTask ? html`
-          <div class="edit-form" style="flex:1;">
-            <input type="text" .value="${this.editTitle}" @input="${(e: Event) => { this.editTitle = (e.target as HTMLInputElement).value; }}" />
-            <textarea .value="${this.editDescription}" @input="${(e: Event) => { this.editDescription = (e.target as HTMLTextAreaElement).value; }}" placeholder="Description (markdown)..."></textarea>
-            ${this.editDescription.trim() ? html`
-              <span class="preview-toggle" @click="${() => {
-                const el = this.renderRoot.querySelector('.edit-preview') as HTMLElement;
-                if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-              }}">Preview</span>
-              <div class="preview-box edit-preview" style="display:none;">
-                <markdown-viewer .content="${this.editDescription}"></markdown-viewer>
+        ${this.editingTask
+          ? html`
+            <div class="edit-form" style="flex:1;">
+              <input type="text" .value="${this.editTitle}" @input="${(
+                e: Event,
+              ) => {
+                this.editTitle = (e.target as HTMLInputElement).value;
+              }}" />
+              <textarea .value="${this.editDescription}" @input="${(
+                e: Event,
+              ) => {
+                this.editDescription = (e.target as HTMLTextAreaElement).value;
+              }}" placeholder="Description (markdown)..."></textarea>
+              ${this.editDescription.trim()
+                ? html`
+                  <span class="preview-toggle" @click="${() => {
+                    const el = this.renderRoot.querySelector(
+                      ".edit-preview",
+                    ) as HTMLElement;
+                    if (el) {
+                      el.style.display = el.style.display === "none"
+                        ? "block"
+                        : "none";
+                    }
+                  }}">Preview</span>
+                  <div class="preview-box edit-preview" style="display:none;">
+                    <markdown-viewer .content="${this
+                      .editDescription}"></markdown-viewer>
+                  </div>
+                `
+                : ""}
+              <div class="btn-row">
+                <button class="btn btn-primary" @click="${this
+                  .saveEditTask}">Save</button>
+                <button class="btn btn-cancel" @click="${this
+                  .cancelEditTask}">Cancel</button>
               </div>
-            ` : ''}
-            <div class="btn-row">
-              <button class="btn btn-primary" @click="${this.saveEditTask}">Save</button>
-              <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
             </div>
-          </div>
-        ` : html`
-          <div class="anchor-title">
-            <h1>${this.task.title}</h1>
-          </div>
-          <div class="actions">
-            <button class="btn-edit" @click="${this.startEditTask}">Edit</button>
-            <button class="btn-delete" @click="${this.handleDeleteTask}">Delete</button>
-          </div>
-        `}
+          `
+          : html`
+            <div class="anchor-title">
+              <h1>${this.task.title}</h1>
+            </div>
+            <div class="actions">
+              <button class="btn-edit" @click="${this
+                .startEditTask}">Edit</button>
+              <button class="btn-delete" @click="${this
+                .handleDeleteTask}">Delete</button>
+            </div>
+          `}
       </div>
 
-      ${!this.editingTask && this.task.description ? html`
-        <div class="description section">
-          <markdown-viewer .content="${this.task.description}"></markdown-viewer>
-        </div>
-      ` : ''}
+      ${!this.editingTask && this.task.description
+        ? html`
+          <div class="description section">
+            <markdown-viewer .content="${this.task
+              .description}"></markdown-viewer>
+          </div>
+        `
+        : ""}
 
       <div class="section">
-        <image-gallery .images="${this.task.images}" deletable @image-removed="${this.handleDetachTaskImage}"></image-gallery>
-        <image-upload @image-selected="${this.handleAttachTaskImage}"></image-upload>
+        <image-gallery .images="${this.task
+          .images}" deletable @image-removed="${this
+          .handleDetachTaskImage}"></image-gallery>
+        <image-upload @image-selected="${this
+          .handleAttachTaskImage}"></image-upload>
       </div>
 
       <div class="section">
         <h3>Comments (${this.comments.length})</h3>
-        ${this.comments.map(c => html`
-          <div class="comment">
-            ${this.editingCommentId === c.id ? html`
-              <div class="comment-edit">
-                <textarea .value="${this.editingCommentText}" @input="${(e: Event) => { this.editingCommentText = (e.target as HTMLTextAreaElement).value; }}"></textarea>
-                <div class="btn-row">
-                  <button class="btn btn-primary" @click="${() => this.saveEditComment(c)}">Save</button>
-                  <button class="btn btn-cancel" @click="${this.cancelEditComment}">Cancel</button>
-                </div>
-              </div>
-            ` : html`
-              <div class="comment-header">
-                <div class="date">${new Date(c.createdAt).toLocaleDateString()}</div>
-                <div class="comment-actions">
-                  <button @click="${() => this.startEditComment(c)}">Edit</button>
-                  <button @click="${() => this.handleDeleteComment(c)}">Delete</button>
-                </div>
-              </div>
-              <markdown-viewer .content="${c.markdown}"></markdown-viewer>
-              <image-gallery .images="${c.images}" deletable @image-removed="${(e: Event) => this.handleDetachCommentImage(e, c)}"></image-gallery>
-              <div class="comment-actions">
-                <image-upload @image-selected="${(e: Event) => this.handleAttachCommentImage(e, c)}"></image-upload>
-              </div>
-            `}
-          </div>
-        `)}
-        ${this.commentError ? html`<div class="comment-error">${this.commentError}</div>` : ''}
+        ${this.comments.map((c) =>
+          html`
+            <div class="comment">
+              ${this.editingCommentId === c.id
+                ? html`
+                  <div class="comment-edit">
+                    <textarea .value="${this.editingCommentText}" @input="${(
+                      e: Event,
+                    ) => {
+                      this.editingCommentText =
+                        (e.target as HTMLTextAreaElement).value;
+                    }}"></textarea>
+                    <div class="btn-row">
+                      <button class="btn btn-primary" @click="${() =>
+                        this.saveEditComment(c)}">Save</button>
+                      <button class="btn btn-cancel" @click="${this
+                        .cancelEditComment}">Cancel</button>
+                    </div>
+                  </div>
+                `
+                : html`
+                  <div class="comment-header">
+                    <div class="date">${new Date(c.createdAt)
+                      .toLocaleDateString()}</div>
+                    <div class="comment-actions">
+                      <button @click="${() =>
+                        this.startEditComment(c)}">Edit</button>
+                      <button @click="${() =>
+                        this.handleDeleteComment(c)}">Delete</button>
+                    </div>
+                  </div>
+                  <markdown-viewer .content="${c.markdown}"></markdown-viewer>
+                  <image-gallery .images="${c.images}" deletable
+                    @image-removed="${(e: Event) =>
+                      this.handleDetachCommentImage(e, c)}"></image-gallery>
+                  <div class="comment-actions">
+                    <image-upload @image-selected="${(e: Event) =>
+                      this.handleAttachCommentImage(e, c)}"></image-upload>
+                  </div>
+                `}
+            </div>
+          `
+        )}
+        ${this.commentError
+          ? html`<div class="comment-error">${this.commentError}</div>`
+          : ""}
       </div>
 
       <div class="section add-comment">
         <textarea
           placeholder="Add a comment (markdown)..."
           .value="${this.newComment}"
-          @input="${(e: Event) => { this.newComment = (e.target as HTMLTextAreaElement).value; }}"
-          @keydown="${(e: KeyboardEvent) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) this.handleAddComment(); }}"
+          @input="${(e: Event) => {
+            this.newComment = (e.target as HTMLTextAreaElement).value;
+          }}"
+          @keydown="${(e: KeyboardEvent) => {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              this.handleAddComment();
+            }
+          }}"
         ></textarea>
-        <button class="btn btn-primary" style="margin-top:var(--space-sm);" @click="${this.handleAddComment}">Add Comment</button>
+        <button class="btn btn-primary" style="margin-top:var(--space-sm);" @click="${this
+          .handleAddComment}">Add Comment</button>
       </div>
     `;
   }

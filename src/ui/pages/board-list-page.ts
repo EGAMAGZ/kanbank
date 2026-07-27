@@ -1,25 +1,29 @@
-import { html, LitElement, css } from 'lit';
-import { PageController } from '@open-cells/page-controller';
-import { customElement, state } from 'lit/decorators.js';
-import { ListBoardsUseCase } from '../../application/use-cases/boards/list-boards.js';
-import { CreateBoardUseCase } from '../../application/use-cases/boards/create-board.js';
-import { DexieBoardRepository } from '../../infrastructure/repositories/dexie-board.repository.js';
-import { DexieStateRepository } from '../../infrastructure/repositories/dexie-state.repository.js';
-import type { Board } from '../../domain/entities/board.entity.js';
+import { css, html, LitElement } from "lit";
+import { PageController } from "@open-cells/page-controller";
+import { customElement, state } from "lit/decorators.js";
+import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
+import { CreateBoardUseCase } from "../../application/use-cases/boards/create-board.js";
+import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
+import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
+import type { Board } from "../../domain/entities/board.entity.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
 const createBoard = new CreateBoardUseCase(boardRepo, stateRepo);
 
-@customElement('board-list-page')
+@customElement("board-list-page")
 export class BoardListPage extends LitElement {
   pageController = new PageController(this);
 
-  @state() private boards: Board[] = [];
-  @state() private showCreateForm = false;
-  @state() private newTitle = '';
-  @state() private newDescription = '';
+  @state()
+  private boards: Board[] = [];
+  @state()
+  private showCreateForm = false;
+  @state()
+  private newTitle = "";
+  @state()
+  private newDescription = "";
 
   static styles = css`
     :host {
@@ -240,65 +244,77 @@ export class BoardListPage extends LitElement {
       title: this.newTitle.trim(),
       description: this.newDescription.trim() || undefined,
     });
-    this.newTitle = '';
-    this.newDescription = '';
+    this.newTitle = "";
+    this.newDescription = "";
     this.showCreateForm = false;
-    this.pageController.navigate('board-detail', { id });
+    this.pageController.navigate("board-detail", { id });
   }
 
   private navigateToBoard(id: string): void {
-    this.pageController.navigate('board-detail', { id });
+    this.pageController.navigate("board-detail", { id });
   }
 
   render() {
     return html`
       <h1 class="page-title">Boards</h1>
 
-      <button class="new-board-btn" @click="${() => this.showCreateForm = !this.showCreateForm}">
-        ${this.showCreateForm ? 'Cancel' : 'New board'}
+      <button class="new-board-btn" @click="${() =>
+        this.showCreateForm = !this.showCreateForm}">
+        ${this.showCreateForm ? "Cancel" : "New board"}
       </button>
 
       <div class="board-grid">
-        ${this.showCreateForm ? html`
-          <div class="create-form">
-            <input
-              type="text"
-              placeholder="Board title"
-              .value="${this.newTitle}"
-              @input="${(e: Event) => this.newTitle = (e.target as HTMLInputElement).value}"
-            />
-            <textarea
-              placeholder="Description (optional)"
-              .value="${this.newDescription}"
-              @input="${(e: Event) => this.newDescription = (e.target as HTMLTextAreaElement).value}"
-            ></textarea>
-            <div class="form-actions">
-              <button class="btn-create" @click="${this.handleCreate}">Create</button>
-              <button class="btn-cancel" @click="${() => this.showCreateForm = false}">Cancel</button>
+        ${this.showCreateForm
+          ? html`
+            <div class="create-form">
+              <input
+                type="text"
+                placeholder="Board title"
+                .value="${this.newTitle}"
+                @input="${(e: Event) =>
+                  this.newTitle = (e.target as HTMLInputElement).value}"
+              />
+              <textarea
+                placeholder="Description (optional)"
+                .value="${this.newDescription}"
+                @input="${(e: Event) =>
+                  this.newDescription =
+                    (e.target as HTMLTextAreaElement).value}"
+              ></textarea>
+              <div class="form-actions">
+                <button class="btn-create" @click="${this
+                  .handleCreate}">Create</button>
+                <button class="btn-cancel" @click="${() =>
+                  this.showCreateForm = false}">Cancel</button>
+              </div>
             </div>
-          </div>
-        ` : ''}
+          `
+          : ""}
 
-        ${this.boards.length === 0 && !this.showCreateForm ? html`
-          <div class="empty">
-            <p>No boards yet. Create one to get started.</p>
-          </div>
-        ` : this.boards.map((board, i) => {
-          if (i === 0) {
+        ${this.boards.length === 0 && !this.showCreateForm
+          ? html`
+            <div class="empty">
+              <p>No boards yet. Create one to get started.</p>
+            </div>
+          `
+          : this.boards.map((board, i) => {
+            if (i === 0) {
+              return html`
+                <div class="board-item-anchor" @click="${() =>
+                  this.navigateToBoard(board.id)}">
+                  <h3>${board.title}</h3>
+                  ${board.description ? html`<p>${board.description}</p>` : ""}
+                </div>
+              `;
+            }
             return html`
-              <div class="board-item-anchor" @click="${() => this.navigateToBoard(board.id)}">
+              <div class="board-item-minimal" @click="${() =>
+                this.navigateToBoard(board.id)}">
                 <h3>${board.title}</h3>
-                ${board.description ? html`<p>${board.description}</p>` : ''}
+                ${board.description ? html`<p>${board.description}</p>` : ""}
               </div>
             `;
-          }
-          return html`
-            <div class="board-item-minimal" @click="${() => this.navigateToBoard(board.id)}">
-              <h3>${board.title}</h3>
-              ${board.description ? html`<p>${board.description}</p>` : ''}
-            </div>
-          `;
-        })}
+          })}
       </div>
     `;
   }

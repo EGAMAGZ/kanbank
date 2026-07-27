@@ -1,4 +1,4 @@
-import { css } from 'lit';
+import { css } from "lit";
 
 /* Anchor card — the "raw gesture" container.
  * Use max 1-2 per view. Everything else floats free. */
@@ -26,7 +26,7 @@ export const brutalButton = css`
   font-weight: 700;
   cursor: pointer;
   transition: transform var(--ease-brutal, 0.12s),
-              box-shadow var(--ease-brutal, 0.12s);
+    box-shadow var(--ease-brutal, 0.12s);
 `;
 
 export const brutalButtonHover = css`

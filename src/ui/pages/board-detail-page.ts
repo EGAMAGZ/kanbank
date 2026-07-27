@@ -1,19 +1,22 @@
-import { html, LitElement, css } from 'lit';
-import { PageController } from '@open-cells/page-controller';
-import { customElement, state } from 'lit/decorators.js';
-import { GetBoardUseCase, type BoardDetail } from '../../application/use-cases/boards/get-board.js';
-import { CreateTaskUseCase } from '../../application/use-cases/tasks/create-task.js';
-import { MoveTaskUseCase } from '../../application/use-cases/tasks/move-task.js';
-import { CreateStateUseCase } from '../../application/use-cases/states/create-state.js';
-import { UpdateStateUseCase } from '../../application/use-cases/states/update-state.js';
-import { DeleteStateUseCase } from '../../application/use-cases/states/delete-state.js';
-import { DexieBoardRepository } from '../../infrastructure/repositories/dexie-board.repository.js';
-import { DexieStateRepository } from '../../infrastructure/repositories/dexie-state.repository.js';
-import { DexieTaskRepository } from '../../infrastructure/repositories/dexie-task.repository.js';
-import { inactiveDays } from '../../shared/utils/dates.js';
-import type { Task } from '../../domain/entities/task.entity.js';
-import type { State } from '../../domain/entities/state.entity.js';
-import type { Id } from '../../shared/types/index.js';
+import { css, html, LitElement } from "lit";
+import { PageController } from "@open-cells/page-controller";
+import { customElement, state } from "lit/decorators.js";
+import {
+  type BoardDetail,
+  GetBoardUseCase,
+} from "../../application/use-cases/boards/get-board.js";
+import { CreateTaskUseCase } from "../../application/use-cases/tasks/create-task.js";
+import { MoveTaskUseCase } from "../../application/use-cases/tasks/move-task.js";
+import { CreateStateUseCase } from "../../application/use-cases/states/create-state.js";
+import { UpdateStateUseCase } from "../../application/use-cases/states/update-state.js";
+import { DeleteStateUseCase } from "../../application/use-cases/states/delete-state.js";
+import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
+import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
+import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
+import { inactiveDays } from "../../shared/utils/dates.js";
+import type { Task } from "../../domain/entities/task.entity.js";
+import type { State } from "../../domain/entities/state.entity.js";
+import type { Id } from "../../shared/types/index.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
@@ -25,30 +28,44 @@ const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
 const deleteState = new DeleteStateUseCase(stateRepo, taskRepo);
 
-@customElement('board-detail-page')
+@customElement("board-detail-page")
 export class BoardDetailPage extends LitElement {
   pageController = new PageController(this);
   params: Record<string, string> = {};
 
-  @state() private detail: BoardDetail | null = null;
-  @state() private error: string | null = null;
+  @state()
+  private detail: BoardDetail | null = null;
+  @state()
+  private error: string | null = null;
 
-  @state() private expandedColumnId: string | null = null;
+  @state()
+  private expandedColumnId: string | null = null;
 
-  @state() private dragOverStateId = '';
+  @state()
+  private dragOverStateId = "";
 
-  @state() private newColumnTitle = '';
-  @state() private newColumnColor = '#2563EB';
-  @state() private showColumnForm = false;
+  @state()
+  private newColumnTitle = "";
+  @state()
+  private newColumnColor = "#2563EB";
+  @state()
+  private showColumnForm = false;
 
-  @state() private editingStateId: string | null = null;
-  @state() private editingStateTitle = '';
-  @state() private editingStateColor = '#2563EB';
+  @state()
+  private editingStateId: string | null = null;
+  @state()
+  private editingStateTitle = "";
+  @state()
+  private editingStateColor = "#2563EB";
 
-  @state() private showTaskModal = false;
-  @state() private modalTitle = '';
-  @state() private modalDescription = '';
-  @state() private modalError: string | null = null;
+  @state()
+  private showTaskModal = false;
+  @state()
+  private modalTitle = "";
+  @state()
+  private modalDescription = "";
+  @state()
+  private modalError: string | null = null;
 
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
 
@@ -552,13 +569,13 @@ export class BoardDetailPage extends LitElement {
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
     this.boundKeydown = this.handleKeydown.bind(this);
-    document.addEventListener('keydown', this.boundKeydown);
+    document.addEventListener("keydown", this.boundKeydown);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this.boundKeydown) {
-      document.removeEventListener('keydown', this.boundKeydown);
+      document.removeEventListener("keydown", this.boundKeydown);
       this.boundKeydown = null;
     }
   }
@@ -574,17 +591,27 @@ export class BoardDetailPage extends LitElement {
       this.error = null;
       this.detail = await getBoard.execute(id as any);
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to load board';
+      this.error = e instanceof Error ? e.message : "Failed to load board";
     }
   }
 
-  private getMandatoryOrder(): { first: Id<'State'>; maybe: Id<'State'>; last: Id<'State'> } {
-    if (!this.detail) return { first: '' as Id<'State'>, maybe: '' as Id<'State'>, last: '' as Id<'State'> };
+  private getMandatoryOrder(): {
+    first: Id<"State">;
+    maybe: Id<"State">;
+    last: Id<"State">;
+  } {
+    if (!this.detail) {
+      return {
+        first: "" as Id<"State">,
+        maybe: "" as Id<"State">,
+        last: "" as Id<"State">,
+      };
+    }
     const sorted = [...this.detail.states].sort((a, b) => a.order - b.order);
     return {
-      first: sorted[0]?.id ?? ('' as Id<'State'>),
-      maybe: sorted[1]?.id ?? ('' as Id<'State'>),
-      last: sorted[sorted.length - 1]?.id ?? ('' as Id<'State'>),
+      first: sorted[0]?.id ?? ("" as Id<"State">),
+      maybe: sorted[1]?.id ?? ("" as Id<"State">),
+      last: sorted[sorted.length - 1]?.id ?? ("" as Id<"State">),
     };
   }
 
@@ -601,12 +628,17 @@ export class BoardDetailPage extends LitElement {
 
   private handleKeydown(e: KeyboardEvent): void {
     if (!this.detail) return;
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) return;
 
     const sorted = this.getSortedStates();
-    const maybeIdx = sorted.findIndex(s => s.id === this.getMandatoryOrder().maybe);
+    const maybeIdx = sorted.findIndex((s) =>
+      s.id === this.getMandatoryOrder().maybe
+    );
 
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       if (this.showTaskModal) {
         this.closeTaskModal();
       } else {
@@ -615,14 +647,14 @@ export class BoardDetailPage extends LitElement {
       return;
     }
 
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
       const currentIdx = this.expandedColumnId
-        ? sorted.findIndex(s => s.id === this.expandedColumnId)
+        ? sorted.findIndex((s) => s.id === this.expandedColumnId)
         : maybeIdx;
 
       let nextIdx: number;
-      if (e.key === 'ArrowLeft') {
+      if (e.key === "ArrowLeft") {
         nextIdx = currentIdx - 1;
         if (nextIdx < 0) nextIdx = 0;
       } else {
@@ -638,8 +670,8 @@ export class BoardDetailPage extends LitElement {
   }
 
   private handleDragStart(e: DragEvent, task: Task): void {
-    e.dataTransfer?.setData('text/plain', task.id);
-    e.dataTransfer?.setData('application/x-kanbank-from-state', task.stateId);
+    e.dataTransfer?.setData("text/plain", task.id);
+    e.dataTransfer?.setData("application/x-kanbank-from-state", task.stateId);
   }
 
   private handleDragOver(e: DragEvent, stateId: string): void {
@@ -648,22 +680,28 @@ export class BoardDetailPage extends LitElement {
   }
 
   private handleDragLeave(): void {
-    this.dragOverStateId = '';
+    this.dragOverStateId = "";
   }
 
   private async handleDrop(e: DragEvent, stateId: string): Promise<void> {
     e.preventDefault();
-    this.dragOverStateId = '';
-    const taskId = e.dataTransfer?.getData('text/plain');
+    this.dragOverStateId = "";
+    const taskId = e.dataTransfer?.getData("text/plain");
     if (!taskId || !this.detail) return;
 
-    const tasksInColumn = this.detail.tasks.filter(t => t.stateId === stateId);
-    await moveTask.execute({ taskId, newStateId: stateId, order: tasksInColumn.length });
+    const tasksInColumn = this.detail.tasks.filter((t) =>
+      t.stateId === stateId
+    );
+    await moveTask.execute({
+      taskId,
+      newStateId: stateId,
+      order: tasksInColumn.length,
+    });
     await this.loadBoard();
   }
 
   private selectTask(task: Task): void {
-    this.pageController.navigate('task-detail', { id: task.id });
+    this.pageController.navigate("task-detail", { id: task.id });
   }
 
   private async handleCreateState(): Promise<void> {
@@ -678,12 +716,12 @@ export class BoardDetailPage extends LitElement {
         color: this.newColumnColor,
         order,
       });
-      this.newColumnTitle = '';
-      this.newColumnColor = '#2563EB';
+      this.newColumnTitle = "";
+      this.newColumnColor = "#2563EB";
       this.showColumnForm = false;
       await this.loadBoard();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to create state';
+      this.error = e instanceof Error ? e.message : "Failed to create state";
     }
   }
 
@@ -696,29 +734,34 @@ export class BoardDetailPage extends LitElement {
   private async saveEditState(state: State): Promise<void> {
     if (!this.editingStateTitle.trim()) return;
     try {
-      await updateState.execute(state.id, { title: this.editingStateTitle.trim(), color: this.editingStateColor });
+      await updateState.execute(state.id, {
+        title: this.editingStateTitle.trim(),
+        color: this.editingStateColor,
+      });
       this.editingStateId = null;
-      this.editingStateTitle = '';
-      this.editingStateColor = '#2563EB';
+      this.editingStateTitle = "";
+      this.editingStateColor = "#2563EB";
       await this.loadBoard();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to update state';
+      this.error = e instanceof Error ? e.message : "Failed to update state";
     }
   }
 
   private cancelEditState(): void {
     this.editingStateId = null;
-    this.editingStateTitle = '';
-    this.editingStateColor = '#2563EB';
+    this.editingStateTitle = "";
+    this.editingStateColor = "#2563EB";
   }
 
   private async handleDeleteState(state: State): Promise<void> {
-    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) return;
+    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) {
+      return;
+    }
     try {
       await deleteState.execute(state.id);
       await this.loadBoard();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to delete state';
+      this.error = e instanceof Error ? e.message : "Failed to delete state";
     }
   }
 
@@ -727,20 +770,23 @@ export class BoardDetailPage extends LitElement {
   }
 
   private openTaskModal(): void {
-    this.modalTitle = '';
-    this.modalDescription = '';
+    this.modalTitle = "";
+    this.modalDescription = "";
     this.modalError = null;
     this.showTaskModal = true;
   }
 
   private closeTaskModal(): void {
     this.showTaskModal = false;
-    this.modalTitle = '';
-    this.modalDescription = '';
+    this.modalTitle = "";
+    this.modalDescription = "";
     this.modalError = null;
   }
 
-  private async handleModalCreate(stateId: string, mode: 'close' | 'another' | 'duplicate'): Promise<void> {
+  private async handleModalCreate(
+    stateId: string,
+    mode: "close" | "another" | "duplicate",
+  ): Promise<void> {
     if (!this.modalTitle.trim() || !this.detail) return;
     try {
       this.modalError = null;
@@ -751,18 +797,20 @@ export class BoardDetailPage extends LitElement {
         title: this.modalTitle.trim(),
         description,
       });
-      if (mode === 'close') {
+      if (mode === "close") {
         this.closeTaskModal();
-      } else if (mode === 'another') {
-        this.modalTitle = '';
-        this.modalDescription = '';
+      } else if (mode === "another") {
+        this.modalTitle = "";
+        this.modalDescription = "";
       } else {
-        this.modalTitle = '';
-        this.modalDescription = description ?? '';
+        this.modalTitle = "";
+        this.modalDescription = description ?? "";
       }
       await this.loadBoard();
     } catch (e) {
-      this.modalError = e instanceof Error ? e.message : 'Failed to create task';
+      this.modalError = e instanceof Error
+        ? e.message
+        : "Failed to create task";
     }
   }
 
@@ -777,16 +825,20 @@ export class BoardDetailPage extends LitElement {
 
     return html`
       <div
-        class="column-bar ${isActive ? 'active' : ''} ${this.dragOverStateId === state.id ? 'drag-over' : ''}"
+        class="column-bar ${isActive
+          ? "active"
+          : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
         @click="${() => this.toggleColumn(state.id)}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="fill" style="height: ${isNotNow ? '100' : pct}%; ${isNotNow ? 'background:var(--color-warning)' : `background:${state.color}`}"></div>
+        <div class="fill" style="height: ${isNotNow ? "100" : pct}%; ${isNotNow
+          ? "background:var(--color-warning)"
+          : `background:${state.color}`}"></div>
         <div class="badge">${count}</div>
         <div class="bar-label">${state.title}</div>
-        ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ''}
+        ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ""}
       </div>
     `;
   }
@@ -795,60 +847,88 @@ export class BoardDetailPage extends LitElement {
     if (!this.detail) return html``;
     const { tasks } = this.detail;
     const stateTasks = tasks
-      .filter(t => t.stateId === state.id)
-      .sort((a, b) => new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime());
+      .filter((t) => t.stateId === state.id)
+      .sort((a, b) =>
+        new Date(a.lastActivityAt).getTime() -
+        new Date(b.lastActivityAt).getTime()
+      );
     const mandatory = this.getMandatoryOrder();
-    const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
+    const isMandatory = state.id === mandatory.first ||
+      state.id === mandatory.maybe || state.id === mandatory.last;
 
     return html`
       <div
-        class="column-expanded ${this.dragOverStateId === state.id ? 'drag-over' : ''}"
+        class="column-expanded ${this.dragOverStateId === state.id
+          ? "drag-over"
+          : ""}"
         style="border-top: 3px solid ${state.color};"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
         <div class="column-header">
-          ${this.editingStateId === state.id ? html`
-            <div style="display:flex;align-items:center;gap:var(--space-xs);">
-              <input
-                class="state-edit-input"
-                type="text"
-                .value="${this.editingStateTitle}"
-                @input="${(e: Event) => { this.editingStateTitle = (e.target as HTMLInputElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === 'Enter') this.saveEditState(state);
-                  if (e.key === 'Escape') this.cancelEditState();
-                }}"
-              />
-              <input
-                class="state-edit-color"
-                type="color"
-                .value="${this.editingStateColor}"
-                @input="${(e: Event) => { this.editingStateColor = (e.target as HTMLInputElement).value; }}"
-              />
-            </div>
-          ` : html`
-            <span class="col-title">${state.title}</span>
-          `}
-          <div class="col-actions">
-            <span class="column-count">${this.detail.taskCounts[state.id] ?? 0}</span>
-            ${!isMandatory ? html`
-              <button @click="${() => this.startEditState(state)}" title="Edit">&#9998;</button>
-              <button @click="${() => this.handleDeleteState(state)}" title="Delete">&#10005;</button>
-              <button class="collapse-btn" @click="${() => this.expandedColumnId = null}" title="Collapse">&#9664;</button>
-            ` : html`
-              <button class="collapse-btn" @click="${() => this.expandedColumnId = null}" title="Collapse">&#9664;</button>
+          ${this.editingStateId === state.id
+            ? html`
+              <div style="display:flex;align-items:center;gap:var(--space-xs);">
+                <input
+                  class="state-edit-input"
+                  type="text"
+                  .value="${this.editingStateTitle}"
+                  @input="${(e: Event) => {
+                    this.editingStateTitle =
+                      (e.target as HTMLInputElement).value;
+                  }}"
+                  @keydown="${(e: KeyboardEvent) => {
+                    if (e.key === "Enter") this.saveEditState(state);
+                    if (e.key === "Escape") this.cancelEditState();
+                  }}"
+                />
+                <input
+                  class="state-edit-color"
+                  type="color"
+                  .value="${this.editingStateColor}"
+                  @input="${(e: Event) => {
+                    this.editingStateColor =
+                      (e.target as HTMLInputElement).value;
+                  }}"
+                />
+              </div>
+            `
+            : html`
+              <span class="col-title">${state.title}</span>
             `}
+          <div class="col-actions">
+            <span class="column-count">${this.detail.taskCounts[state.id] ??
+              0}</span>
+            ${!isMandatory
+              ? html`
+                <button @click="${() =>
+                  this.startEditState(state)}" title="Edit">&#9998;</button>
+                <button @click="${() =>
+                  this.handleDeleteState(
+                    state,
+                  )}" title="Delete">&#10005;</button>
+                <button class="collapse-btn" @click="${() =>
+                  this.expandedColumnId = null}"
+                  title="Collapse">&#9664;</button>
+              `
+              : html`
+                <button class="collapse-btn" @click="${() =>
+                  this.expandedColumnId = null}"
+                  title="Collapse">&#9664;</button>
+              `}
           </div>
         </div>
 
-        ${state.id === mandatory.maybe ? html`
-          <button class="add-task-btn" @click="${() => this.openTaskModal()}">+ Add task</button>
-        ` : ''}
+        ${state.id === mandatory.maybe
+          ? html`
+            <button class="add-task-btn" @click="${() =>
+              this.openTaskModal()}">+ Add task</button>
+          `
+          : ""}
 
         <div class="column-tasks">
-          ${stateTasks.map(task => {
+          ${stateTasks.map((task) => {
             const days = inactiveDays(task.lastActivityAt);
             return html`
               <div
@@ -858,8 +938,14 @@ export class BoardDetailPage extends LitElement {
                 @click="${() => this.selectTask(task)}"
               >
                 <div class="title">${task.title}</div>
-                ${task.images.length ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>` : ''}
-                ${days > 0 ? html`<div class="inactive ${days > 7 ? 'stale' : ''}">${days}d inactive</div>` : ''}
+                ${task.images.length
+                  ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>`
+                  : ""}
+                ${days > 0
+                  ? html`<div class="inactive ${
+                    days > 7 ? "stale" : ""
+                  }">${days}d inactive</div>`
+                  : ""}
               </div>
             `;
           })}
@@ -869,95 +955,165 @@ export class BoardDetailPage extends LitElement {
   }
 
   render() {
-    if (this.error) return html`<div style="padding:var(--space-xl);color:var(--color-error);">Error: ${this.error}</div>`;
-    if (!this.detail) return html`<div style="padding:var(--space-xl);color:var(--color-text-3);">Loading...</div>`;
+    if (this.error) {
+      return html`
+        <div
+          style="padding:var(--space-xl);color:var(--color-error);">Error: ${this
+            .error}</div>
+      `;
+    }
+    if (!this.detail) {
+      return html`<div style="padding:var(--space-xl);color:var(--color-text-3);">Loading...</div>`;
+    }
 
     const { board } = this.detail;
     const sorted = this.getSortedStates();
     const mandatory = this.getMandatoryOrder();
-    const maybeState = sorted.find(s => s.id === mandatory.maybe);
-    const leftStates = sorted.filter(s => s.order < (maybeState?.order ?? 1));
-    const rightStates = sorted.filter(s => s.order > (maybeState?.order ?? 1));
+    const maybeState = sorted.find((s) => s.id === mandatory.maybe);
+    const leftStates = sorted.filter((s) => s.order < (maybeState?.order ?? 1));
+    const rightStates = sorted.filter((s) =>
+      s.order > (maybeState?.order ?? 1)
+    );
 
     return html`
       <div class="board-header">
-        <span class="back" @click="${() => this.pageController.navigate('home')}">&#8592;</span>
+        <span class="back" @click="${() =>
+          this.pageController.navigate("home")}">&#8592;</span>
         <h1>${board.title}</h1>
-        ${this.showColumnForm ? html`
-          <div class="column-form">
-            <input
-              type="text"
-              placeholder="Column name..."
-              .value="${this.newColumnTitle}"
-              @input="${(e: Event) => { this.newColumnTitle = (e.target as HTMLInputElement).value; }}"
-              @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter') this.handleCreateState();
-                if (e.key === 'Escape') { this.showColumnForm = false; this.newColumnTitle = ''; }
-              }}"
-            />
-            <input
-              type="color"
-              .value="${this.newColumnColor}"
-              @input="${(e: Event) => { this.newColumnColor = (e.target as HTMLInputElement).value; }}"
-            />
-            <button class="btn-sm" @click="${this.handleCreateState}">Add</button>
-            <button class="cancel" @click="${() => { this.showColumnForm = false; this.newColumnTitle = ''; }}">Cancel</button>
-          </div>
-        ` : html`
-          <button class="add-column-btn" @click="${() => { this.showColumnForm = true; }}">+ Add column</button>
-        `}
+        ${this.showColumnForm
+          ? html`
+            <div class="column-form">
+              <input
+                type="text"
+                placeholder="Column name..."
+                .value="${this.newColumnTitle}"
+                @input="${(e: Event) => {
+                  this.newColumnTitle = (e.target as HTMLInputElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") this.handleCreateState();
+                  if (e.key === "Escape") {
+                    this.showColumnForm = false;
+                    this.newColumnTitle = "";
+                  }
+                }}"
+              />
+              <input
+                type="color"
+                .value="${this.newColumnColor}"
+                @input="${(e: Event) => {
+                  this.newColumnColor = (e.target as HTMLInputElement).value;
+                }}"
+              />
+              <button class="btn-sm" @click="${this
+                .handleCreateState}">Add</button>
+              <button class="cancel" @click="${() => {
+                this.showColumnForm = false;
+                this.newColumnTitle = "";
+              }}">Cancel</button>
+            </div>
+          `
+          : html`
+            <button class="add-column-btn" @click="${() => {
+              this.showColumnForm = true;
+            }}">+ Add column</button>
+          `}
       </div>
 
       <div class="columns">
-        ${leftStates.map(s => this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
-        ${maybeState ? this.renderExpanded(maybeState) : ''}
-        ${rightStates.map(s => this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s))}
+        ${leftStates.map((s) =>
+          this.expandedColumnId === s.id
+            ? this.renderExpanded(s)
+            : this.renderBar(s)
+        )}
+        ${maybeState ? this.renderExpanded(maybeState) : ""}
+        ${rightStates.map((s) =>
+          this.expandedColumnId === s.id
+            ? this.renderExpanded(s)
+            : this.renderBar(s)
+        )}
       </div>
 
-      ${this.showTaskModal && maybeState ? html`
-        <div class="modal-overlay" @click="${() => this.closeTaskModal()}">
-          <div class="modal-card" @click="${(e: Event) => e.stopPropagation()}">
-            <h2>New task in Maybe?</h2>
-            <label for="modal-title">Title</label>
-            <input
-              id="modal-title"
-              type="text"
-              placeholder="Task title..."
-              .value="${this.modalTitle}"
-              @input="${(e: Event) => { this.modalTitle = (e.target as HTMLInputElement).value; }}"
-              @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter') { e.preventDefault(); this.handleModalCreate(maybeState.id, 'close'); }
-              }}"
-            />
-            <label for="modal-desc" style="margin-top:var(--space-md);">Description (markdown)</label>
-            <textarea
-              id="modal-desc"
-              placeholder="Description (optional)..."
-              .value="${this.modalDescription}"
-              @input="${(e: Event) => { this.modalDescription = (e.target as HTMLTextAreaElement).value; }}"
-              @keydown="${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleModalCreate(maybeState.id, 'close'); }
-              }}"
-            ></textarea>
-            ${this.modalDescription.trim() ? html`
-              <span class="preview-toggle" @click="${() => {
-                const el = this.renderRoot.querySelector('[data-modal-preview]') as HTMLElement;
-                if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-              }}">Preview</span>
-              <div class="preview-box" data-modal-preview style="display:none;">
-                <markdown-viewer .content="${this.modalDescription}"></markdown-viewer>
+      ${this.showTaskModal && maybeState
+        ? html`
+          <div class="modal-overlay" @click="${() => this.closeTaskModal()}">
+            <div class="modal-card" @click="${(e: Event) =>
+              e.stopPropagation()}">
+              <h2>New task in Maybe?</h2>
+              <label for="modal-title">Title</label>
+              <input
+                id="modal-title"
+                type="text"
+                placeholder="Task title..."
+                .value="${this.modalTitle}"
+                @input="${(e: Event) => {
+                  this.modalTitle = (e.target as HTMLInputElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.handleModalCreate(maybeState.id, "close");
+                  }
+                }}"
+              />
+              <label for="modal-desc" style="margin-top:var(--space-md);">Description (markdown)</label>
+              <textarea
+                id="modal-desc"
+                placeholder="Description (optional)..."
+                .value="${this.modalDescription}"
+                @input="${(e: Event) => {
+                  this.modalDescription =
+                    (e.target as HTMLTextAreaElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    this.handleModalCreate(maybeState.id, "close");
+                  }
+                }}"
+              ></textarea>
+              ${this.modalDescription.trim()
+                ? html`
+                  <span class="preview-toggle" @click="${() => {
+                    const el = this.renderRoot.querySelector(
+                      "[data-modal-preview]",
+                    ) as HTMLElement;
+                    if (el) {el.style.display = el.style.display === "none"
+                        ? "block"
+                        : "none";}
+                  }}">Preview</span>
+                  <div class="preview-box" data-modal-preview style="display:none;">
+                    <markdown-viewer .content="${this
+                      .modalDescription}"></markdown-viewer>
+                  </div>
+                `
+                : ""}
+              ${this.modalError
+                ? html`<div class="modal-error">${this.modalError}</div>`
+                : ""}
+              <div class="modal-btn-row">
+                <button class="btn btn-cancel" @click="${() =>
+                  this.closeTaskModal()}">Cancel</button>
+                <button class="btn btn-primary" @click="${() =>
+                  this.handleModalCreate(
+                    maybeState.id,
+                    "close",
+                  )}">Create</button>
+                <button class="btn btn-primary" @click="${() =>
+                  this.handleModalCreate(
+                    maybeState.id,
+                    "another",
+                  )}">Create another one</button>
+                <button class="btn btn-primary" @click="${() =>
+                  this.handleModalCreate(
+                    maybeState.id,
+                    "duplicate",
+                  )}">Create and duplicate</button>
               </div>
-            ` : ''}
-            ${this.modalError ? html`<div class="modal-error">${this.modalError}</div>` : ''}
-            <div class="modal-btn-row">
-              <button class="btn btn-cancel" @click="${() => this.closeTaskModal()}">Cancel</button>
-              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'close')}">Create</button>
-              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'another')}">Create another one</button>
-              <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, 'duplicate')}">Create and duplicate</button>
             </div>
           </div>
-        </div>
-      ` : ''}
+        `
+        : ""}
     `;
   }
 }

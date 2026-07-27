@@ -1,12 +1,15 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { css, html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 
-@customElement('comment-editor')
+@customElement("comment-editor")
 export class CommentEditor extends LitElement {
-  @state() private markdown = '';
+  @state()
+  private markdown = "";
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     textarea {
       width: 100%;
       min-height: 80px;
@@ -44,12 +47,14 @@ export class CommentEditor extends LitElement {
 
   private handleSubmit(): void {
     if (!this.markdown.trim()) return;
-    this.dispatchEvent(new CustomEvent('comment-add', {
-      detail: { markdown: this.markdown.trim() },
-      bubbles: true,
-      composed: true,
-    }));
-    this.markdown = '';
+    this.dispatchEvent(
+      new CustomEvent("comment-add", {
+        detail: { markdown: this.markdown.trim() },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    this.markdown = "";
   }
 
   render() {
@@ -57,7 +62,8 @@ export class CommentEditor extends LitElement {
       <textarea
         placeholder="Add a comment..."
         .value="${this.markdown}"
-        @input="${(e: Event) => this.markdown = (e.target as HTMLTextAreaElement).value}"
+        @input="${(e: Event) =>
+          this.markdown = (e.target as HTMLTextAreaElement).value}"
       ></textarea>
       <button class="btn" @click="${this.handleSubmit}">Add Comment</button>
     `;
