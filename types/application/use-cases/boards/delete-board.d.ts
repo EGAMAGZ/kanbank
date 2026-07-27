@@ -4,15 +4,10 @@ import type { TaskRepository } from "../../../domain/repositories/task.repositor
 import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
 import type { Id } from "../../../shared/types/index.js";
 export declare class DeleteBoardUseCase {
-  private boardRepo;
-  private stateRepo;
-  private taskRepo;
-  private commentRepo;
-  constructor(
-    boardRepo: BoardRepository,
-    stateRepo: StateRepository,
-    taskRepo: TaskRepository,
-    commentRepo: CommentRepository,
-  );
-  execute(id: Id<"Board">): Promise<void>;
+    private boardRepo;
+    private stateRepo;
+    private taskRepo;
+    private commentRepo;
+    constructor(boardRepo: BoardRepository, stateRepo: StateRepository, taskRepo: TaskRepository, commentRepo: CommentRepository);
+    execute(id: Id<"Board">): Promise<void>;
 }

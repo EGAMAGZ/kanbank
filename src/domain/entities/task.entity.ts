@@ -9,6 +9,10 @@ export interface Task extends Timestamped {
   description: string;
   images: ImageRef[];
   lastActivityAt: string;
+  pinned: boolean;
+  dueDate: string | null;
+  notNowSince: string | null;
+  isGold: boolean;
 }
 
 export interface CreateTaskData {
@@ -21,6 +25,10 @@ export interface CreateTaskData {
   lastActivityAt: string;
   createdAt: string;
   updatedAt: string;
+  pinned?: boolean;
+  dueDate?: string | null;
+  notNowSince?: string | null;
+  isGold?: boolean;
 }
 
 export function createTask(data: CreateTaskData): Task {
@@ -32,6 +40,10 @@ export function createTask(data: CreateTaskData): Task {
     description: data.description ?? "",
     images: data.images ?? [],
     lastActivityAt: data.lastActivityAt,
+    pinned: data.pinned ?? false,
+    dueDate: data.dueDate ?? null,
+    notNowSince: data.notNowSince ?? null,
+    isGold: data.isGold ?? false,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };

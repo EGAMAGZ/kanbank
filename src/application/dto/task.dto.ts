@@ -5,6 +5,7 @@ export const CreateTaskSchema = z.object({
   stateId: z.string(),
   title: z.string().min(1).max(500),
   description: z.string().max(50000).optional(),
+  dueDate: z.string().nullable().optional(),
 });
 
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
@@ -13,6 +14,10 @@ export const UpdateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(50000).optional(),
   stateId: z.string().optional(),
+  pinned: z.boolean().optional(),
+  dueDate: z.string().nullable().optional(),
+  notNowSince: z.string().nullable().optional(),
+  isGold: z.boolean().optional(),
 });
 
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;

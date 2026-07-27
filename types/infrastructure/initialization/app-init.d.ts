@@ -4,10 +4,10 @@ import type { TaskRepository } from "../../domain/repositories/task.repository.j
 import type { CommentRepository } from "../../domain/repositories/comment.repository.js";
 import type { ImageRepository } from "../../domain/repositories/image.repository.js";
 export interface AppRepositories {
-  boardRepo: BoardRepository;
-  stateRepo: StateRepository;
-  taskRepo: TaskRepository;
-  commentRepo: CommentRepository;
-  imageRepo: ImageRepository;
+    boardRepo: BoardRepository;
+    stateRepo: StateRepository;
+    taskRepo: TaskRepository;
+    commentRepo: CommentRepository;
+    imageRepo: ImageRepository;
 }
 export declare function initApp(repos: AppRepositories): void;

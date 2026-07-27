@@ -70,6 +70,9 @@ export class TaskDetailPage extends LitElement {
   @state()
   private editingCommentText = "";
 
+  @state()
+  private editDueDate = "";
+
   static styles = css`
     :host {
       display: block;
@@ -352,6 +355,110 @@ export class TaskDetailPage extends LitElement {
       padding: var(--space-md);
       border: 1px solid var(--color-border);
     }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+      flex-wrap: wrap;
+    }
+
+    .meta-row .due-display {
+      font-size: var(--text-sm);
+      color: var(--color-text-2);
+    }
+
+    .meta-row .due-display.overdue {
+      color: var(--color-error);
+      font-weight: 700;
+    }
+
+    .meta-row .due-display.due-soon {
+      color: var(--color-warning);
+      font-weight: 600;
+    }
+
+    .btn-pin,
+    .btn-gold {
+      padding: var(--space-xs) var(--space-md);
+      border: 2px solid var(--color-black);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      background: var(--color-white);
+      font-family: var(--font-body);
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      box-shadow: 3px 3px 0 var(--color-black);
+    }
+
+    .btn-pin:hover,
+    .btn-gold:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--color-black);
+    }
+
+    .btn-pin:active,
+    .btn-gold:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
+    .btn-pin.active {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+
+    .btn-gold.active {
+      background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100);
+      color: #5a3e00;
+    }
+
+    .edit-form .field-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+
+    .edit-form .field-row label {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      min-width: 80px;
+    }
+
+    .edit-form .field-row input[type="date"] {
+      padding: var(--space-xs) var(--space-sm);
+      border: 2px solid var(--color-black);
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      outline: none;
+      transition: box-shadow var(--ease-brutal);
+    }
+
+    .edit-form .field-row input[type="date"]:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
+    }
+
+    .gold-header {
+      border: 2px solid #b8860b;
+      background: linear-gradient(
+        135deg,
+        #f9e547 0%,
+        #f5c518 25%,
+        #e8b100 50%,
+        #f5c518 75%,
+        #f9e547 100%
+      );
+      background-size: 200% 200%;
+      animation: gold-shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes gold-shimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
   `;
 
   async onPageEnter(): Promise<void> {
@@ -385,6 +492,7 @@ export class TaskDetailPage extends LitElement {
     this.editingTask = true;
     this.editTitle = this.task.title;
     this.editDescription = this.task.description;
+    this.editDueDate = this.task.dueDate ?? "";
   }
 
   private cancelEditTask(): void {
@@ -397,6 +505,7 @@ export class TaskDetailPage extends LitElement {
       await updateTask.execute(this.task.id, {
         title: this.editTitle.trim(),
         description: this.editDescription.trim() || undefined,
+        dueDate: this.editDueDate || null,
       });
       this.editingTask = false;
       await this.loadTask();
@@ -426,6 +535,18 @@ export class TaskDetailPage extends LitElement {
     const { imageId } = (e as CustomEvent).detail;
     if (!imageId || !this.task) return;
     await detachImage.execute(this.task.id, imageId);
+    await this.loadTask();
+  }
+
+  private async togglePin(): Promise<void> {
+    if (!this.task) return;
+    await updateTask.execute(this.task.id, { pinned: !this.task.pinned });
+    await this.loadTask();
+  }
+
+  private async toggleGold(): Promise<void> {
+    if (!this.task) return;
+    await updateTask.execute(this.task.id, { isGold: !this.task.isGold });
     await this.loadTask();
   }
 
@@ -518,6 +639,17 @@ export class TaskDetailPage extends LitElement {
               ) => {
                 this.editDescription = (e.target as HTMLTextAreaElement).value;
               }}" placeholder="Description (markdown)..."></textarea>
+              <div class="field-row">
+                <label for="edit-due">Due date</label>
+                <input
+                  id="edit-due"
+                  type="date"
+                  .value="${this.editDueDate}"
+                  @input="${(e: Event) => {
+                    this.editDueDate = (e.target as HTMLInputElement).value;
+                  }}"
+                />
+              </div>
               ${this.editDescription.trim()
                 ? html`
                   <span class="preview-toggle" @click="${() => {
@@ -545,17 +677,50 @@ export class TaskDetailPage extends LitElement {
             </div>
           `
           : html`
-            <div class="anchor-title">
+            <div class="anchor-title ${this.task.isGold ? "gold-header" : ""}">
               <h1>${this.task.title}</h1>
             </div>
             <div class="actions">
               <button class="btn-edit" @click="${this
                 .startEditTask}">Edit</button>
+              <button class="btn-pin ${this.task.pinned ? "active" : ""}"
+                @click="${this.togglePin}">
+                ${this.task.pinned ? "&#128204; Unpin" : "&#128204; Pin"}
+              </button>
+              <button class="btn-gold ${this.task.isGold ? "active" : ""}"
+                @click="${this.toggleGold}">
+                ${this.task.isGold ? "&#11088; Gold" : "&#11088; Gold"}
+              </button>
               <button class="btn-delete" @click="${this
                 .handleDeleteTask}">Delete</button>
             </div>
           `}
       </div>
+
+      ${!this.editingTask
+        ? html`
+          <div class="meta-row">
+            ${this.task.dueDate
+              ? html`
+                ${(() => {
+                  const dueDate = new Date(this.task.dueDate!);
+                  const now = new Date();
+                  const isOverdue = dueDate < now;
+                  const isDueSoon = !isOverdue &&
+                    (dueDate.getTime() - now.getTime()) <
+                      3 * 24 * 60 * 60 * 1000;
+                  return html`
+                    <span class="due-display ${isOverdue ? "overdue" : ""} ${isDueSoon ? "due-soon" : ""}">
+                      Due: ${dueDate.toLocaleDateString()}
+                      ${isOverdue ? " (overdue)" : ""}
+                    </span>
+                  `;
+                })()}
+              `
+              : ""}
+          </div>
+        `
+        : ""}
 
       ${!this.editingTask && this.task.description
         ? html`

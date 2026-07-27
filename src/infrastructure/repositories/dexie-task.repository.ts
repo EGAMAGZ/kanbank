@@ -16,6 +16,10 @@ export class DexieTaskRepository implements TaskRepository {
     return db.tasks.get(id);
   }
 
+  async findPinned(): Promise<Task[]> {
+    return db.tasks.filter((t) => t.pinned === true).toArray();
+  }
+
   async create(task: Task): Promise<Id<"Task">> {
     await db.tasks.add(task);
     return task.id;
@@ -32,6 +36,10 @@ export class DexieTaskRepository implements TaskRepository {
         | "images"
         | "lastActivityAt"
         | "updatedAt"
+        | "pinned"
+        | "dueDate"
+        | "notNowSince"
+        | "isGold"
       >
     >,
   ): Promise<void> {
