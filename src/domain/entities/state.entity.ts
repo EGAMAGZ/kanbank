@@ -1,16 +1,16 @@
-import type { Id, Timestamped, WithOrder } from '../../shared/types/index.js';
+import type { Id, Timestamped, WithOrder } from "../../shared/types/index.js";
 
 export interface State extends Timestamped, WithOrder {
-  id: Id<'State'>;
-  boardId: Id<'Board'>;
+  id: Id<"State">;
+  boardId: Id<"Board">;
   title: string;
   color: string;
   isDefault: boolean;
 }
 
 export interface CreateStateData {
-  id: Id<'State'>;
-  boardId: Id<'Board'>;
+  id: Id<"State">;
+  boardId: Id<"Board">;
   title: string;
   color: string;
   order: number;

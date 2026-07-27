@@ -1,11 +1,14 @@
-import type { CommentRepository } from '../../../domain/repositories/comment.repository.js';
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import type { ImageRepository } from '../../../domain/repositories/image.repository.js';
-import { toISODate } from '../../../shared/types/index.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import { EntityNotFoundError, ImageStorageError } from '../../../domain/errors/domain-errors.js';
-import type { Id } from '../../../shared/types/index.js';
-import type { ImageRef } from '../../../domain/value-objects/image-ref.js';
+import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import type { ImageRepository } from "../../../domain/repositories/image.repository.js";
+import { toISODate } from "../../../shared/types/index.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import {
+  EntityNotFoundError,
+  ImageStorageError,
+} from "../../../domain/errors/domain-errors.js";
+import type { Id } from "../../../shared/types/index.js";
+import type { ImageRef } from "../../../domain/value-objects/image-ref.js";
 
 export class AttachImageCommentUseCase {
   constructor(
@@ -14,10 +17,10 @@ export class AttachImageCommentUseCase {
     private imageRepo: ImageRepository,
   ) {}
 
-  async execute(commentId: Id<'Comment'>, file: File): Promise<ImageRef> {
+  async execute(commentId: Id<"Comment">, file: File): Promise<ImageRef> {
     const comment = await this.commentRepo.findById(commentId);
     if (!comment) {
-      throw new EntityNotFoundError('Comment', commentId);
+      throw new EntityNotFoundError("Comment", commentId);
     }
 
     try {
@@ -46,10 +49,12 @@ export class AttachImageCommentUseCase {
         updatedAt: now,
       });
 
-      eventBus.publish('image.added', { commentId, imageRef });
+      eventBus.publish("image.added", { commentId, imageRef });
       return imageRef;
     } catch (e) {
-      throw new ImageStorageError(`Failed to store image: ${e instanceof Error ? e.message : String(e)}`);
+      throw new ImageStorageError(
+        `Failed to store image: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 }

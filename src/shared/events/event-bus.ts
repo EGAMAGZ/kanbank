@@ -1,5 +1,5 @@
-import { Subject, Subscription } from 'rxjs';
-import type { DomainEventName } from '../types/events.js';
+import { Subject, Subscription } from "rxjs";
+import type { DomainEventName } from "../types/events.js";
 
 export interface DomainEvent<T = unknown> {
   name: DomainEventName;

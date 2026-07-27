@@ -1,44 +1,62 @@
-import type { Id } from '../../shared/types/index.js';
-import type { Task } from '../../domain/entities/task.entity.js';
-import type { TaskRepository } from '../../domain/repositories/task.repository.js';
-import { db } from '../database/dexie-db.js';
+import type { Id } from "../../shared/types/index.js";
+import type { Task } from "../../domain/entities/task.entity.js";
+import type { TaskRepository } from "../../domain/repositories/task.repository.js";
+import { db } from "../database/dexie-db.js";
 
 export class DexieTaskRepository implements TaskRepository {
-  async findByBoard(boardId: Id<'Board'>): Promise<Task[]> {
-    return db.tasks.where('boardId').equals(boardId).toArray();
+  async findByBoard(boardId: Id<"Board">): Promise<Task[]> {
+    return db.tasks.where("boardId").equals(boardId).toArray();
   }
 
-  async findByState(stateId: Id<'State'>): Promise<Task[]> {
-    return db.tasks.where('stateId').equals(stateId).toArray();
+  async findByState(stateId: Id<"State">): Promise<Task[]> {
+    return db.tasks.where("stateId").equals(stateId).toArray();
   }
 
-  async findById(id: Id<'Task'>): Promise<Task | undefined> {
+  async findById(id: Id<"Task">): Promise<Task | undefined> {
     return db.tasks.get(id);
   }
 
-  async create(task: Task): Promise<Id<'Task'>> {
+  async create(task: Task): Promise<Id<"Task">> {
     await db.tasks.add(task);
     return task.id;
   }
 
-  async update(id: Id<'Task'>, changes: Partial<Pick<Task, 'title' | 'description' | 'stateId' | 'images' | 'lastActivityAt' | 'updatedAt'>>): Promise<void> {
+  async update(
+    id: Id<"Task">,
+    changes: Partial<
+      Pick<
+        Task,
+        | "title"
+        | "description"
+        | "stateId"
+        | "images"
+        | "lastActivityAt"
+        | "updatedAt"
+      >
+    >,
+  ): Promise<void> {
     await db.tasks.update(id, changes);
   }
 
-  async delete(id: Id<'Task'>): Promise<void> {
+  async delete(id: Id<"Task">): Promise<void> {
     await db.tasks.delete(id);
   }
 
-  async move(id: Id<'Task'>, newStateId: Id<'State'>, _order: number): Promise<void> {
+  async move(
+    id: Id<"Task">,
+    newStateId: Id<"State">,
+    _order: number,
+  ): Promise<void> {
     await db.tasks.update(id, { stateId: newStateId });
   }
 
-  async search(boardId: Id<'Board'>, query: string): Promise<Task[]> {
+  async search(boardId: Id<"Board">, query: string): Promise<Task[]> {
     const lowerQuery = query.toLowerCase();
-    const tasks = await db.tasks.where('boardId').equals(boardId).toArray();
+    const tasks = await db.tasks.where("boardId").equals(boardId).toArray();
     return tasks.filter(
-      t => t.title.toLowerCase().includes(lowerQuery) ||
-           t.description.toLowerCase().includes(lowerQuery),
+      (t) =>
+        t.title.toLowerCase().includes(lowerQuery) ||
+        t.description.toLowerCase().includes(lowerQuery),
     );
   }
 }

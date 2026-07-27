@@ -1,10 +1,10 @@
-import type { Id, Timestamped } from '../../shared/types/index.js';
-import type { ImageRef } from '../value-objects/image-ref.js';
+import type { Id, Timestamped } from "../../shared/types/index.js";
+import type { ImageRef } from "../value-objects/image-ref.js";
 
 export interface Task extends Timestamped {
-  id: Id<'Task'>;
-  boardId: Id<'Board'>;
-  stateId: Id<'State'>;
+  id: Id<"Task">;
+  boardId: Id<"Board">;
+  stateId: Id<"State">;
   title: string;
   description: string;
   images: ImageRef[];
@@ -12,9 +12,9 @@ export interface Task extends Timestamped {
 }
 
 export interface CreateTaskData {
-  id: Id<'Task'>;
-  boardId: Id<'Board'>;
-  stateId: Id<'State'>;
+  id: Id<"Task">;
+  boardId: Id<"Board">;
+  stateId: Id<"State">;
   title: string;
   description?: string;
   images?: ImageRef[];
@@ -29,7 +29,7 @@ export function createTask(data: CreateTaskData): Task {
     boardId: data.boardId,
     stateId: data.stateId,
     title: data.title,
-    description: data.description ?? '',
+    description: data.description ?? "",
     images: data.images ?? [],
     lastActivityAt: data.lastActivityAt,
     createdAt: data.createdAt,

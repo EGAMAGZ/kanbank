@@ -1,9 +1,12 @@
-import type { StateRepository } from '../../../domain/repositories/state.repository.js';
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import { EntityNotFoundError, InvalidStateTransitionError } from '../../../domain/errors/domain-errors.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import { toISODate } from '../../../shared/types/index.js';
-import type { Id } from '../../../shared/types/index.js';
+import type { StateRepository } from "../../../domain/repositories/state.repository.js";
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import {
+  EntityNotFoundError,
+  InvalidStateTransitionError,
+} from "../../../domain/errors/domain-errors.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import { toISODate } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/index.js";
 
 export class DeleteStateUseCase {
   constructor(
@@ -11,20 +14,24 @@ export class DeleteStateUseCase {
     private taskRepo: TaskRepository,
   ) {}
 
-  async execute(id: Id<'State'>): Promise<void> {
+  async execute(id: Id<"State">): Promise<void> {
     const state = await this.stateRepo.findById(id);
     if (!state) {
-      throw new EntityNotFoundError('State', id);
+      throw new EntityNotFoundError("State", id);
     }
 
     if (state.isDefault) {
-      throw new InvalidStateTransitionError('Cannot delete a mandatory state');
+      throw new InvalidStateTransitionError("Cannot delete a mandatory state");
     }
 
     const states = await this.stateRepo.findByBoard(state.boardId);
-    const defaultState = states.find(s => s.isDefault && s.title === 'Maybe?');
+    const defaultState = states.find((s) =>
+      s.isDefault && s.title === "Maybe?"
+    );
     if (!defaultState) {
-      throw new InvalidStateTransitionError('No default state found to move tasks to');
+      throw new InvalidStateTransitionError(
+        "No default state found to move tasks to",
+      );
     }
 
     const tasks = await this.taskRepo.findByState(id);
@@ -38,6 +45,6 @@ export class DeleteStateUseCase {
     }
 
     await this.stateRepo.delete(id);
-    eventBus.publish('state.deleted', { id, boardId: state.boardId });
+    eventBus.publish("state.deleted", { id, boardId: state.boardId });
   }
 }

@@ -1,14 +1,18 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import type { State } from '../../domain/entities/state.entity.js';
-import type { Task } from '../../domain/entities/task.entity.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import type { State } from "../../domain/entities/state.entity.js";
+import type { Task } from "../../domain/entities/task.entity.js";
 
-@customElement('kanban-column')
+@customElement("kanban-column")
 export class KanbanColumn extends LitElement {
-  @property({ type: Object }) state!: State;
-  @property({ type: Array }) tasks: Task[] = [];
-  @property({ type: Number }) taskCount = 0;
-  @property({ type: Boolean }) dragOver = false;
+  @property({ type: Object })
+  state!: State;
+  @property({ type: Array })
+  tasks: Task[] = [];
+  @property({ type: Number })
+  taskCount = 0;
+  @property({ type: Boolean })
+  dragOver = false;
 
   static styles = css`
     :host {

@@ -1,11 +1,12 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import type { Task } from '../../domain/entities/task.entity.js';
-import { inactiveDays } from '../../shared/utils/dates.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import type { Task } from "../../domain/entities/task.entity.js";
+import { inactiveDays } from "../../shared/utils/dates.js";
 
-@customElement('task-card')
+@customElement("task-card")
 export class TaskCard extends LitElement {
-  @property({ type: Object }) task!: Task;
+  @property({ type: Object })
+  task!: Task;
 
   static styles = css`
     :host {
@@ -48,7 +49,11 @@ export class TaskCard extends LitElement {
     const days = inactiveDays(this.task.lastActivityAt);
     return html`
       <div class="title">${this.task.title}</div>
-      ${days > 0 ? html`<div class="inactive ${days > 7 ? 'stale' : ''}">${days}d inactive</div>` : ''}
+      ${days > 0
+        ? html`<div class="inactive ${
+          days > 7 ? "stale" : ""
+        }">${days}d inactive</div>`
+        : ""}
     `;
   }
 }

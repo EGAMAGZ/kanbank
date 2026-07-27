@@ -1,12 +1,15 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { css, html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 
-@customElement('image-upload')
+@customElement("image-upload")
 export class ImageUpload extends LitElement {
-  @state() private previewUrls: string[] = [];
+  @state()
+  private previewUrls: string[] = [];
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     .trigger {
       display: inline-flex;
       align-items: center;
@@ -17,8 +20,13 @@ export class ImageUpload extends LitElement {
       font-weight: 500;
       margin-top: var(--space-sm);
     }
-    .trigger:hover { text-decoration: underline; text-underline-offset: 3px; }
-    input[type="file"] { display: none; }
+    .trigger:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    input[type="file"] {
+      display: none;
+    }
     .previews {
       display: flex;
       flex-wrap: wrap;
@@ -51,23 +59,27 @@ export class ImageUpload extends LitElement {
     const files = Array.from(input.files ?? []);
     if (!files.length) return;
 
-    const urls = files.map(f => URL.createObjectURL(f));
+    const urls = files.map((f) => URL.createObjectURL(f));
     this.previewUrls = [...this.previewUrls, ...urls];
 
-    this.dispatchEvent(new CustomEvent('image-selected', {
-      detail: { files },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent("image-selected", {
+        detail: { files },
+        bubbles: true,
+        composed: true,
+      }),
+    );
 
-    input.value = '';
+    input.value = "";
   }
 
   clear(): void {
     this.revokeAll();
     this.previewUrls = [];
-    const input = this.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement | null;
-    if (input) input.value = '';
+    const input = this.shadowRoot?.querySelector('input[type="file"]') as
+      | HTMLInputElement
+      | null;
+    if (input) input.value = "";
   }
 
   private revokeAll(): void {
@@ -78,22 +90,29 @@ export class ImageUpload extends LitElement {
 
   render() {
     return html`
-      ${this.previewUrls.length ? html`
-        <div class="previews">
-          ${this.previewUrls.map((url, i) => html`
-            <div class="preview-item">
-              <img src="${url}" alt="Preview" />
-              <span class="remove" @click="${() => {
-                URL.revokeObjectURL(this.previewUrls[i]);
-                this.previewUrls = this.previewUrls.filter((_, idx) => idx !== i);
-              }}">&times;</span>
-            </div>
-          `)}
-        </div>
-      ` : ''}
+      ${this.previewUrls.length
+        ? html`
+          <div class="previews">
+            ${this.previewUrls.map((url, i) =>
+              html`
+                <div class="preview-item">
+                  <img src="${url}" alt="Preview" />
+                  <span class="remove" @click="${() => {
+                    URL.revokeObjectURL(this.previewUrls[i]);
+                    this.previewUrls = this.previewUrls.filter((_, idx) =>
+                      idx !== i
+                    );
+                  }}">&times;</span>
+                </div>
+              `
+            )}
+          </div>
+        `
+        : ""}
       <label class="trigger">
-        Attach image${this.previewUrls.length ? 's' : ''}
-        <input type="file" accept="image/*" multiple @change="${this.onFileChange}" />
+        Attach image${this.previewUrls.length ? "s" : ""}
+        <input type="file" accept="image/*" multiple @change="${this
+          .onFileChange}" />
       </label>
     `;
   }

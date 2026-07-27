@@ -1,10 +1,16 @@
-import type { CommentRepository } from '../../../domain/repositories/comment.repository.js';
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import { createComment } from '../../../domain/entities/comment.entity.js';
-import { generateId, toISODate } from '../../../shared/types/index.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import { AddCommentSchema, type AddCommentInput } from '../../dto/comment.dto.js';
-import { EntityNotFoundError, ValidationError } from '../../../domain/errors/domain-errors.js';
+import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import { createComment } from "../../../domain/entities/comment.entity.js";
+import { generateId, toISODate } from "../../../shared/types/index.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import {
+  type AddCommentInput,
+  AddCommentSchema,
+} from "../../dto/comment.dto.js";
+import {
+  EntityNotFoundError,
+  ValidationError,
+} from "../../../domain/errors/domain-errors.js";
 
 export class AddCommentUseCase {
   constructor(
@@ -15,16 +21,18 @@ export class AddCommentUseCase {
   async execute(input: AddCommentInput): Promise<string> {
     const parsed = AddCommentSchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(parsed.error.issues.map(i => i.message).join(', '));
+      throw new ValidationError(
+        parsed.error.issues.map((i) => i.message).join(", "),
+      );
     }
 
     const task = await this.taskRepo.findById(parsed.data.taskId as any);
     if (!task) {
-      throw new EntityNotFoundError('Task', parsed.data.taskId);
+      throw new EntityNotFoundError("Task", parsed.data.taskId);
     }
 
     const now = toISODate();
-    const commentId = generateId<'Comment'>();
+    const commentId = generateId<"Comment">();
 
     const comment = createComment({
       id: commentId,
@@ -41,7 +49,7 @@ export class AddCommentUseCase {
       updatedAt: now,
     });
 
-    eventBus.publish('comment.created', comment);
+    eventBus.publish("comment.created", comment);
     return commentId;
   }
 }

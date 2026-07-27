@@ -1,9 +1,12 @@
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import type { ImageRepository } from '../../../domain/repositories/image.repository.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import { EntityNotFoundError, ImageStorageError } from '../../../domain/errors/domain-errors.js';
-import type { Id } from '../../../shared/types/index.js';
-import type { ImageRef } from '../../../domain/value-objects/image-ref.js';
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import type { ImageRepository } from "../../../domain/repositories/image.repository.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import {
+  EntityNotFoundError,
+  ImageStorageError,
+} from "../../../domain/errors/domain-errors.js";
+import type { Id } from "../../../shared/types/index.js";
+import type { ImageRef } from "../../../domain/value-objects/image-ref.js";
 
 export class AttachImageUseCase {
   constructor(
@@ -11,10 +14,10 @@ export class AttachImageUseCase {
     private imageRepo: ImageRepository,
   ) {}
 
-  async execute(taskId: Id<'Task'>, file: File): Promise<ImageRef> {
+  async execute(taskId: Id<"Task">, file: File): Promise<ImageRef> {
     const task = await this.taskRepo.findById(taskId);
     if (!task) {
-      throw new EntityNotFoundError('Task', taskId);
+      throw new EntityNotFoundError("Task", taskId);
     }
 
     try {
@@ -36,10 +39,12 @@ export class AttachImageUseCase {
         images: [...task.images, imageRef],
       });
 
-      eventBus.publish('image.added', { taskId, imageRef });
+      eventBus.publish("image.added", { taskId, imageRef });
       return imageRef;
     } catch (e) {
-      throw new ImageStorageError(`Failed to store image: ${e instanceof Error ? e.message : String(e)}`);
+      throw new ImageStorageError(
+        `Failed to store image: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 }

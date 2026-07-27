@@ -1,16 +1,16 @@
-import type { Id, Timestamped } from '../../shared/types/index.js';
-import type { ImageRef } from '../value-objects/image-ref.js';
+import type { Id, Timestamped } from "../../shared/types/index.js";
+import type { ImageRef } from "../value-objects/image-ref.js";
 
 export interface Comment extends Timestamped {
-  id: Id<'Comment'>;
-  taskId: Id<'Task'>;
+  id: Id<"Comment">;
+  taskId: Id<"Task">;
   markdown: string;
   images: ImageRef[];
 }
 
 export interface CreateCommentData {
-  id: Id<'Comment'>;
-  taskId: Id<'Task'>;
+  id: Id<"Comment">;
+  taskId: Id<"Task">;
   markdown: string;
   images?: ImageRef[];
   createdAt: string;

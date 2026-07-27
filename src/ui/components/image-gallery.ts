@@ -1,19 +1,25 @@
-import { html, LitElement, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import type { ImageRef } from '../../domain/value-objects/image-ref.js';
-import { DexieImageRepository } from '../../infrastructure/storage/image-storage.service.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import type { ImageRef } from "../../domain/value-objects/image-ref.js";
+import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
 
 const imageRepo = new DexieImageRepository();
 
-@customElement('image-gallery')
+@customElement("image-gallery")
 export class ImageGallery extends LitElement {
-  @property({ type: Array }) images: ImageRef[] = [];
-  @property({ type: Boolean }) deletable = false;
-  @state() private urls: Map<string, string> = new Map();
-  @state() private previewUrl: string | null = null;
+  @property({ type: Array })
+  images: ImageRef[] = [];
+  @property({ type: Boolean })
+  deletable = false;
+  @state()
+  private urls: Map<string, string> = new Map();
+  @state()
+  private previewUrl: string | null = null;
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     .grid {
       display: flex;
       flex-wrap: wrap;
@@ -81,7 +87,7 @@ export class ImageGallery extends LitElement {
   `;
 
   async updated(changed: Map<string, unknown>): Promise<void> {
-    if (changed.has('images')) {
+    if (changed.has("images")) {
       await this.loadImages();
     }
   }
@@ -120,12 +126,14 @@ export class ImageGallery extends LitElement {
 
   private handleRemove(e: Event, img: ImageRef): void {
     e.stopPropagation();
-    if (confirm('Remove this image?')) {
-      this.dispatchEvent(new CustomEvent('image-removed', {
-        detail: { imageId: img.id },
-        bubbles: true,
-        composed: true,
-      }));
+    if (confirm("Remove this image?")) {
+      this.dispatchEvent(
+        new CustomEvent("image-removed", {
+          detail: { imageId: img.id },
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
   }
 
@@ -133,21 +141,29 @@ export class ImageGallery extends LitElement {
     if (!this.images.length) return html``;
     return html`
       <div class="grid">
-        ${this.images.map(img => {
+        ${this.images.map((img) => {
           const url = this.urls.get(img.id);
-          return url ? html`
-            <div class="thumb-wrap" @click="${() => this.openPreview(url)}">
-              <img src="${url}" alt="${img.filename}" />
-              ${this.deletable ? html`<button class="remove" @click="${(e: Event) => this.handleRemove(e, img)}">&times;</button>` : ''}
-            </div>
-          ` : html``;
+          return url
+            ? html`
+              <div class="thumb-wrap" @click="${() => this.openPreview(url)}">
+                <img src="${url}" alt="${img.filename}" />
+                ${this.deletable
+                  ? html`<button class="remove" @click="${(e: Event) =>
+                    this.handleRemove(e, img)}">&times;</button>`
+                  : ""}
+              </div>
+            `
+            : html``;
         })}
       </div>
-      ${this.previewUrl ? html`
-        <div class="preview-overlay" @click="${this.closePreview}">
-          <img src="${this.previewUrl}" @click="${(e: Event) => e.stopPropagation()}" />
-        </div>
-      ` : ''}
+      ${this.previewUrl
+        ? html`
+          <div class="preview-overlay" @click="${this.closePreview}">
+            <img src="${this.previewUrl}" @click="${(e: Event) =>
+              e.stopPropagation()}" />
+          </div>
+        `
+        : ""}
     `;
   }
 }

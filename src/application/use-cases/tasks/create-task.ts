@@ -1,9 +1,9 @@
-import type { TaskRepository } from '../../../domain/repositories/task.repository.js';
-import { createTask } from '../../../domain/entities/task.entity.js';
-import { generateId, toISODate } from '../../../shared/types/index.js';
-import { eventBus } from '../../../shared/events/event-bus.js';
-import { CreateTaskSchema, type CreateTaskInput } from '../../dto/task.dto.js';
-import { ValidationError } from '../../../domain/errors/domain-errors.js';
+import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import { createTask } from "../../../domain/entities/task.entity.js";
+import { generateId, toISODate } from "../../../shared/types/index.js";
+import { eventBus } from "../../../shared/events/event-bus.js";
+import { type CreateTaskInput, CreateTaskSchema } from "../../dto/task.dto.js";
+import { ValidationError } from "../../../domain/errors/domain-errors.js";
 
 export class CreateTaskUseCase {
   constructor(private taskRepo: TaskRepository) {}
@@ -11,11 +11,13 @@ export class CreateTaskUseCase {
   async execute(input: CreateTaskInput): Promise<string> {
     const parsed = CreateTaskSchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(parsed.error.issues.map(i => i.message).join(', '));
+      throw new ValidationError(
+        parsed.error.issues.map((i) => i.message).join(", "),
+      );
     }
 
     const now = toISODate();
-    const taskId = generateId<'Task'>();
+    const taskId = generateId<"Task">();
 
     const task = createTask({
       id: taskId,
@@ -29,7 +31,7 @@ export class CreateTaskUseCase {
     });
 
     await this.taskRepo.create(task);
-    eventBus.publish('task.created', task);
+    eventBus.publish("task.created", task);
     return taskId;
   }
 }
