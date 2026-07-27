@@ -10,6 +10,7 @@ import { MoveTaskUseCase } from "../../application/use-cases/tasks/move-task.js"
 import { CreateStateUseCase } from "../../application/use-cases/states/create-state.js";
 import { UpdateStateUseCase } from "../../application/use-cases/states/update-state.js";
 import { DeleteStateUseCase } from "../../application/use-cases/states/delete-state.js";
+import { ReorderStatesUseCase } from "../../application/use-cases/states/reorder-states.js";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
@@ -27,6 +28,7 @@ const moveTask = new MoveTaskUseCase(taskRepo);
 const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
 const deleteState = new DeleteStateUseCase(stateRepo, taskRepo);
+const reorderStates = new ReorderStatesUseCase(stateRepo);
 
 @customElement("board-detail-page")
 export class BoardDetailPage extends LitElement {
@@ -708,14 +710,30 @@ export class BoardDetailPage extends LitElement {
     if (!this.newColumnTitle.trim() || !this.detail) return;
     try {
       const sorted = this.getSortedStates();
-      const doneState = sorted[sorted.length - 1];
-      const order = doneState ? sorted.length - 1 : sorted.length;
-      await createState.execute({
+      const mandatory = this.getMandatoryOrder();
+      const doneState = sorted.find((s) => s.id === mandatory.last);
+      
+      // Place new state before "Done"
+      const order = doneState ? doneState.order : sorted.length;
+      
+      const newStateId = await createState.execute({
         boardId: this.detail.board.id,
         title: this.newColumnTitle.trim(),
         color: this.newColumnColor,
         order,
       });
+
+      // Reorder: insert new state and push Done (+ states after it) forward
+      const newStateIds = sorted.map((s) => s.id);
+      const doneIndex = newStateIds.indexOf(mandatory.last);
+      // Insert new state before Done
+      newStateIds.splice(doneIndex, 0, newStateId as Id<"State">);
+      // Rebuild with correct order indices
+      await reorderStates.execute({
+        boardId: this.detail.board.id,
+        stateIds: newStateIds,
+      });
+
       this.newColumnTitle = "";
       this.newColumnColor = "#2563EB";
       this.showColumnForm = false;
@@ -762,6 +780,67 @@ export class BoardDetailPage extends LitElement {
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to delete state";
+    }
+  }
+
+  private canMoveState(state: State): { left: boolean; right: boolean } {
+    if (!this.detail) return { left: false, right: false };
+    const mandatory = this.getMandatoryOrder();
+    const isMandatory = state.id === mandatory.first ||
+      state.id === mandatory.maybe || state.id === mandatory.last;
+    if (isMandatory) return { left: false, right: false };
+
+    const sorted = this.getSortedStates();
+    const idx = sorted.findIndex((s) => s.id === state.id);
+    const maybeIdx = sorted.findIndex((s) => s.id === mandatory.maybe);
+    const doneIdx = sorted.findIndex((s) => s.id === mandatory.last);
+
+    // Can move left if not immediately after Maybe
+    const left = idx > maybeIdx + 1;
+    // Can move right if not immediately before Done
+    const right = idx < doneIdx - 1;
+    return { left, right };
+  }
+
+  private async moveStateLeft(state: State): Promise<void> {
+    if (!this.detail) return;
+    const sorted = this.getSortedStates();
+    const idx = sorted.findIndex((s) => s.id === state.id);
+    if (idx <= 0) return;
+
+    // Swap with previous state
+    const stateIds = sorted.map((s) => s.id);
+    [stateIds[idx - 1], stateIds[idx]] = [stateIds[idx], stateIds[idx - 1]];
+
+    try {
+      await reorderStates.execute({
+        boardId: this.detail.board.id,
+        stateIds,
+      });
+      await this.loadBoard();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to reorder states";
+    }
+  }
+
+  private async moveStateRight(state: State): Promise<void> {
+    if (!this.detail) return;
+    const sorted = this.getSortedStates();
+    const idx = sorted.findIndex((s) => s.id === state.id);
+    if (idx < 0 || idx >= sorted.length - 1) return;
+
+    // Swap with next state
+    const stateIds = sorted.map((s) => s.id);
+    [stateIds[idx], stateIds[idx + 1]] = [stateIds[idx + 1], stateIds[idx]];
+
+    try {
+      await reorderStates.execute({
+        boardId: this.detail.board.id,
+        stateIds,
+      });
+      await this.loadBoard();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to reorder states";
     }
   }
 
@@ -902,6 +981,15 @@ export class BoardDetailPage extends LitElement {
               0}</span>
             ${!isMandatory
               ? html`
+                ${(() => {
+                  const { left, right } = this.canMoveState(state);
+                  return html`
+                    <button ?disabled="${!left}" @click="${() =>
+                      this.moveStateLeft(state)}" title="Move left">&#9664;</button>
+                    <button ?disabled="${!right}" @click="${() =>
+                      this.moveStateRight(state)}" title="Move right">&#9654;</button>
+                  `;
+                })()}
                 <button @click="${() =>
                   this.startEditState(state)}" title="Edit">&#9998;</button>
                 <button @click="${() =>
