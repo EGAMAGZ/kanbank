@@ -70,12 +70,15 @@ db.version(5).stores({
 });
 
 db.version(6).stores({
-  tasks: "++id, seq, boardId, stateId, lastActivityAt, pinned, [boardId+stateId]",
+  tasks:
+    "++id, seq, boardId, stateId, lastActivityAt, pinned, [boardId+stateId]",
   steps: "++id, taskId",
   timeline: "++id, taskId",
 }).upgrade(async (tx) => {
   const tasks = await tx.table("tasks").toArray();
-  tasks.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  tasks.sort((a, b) =>
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
   let seq = 0;
   for (const t of tasks) {
     seq++;

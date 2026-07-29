@@ -6,15 +6,19 @@ import type { Board } from "../../../domain/entities/board.entity.js";
 import type { State } from "../../../domain/entities/state.entity.js";
 import type { Task } from "../../../domain/entities/task.entity.js";
 export interface BoardDetail {
-    board: Board;
-    states: State[];
-    tasks: Task[];
-    taskCounts: Record<string, number>;
+  board: Board;
+  states: State[];
+  tasks: Task[];
+  taskCounts: Record<string, number>;
 }
 export declare class GetBoardUseCase {
-    private boardRepo;
-    private stateRepo;
-    private taskRepo;
-    constructor(boardRepo: BoardRepository, stateRepo: StateRepository, taskRepo: TaskRepository);
-    execute(id: Id<"Board">): Promise<BoardDetail>;
+  private boardRepo;
+  private stateRepo;
+  private taskRepo;
+  constructor(
+    boardRepo: BoardRepository,
+    stateRepo: StateRepository,
+    taskRepo: TaskRepository,
+  );
+  execute(id: Id<"Board">): Promise<BoardDetail>;
 }

@@ -2,7 +2,17 @@ import { z } from "zod";
 
 export const CreateTimelineEntrySchema = z.object({
   taskId: z.string(),
-  type: z.enum(["created", "moved", "updated", "commented", "completed", "auto-closed", "gold-toggled", "pinned", "subscribed"]),
+  type: z.enum([
+    "created",
+    "moved",
+    "updated",
+    "commented",
+    "completed",
+    "auto-closed",
+    "gold-toggled",
+    "pinned",
+    "subscribed",
+  ]),
   fromStateId: z.string().optional(),
   toStateId: z.string().optional(),
   userId: z.string(),
@@ -10,4 +20,6 @@ export const CreateTimelineEntrySchema = z.object({
   message: z.string(),
 });
 
-export type CreateTimelineEntryInput = z.infer<typeof CreateTimelineEntrySchema>;
+export type CreateTimelineEntryInput = z.infer<
+  typeof CreateTimelineEntrySchema
+>;

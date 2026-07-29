@@ -5,7 +5,9 @@ import { db } from "../database/dexie-db.js";
 
 export class DexieTimelineRepository implements TimelineRepository {
   async findByTask(taskId: Id<"Task">): Promise<TimelineEntry[]> {
-    return db.timeline.where("taskId").equals(taskId).reverse().sortBy("timestamp");
+    return db.timeline.where("taskId").equals(taskId).reverse().sortBy(
+      "timestamp",
+    );
   }
 
   async create(entry: TimelineEntry): Promise<Id<"TimelineEntry">> {

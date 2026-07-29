@@ -1,6 +1,9 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { activityStore, type ActivityEvent } from "../services/activity-store.js";
+import {
+  type ActivityEvent,
+  activityStore,
+} from "../services/activity-store.js";
 
 function groupByDate(events: ActivityEvent[]): Map<string, ActivityEvent[]> {
   const groups = new Map<string, ActivityEvent[]>();
@@ -16,7 +19,11 @@ function groupByDate(events: ActivityEvent[]): Map<string, ActivityEvent[]> {
     } else if (d.toDateString() === yesterday.toDateString()) {
       key = "Yesterday";
     } else {
-      key = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      key = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
     }
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(ev);
@@ -132,11 +139,26 @@ export class ActivityFeed extends LitElement {
       margin-top: 1px;
     }
 
-    .event-icon.created { background: var(--color-success); color: var(--color-white); }
-    .event-icon.moved { background: var(--color-accent); color: var(--color-white); }
-    .event-icon.updated { background: var(--color-warning); color: var(--color-white); }
-    .event-icon.commented { background: var(--color-accent-2); color: var(--color-white); }
-    .event-icon.completed { background: var(--color-error); color: var(--color-white); }
+    .event-icon.created {
+      background: var(--color-success);
+      color: var(--color-white);
+    }
+    .event-icon.moved {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+    .event-icon.updated {
+      background: var(--color-warning);
+      color: var(--color-white);
+    }
+    .event-icon.commented {
+      background: var(--color-accent-2);
+      color: var(--color-white);
+    }
+    .event-icon.completed {
+      background: var(--color-error);
+      color: var(--color-white);
+    }
 
     .event-body {
       flex: 1;
@@ -217,24 +239,31 @@ export class ActivityFeed extends LitElement {
         <span class="feed-badge">${this.events.length}</span>
       </div>
       <div class="feed-body">
-        ${[...groups.entries()].map(([dateLabel, evs]) => html`
-          <div class="day-group">
-            <div class="day-label">${dateLabel}</div>
-            ${evs.map((ev) => {
-              const { label, detail } = this._formatEvent(ev);
-              return html`
-                <div class="event">
-                  <span class="event-icon ${ev.type}">${TYPE_ICON[ev.type] || "•"}</span>
-                  <div class="event-body">
-                    <div class="event-label" title="${label}">${label}</div>
-                    <div class="event-detail">${detail}</div>
+        ${[...groups.entries()].map(([dateLabel, evs]) =>
+          html`
+            <div class="day-group">
+              <div class="day-label">${dateLabel}</div>
+              ${evs.map((ev) => {
+                const { label, detail } = this._formatEvent(ev);
+                return html`
+                  <div class="event">
+                    <span class="event-icon ${ev.type}">${TYPE_ICON[ev.type] ||
+                      "•"}</span>
+                    <div class="event-body">
+                      <div class="event-label" title="${label}">${label}</div>
+                      <div class="event-detail">${detail}</div>
+                    </div>
+                    <span class="event-time">${new Date(ev.timestamp)
+                      .toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}</span>
                   </div>
-                  <span class="event-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              `;
-            })}
-          </div>
-        `)}
+                `;
+              })}
+            </div>
+          `
+        )}
       </div>
     `;
   }

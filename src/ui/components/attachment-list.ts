@@ -192,13 +192,25 @@ export class AttachmentList extends LitElement {
   }
 
   private _handleDelete(img: ImageRef): void {
-    this.dispatchEvent(new CustomEvent("attachment-remove", { detail: { imageId: img.id }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("attachment-remove", {
+        detail: { imageId: img.id },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private _handleFileSelect(e: Event): void {
     const files = (e.target as HTMLInputElement).files;
     if (!files?.length) return;
-    this.dispatchEvent(new CustomEvent("attachment-add", { detail: { files: Array.from(files) }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("attachment-add", {
+        detail: { files: Array.from(files) },
+        bubbles: true,
+        composed: true,
+      }),
+    );
     (e.target as HTMLInputElement).value = "";
   }
 
@@ -208,23 +220,32 @@ export class AttachmentList extends LitElement {
         ${this.images.length === 0
           ? html`<div class="no-attachments">No attachments</div>`
           : this.images.map((img) => {
-              const url = this.blobs.get(img.id);
-              return html`
-                <div class="polaroid-wrap">
-                  <div class="polaroid">
-                    ${url
-                      ? html`<img class="polaroid-img" src="${url}" alt="${img.filename}" />`
-                      : html`<div class="polaroid-img" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">loading...</div>`}
-                    <div class="polaroid-caption">
-                      <div class="polaroid-name">${img.filename}</div>
-                      <div class="polaroid-size">${this._formatSize(img.size)}</div>
-                      <span class="polaroid-download" @click="${() => this._handleDownload(img)}">Download</span>
-                    </div>
+            const url = this.blobs.get(img.id);
+            return html`
+              <div class="polaroid-wrap">
+                <div class="polaroid">
+                  ${url
+                    ? html`<img class="polaroid-img" src="${url}" alt="${img.filename}" />`
+                    : html`
+                      <div class="polaroid-img"
+                        style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">loading...</div>
+                    `}
+                  <div class="polaroid-caption">
+                    <div class="polaroid-name">${img.filename}</div>
+                    <div class="polaroid-size">${this._formatSize(
+                      img.size,
+                    )}</div>
+                    <span class="polaroid-download" @click="${() =>
+                      this._handleDownload(img)}">Download</span>
                   </div>
-                  ${this.deletable ? html`<button class="polaroid-delete" @click="${() => this._handleDelete(img)}">✕</button>` : ""}
                 </div>
-              `;
-            })}
+                ${this.deletable
+                  ? html`<button class="polaroid-delete" @click="${() =>
+                    this._handleDelete(img)}">✕</button>`
+                  : ""}
+              </div>
+            `;
+          })}
       </div>
       <div class="file-input">
         <label class="file-input-label">

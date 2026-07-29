@@ -1,6 +1,7 @@
 @import './tokens.css';
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   font-family: var(--font-body);
@@ -11,11 +12,18 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -34,7 +42,9 @@ button {
   cursor: pointer;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: var(--font-body);
 }
 

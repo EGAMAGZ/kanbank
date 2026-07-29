@@ -11,7 +11,10 @@ import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
 import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
 import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
-import { activityStore, type ActivityEvent } from "../services/activity-store.js";
+import {
+  type ActivityEvent,
+  activityStore,
+} from "../services/activity-store.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 
 const boardRepo = new DexieBoardRepository();
@@ -23,7 +26,15 @@ const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
 const createBoard = new CreateBoardUseCase(boardRepo, stateRepo);
-const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
+const deleteBoard = new DeleteBoardUseCase(
+  boardRepo,
+  stateRepo,
+  taskRepo,
+  commentRepo,
+  imageRepo,
+  stepRepo,
+  timelineRepo,
+);
 
 const BENTO_COLORS = ["#1E40AF", "#D97706", "#059669", "#7C3AED", "#DC2626"];
 
@@ -117,9 +128,15 @@ export class BoardListPage extends LitElement {
       border-bottom: 4px solid var(--color-black);
     }
 
-    .activity-col-header.added { background: var(--color-accent); }
-    .activity-col-header.updated { background: var(--color-warning); }
-    .activity-col-header.done { background: var(--color-success); }
+    .activity-col-header.added {
+      background: var(--color-accent);
+    }
+    .activity-col-header.updated {
+      background: var(--color-warning);
+    }
+    .activity-col-header.done {
+      background: var(--color-success);
+    }
 
     .activity-col-body {
       flex: 1;
@@ -157,11 +174,26 @@ export class BoardListPage extends LitElement {
       flex-shrink: 0;
     }
 
-    .activity-icon.created { background: var(--color-accent); color: var(--color-white); }
-    .activity-icon.moved { background: var(--color-accent); color: var(--color-white); }
-    .activity-icon.updated { background: var(--color-warning); color: var(--color-white); }
-    .activity-icon.commented { background: var(--color-accent-2); color: var(--color-white); }
-    .activity-icon.completed { background: var(--color-success); color: var(--color-white); }
+    .activity-icon.created {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+    .activity-icon.moved {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+    .activity-icon.updated {
+      background: var(--color-warning);
+      color: var(--color-white);
+    }
+    .activity-icon.commented {
+      background: var(--color-accent-2);
+      color: var(--color-white);
+    }
+    .activity-icon.completed {
+      background: var(--color-success);
+      color: var(--color-white);
+    }
 
     .activity-info {
       flex: 1;
@@ -258,7 +290,8 @@ export class BoardListPage extends LitElement {
       color: var(--color-text-2);
       cursor: pointer;
       min-height: 200px;
-      transition: color var(--ease-brutal), border-color var(--ease-brutal), background var(--ease-brutal);
+      transition: color var(--ease-brutal), border-color var(--ease-brutal),
+        background var(--ease-brutal);
       background: var(--color-white);
     }
 
@@ -434,7 +467,11 @@ export class BoardListPage extends LitElement {
   }
 
   private async handleDelete(board: Board): Promise<void> {
-    if (!confirm(`Delete "${board.title}"? All states, tasks, and images will be permanently removed.`)) return;
+    if (
+      !confirm(
+        `Delete "${board.title}"? All states, tasks, and images will be permanently removed.`,
+      )
+    ) return;
     try {
       await deleteBoard.execute(board.id);
       await this.loadBoards();
@@ -447,10 +484,20 @@ export class BoardListPage extends LitElement {
     this.pageController.navigate("board-detail", { id });
   }
 
-  private _groupEventsByType(): { added: ActivityEvent[]; updated: ActivityEvent[]; done: ActivityEvent[] } {
-    const added = this.activityEvents.filter((e) => e.type === "created").slice(0, 5);
-    const updated = this.activityEvents.filter((e) => e.type === "updated" || e.type === "moved" || e.type === "commented").slice(0, 5);
-    const done = this.activityEvents.filter((e) => e.type === "completed").slice(0, 5);
+  private _groupEventsByType(): {
+    added: ActivityEvent[];
+    updated: ActivityEvent[];
+    done: ActivityEvent[];
+  } {
+    const added = this.activityEvents.filter((e) => e.type === "created").slice(
+      0,
+      5,
+    );
+    const updated = this.activityEvents.filter((e) =>
+      e.type === "updated" || e.type === "moved" || e.type === "commented"
+    ).slice(0, 5);
+    const done = this.activityEvents.filter((e) => e.type === "completed")
+      .slice(0, 5);
     return { added, updated, done };
   }
 
@@ -469,48 +516,87 @@ export class BoardListPage extends LitElement {
           <div class="activity-col">
             <div class="activity-col-header added">Added</div>
             <div class="activity-col-body">
-              ${added.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No new items</div>` : ""}
-              ${added.map((ev) => html`
-                <div class="activity-item">
-                  <span class="activity-icon created">+</span>
-                  <div class="activity-info">
-                    <div class="activity-label">${ev.label}</div>
-                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              ${added.length === 0
+                ? html`
+                  <div
+                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No new items</div>
+                `
+                : ""}
+              ${added.map((ev) =>
+                html`
+                  <div class="activity-item">
+                    <span class="activity-icon created">+</span>
+                    <div class="activity-info">
+                      <div class="activity-label">${ev.label}</div>
+                      <div class="activity-time">${new Date(ev.timestamp)
+                        .toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}</div>
+                    </div>
                   </div>
-                </div>
-              `)}
+                `
+              )}
             </div>
           </div>
 
           <div class="activity-col">
             <div class="activity-col-header updated">Updated</div>
             <div class="activity-col-body">
-              ${updated.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No updates</div>` : ""}
-              ${updated.map((ev) => html`
-                <div class="activity-item">
-                  <span class="activity-icon ${ev.type === "commented" ? "commented" : "updated"}">${ev.type === "commented" ? "💬" : ev.type === "moved" ? "→" : "✎"}</span>
-                  <div class="activity-info">
-                    <div class="activity-label">${ev.label}</div>
-                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              ${updated.length === 0
+                ? html`
+                  <div
+                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No updates</div>
+                `
+                : ""}
+              ${updated.map((ev) =>
+                html`
+                  <div class="activity-item">
+                    <span class="activity-icon ${ev.type === "commented"
+                      ? "commented"
+                      : "updated"}">${ev.type === "commented"
+                      ? "💬"
+                      : ev.type === "moved"
+                      ? "→"
+                      : "✎"}</span>
+                    <div class="activity-info">
+                      <div class="activity-label">${ev.label}</div>
+                      <div class="activity-time">${new Date(ev.timestamp)
+                        .toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}</div>
+                    </div>
                   </div>
-                </div>
-              `)}
+                `
+              )}
             </div>
           </div>
 
           <div class="activity-col">
             <div class="activity-col-header done">Done</div>
             <div class="activity-col-body">
-              ${done.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">Nothing done yet</div>` : ""}
-              ${done.map((ev) => html`
-                <div class="activity-item">
-                  <span class="activity-icon completed">✓</span>
-                  <div class="activity-info">
-                    <div class="activity-label">${ev.label}</div>
-                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              ${done.length === 0
+                ? html`
+                  <div
+                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">Nothing done yet</div>
+                `
+                : ""}
+              ${done.map((ev) =>
+                html`
+                  <div class="activity-item">
+                    <span class="activity-icon completed">✓</span>
+                    <div class="activity-info">
+                      <div class="activity-label">${ev.label}</div>
+                      <div class="activity-time">${new Date(ev.timestamp)
+                        .toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}</div>
+                    </div>
                   </div>
-                </div>
-              `)}
+                `
+              )}
             </div>
           </div>
         </div>
@@ -518,7 +604,8 @@ export class BoardListPage extends LitElement {
 
       <h2 class="activity-section-title" style="margin-top:var(--space-2xl);">
         Boards
-        <span style="font-family:var(--font-mono);font-size:var(--text-base);border:3px solid var(--color-black);padding:2px var(--space-sm);margin-left:var(--space-sm);">${this.boards.length}</span>
+        <span style="font-family:var(--font-mono);font-size:var(--text-base);border:3px solid var(--color-black);padding:2px var(--space-sm);margin-left:var(--space-sm);">${this
+          .boards.length}</span>
       </h2>
 
       <div class="board-grid">
@@ -536,26 +623,34 @@ export class BoardListPage extends LitElement {
                   @click="${() => this.navigateToBoard(board.id)}">
                   <div class="color-strip" style="background:${color}"></div>
                   <button class="card-delete-btn"
-                    @click="${(e: Event) => { e.stopPropagation(); this.handleDelete(board); }}"
+                    @click="${(e: Event) => {
+                      e.stopPropagation();
+                      this.handleDelete(board);
+                    }}"
                     title="Delete board">✕</button>
                   <h3>${board.title}</h3>
                   ${board.description ? html`<p>${board.description}</p>` : ""}
                   <div class="card-meta">
-                    <span>#${(i + 1).toString().padStart(2, '0')}</span>
-                    <span>${new Date(board.createdAt).toLocaleDateString()}</span>
+                    <span>#${(i + 1).toString().padStart(2, "0")}</span>
+                    <span>${new Date(board.createdAt)
+                      .toLocaleDateString()}</span>
                   </div>
                 </div>
               `;
             })}
 
             <div class="board-card--new"
-              @click="${() => { if (!this.showCreateForm) this.showCreateForm = true; }}">
+              @click="${() => {
+                if (!this.showCreateForm) this.showCreateForm = true;
+              }}">
               ${this.showCreateForm
                 ? html`
-                  <div class="create-form" @click="${(e: Event) => e.stopPropagation()}">
+                  <div class="create-form" @click="${(e: Event) =>
+                    e.stopPropagation()}">
                     <input type="text" placeholder="Board title"
                       .value="${this.newTitle}"
-                      @input="${(e: Event) => this.newTitle = (e.target as HTMLInputElement).value}"
+                      @input="${(e: Event) =>
+                        this.newTitle = (e.target as HTMLInputElement).value}"
                       @keydown="${(e: KeyboardEvent) => {
                         if (e.key === "Enter") this.handleCreate();
                         if (e.key === "Escape") this.showCreateForm = false;
@@ -563,11 +658,15 @@ export class BoardListPage extends LitElement {
                     />
                     <textarea placeholder="Description (optional)"
                       .value="${this.newDescription}"
-                      @input="${(e: Event) => this.newDescription = (e.target as HTMLTextAreaElement).value}"
+                      @input="${(e: Event) =>
+                        this.newDescription =
+                          (e.target as HTMLTextAreaElement).value}"
                     ></textarea>
                     <div class="form-actions">
-                      <button class="btn-create" @click="${this.handleCreate}">Create</button>
-                      <button class="btn-cancel" @click="${() => this.showCreateForm = false}">Cancel</button>
+                      <button class="btn-create" @click="${this
+                        .handleCreate}">Create</button>
+                      <button class="btn-cancel" @click="${() =>
+                        this.showCreateForm = false}">Cancel</button>
                     </div>
                   </div>
                 `

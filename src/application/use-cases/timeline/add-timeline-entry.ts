@@ -1,4 +1,7 @@
-import { type CreateTimelineEntryInput, CreateTimelineEntrySchema } from "../../dto/timeline.dto.js";
+import {
+  type CreateTimelineEntryInput,
+  CreateTimelineEntrySchema,
+} from "../../dto/timeline.dto.js";
 import { ValidationError } from "../../../domain/errors/domain-errors.js";
 import type { TimelineRepository } from "../../../domain/repositories/timeline.repository.js";
 import { createTimelineEntry } from "../../../domain/entities/timeline-entry.entity.js";
@@ -11,7 +14,9 @@ export class AddTimelineEntryUseCase {
   async execute(input: CreateTimelineEntryInput): Promise<string> {
     const parsed = CreateTimelineEntrySchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(parsed.error.issues.map((i) => i.message).join(", "));
+      throw new ValidationError(
+        parsed.error.issues.map((i) => i.message).join(", "),
+      );
     }
     const entry = createTimelineEntry({
       id: generateId(),

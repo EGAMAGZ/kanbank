@@ -11,7 +11,9 @@ export class CreateStepUseCase {
   async execute(input: CreateStepInput): Promise<string> {
     const parsed = CreateStepSchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(parsed.error.issues.map((i) => i.message).join(", "));
+      throw new ValidationError(
+        parsed.error.issues.map((i) => i.message).join(", "),
+      );
     }
     const now = toISODate();
     const step = createStep({

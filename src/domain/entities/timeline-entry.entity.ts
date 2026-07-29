@@ -3,7 +3,16 @@ import type { Id } from "../../shared/types/index.js";
 export interface TimelineEntry {
   id: Id<"TimelineEntry">;
   taskId: Id<"Task">;
-  type: "created" | "moved" | "updated" | "commented" | "completed" | "auto-closed" | "gold-toggled" | "pinned" | "subscribed";
+  type:
+    | "created"
+    | "moved"
+    | "updated"
+    | "commented"
+    | "completed"
+    | "auto-closed"
+    | "gold-toggled"
+    | "pinned"
+    | "subscribed";
   fromStateId?: Id<"State">;
   toStateId?: Id<"State">;
   userId: string;
@@ -24,7 +33,9 @@ export interface CreateTimelineEntryData {
   timestamp: string;
 }
 
-export function createTimelineEntry(data: CreateTimelineEntryData): TimelineEntry {
+export function createTimelineEntry(
+  data: CreateTimelineEntryData,
+): TimelineEntry {
   return {
     id: data.id,
     taskId: data.taskId,

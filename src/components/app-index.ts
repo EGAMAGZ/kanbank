@@ -25,7 +25,15 @@ const imageRepo = new DexieImageRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
 
-initApp({ boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo });
+initApp({
+  boardRepo,
+  stateRepo,
+  taskRepo,
+  commentRepo,
+  imageRepo,
+  stepRepo,
+  timelineRepo,
+});
 
 startApp({
   routes,
@@ -63,8 +71,13 @@ export class AppIndex extends LitElement {
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-    if ((e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true") return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) return;
+    if (
+      (e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true"
+    ) return;
 
     if (e.key === "k" && mod(e)) {
       e.preventDefault();
@@ -135,13 +148,28 @@ export class AppIndex extends LitElement {
   render() {
     return html`
       <nav>
-        <strong class="logo" @click="${() => this.elementController.navigate("home")}">◆ KANBANK</strong>
-        <span class="nav-link" @click="${() => this.elementController.navigate("home")}">Home <keycap-el key="^B"></keycap-el></span>
-        <span class="nav-link" @click="${() => this.elementController.navigate("settings")}">Settings <keycap-el key="^,"></keycap-el></span>
+        <strong class="logo" @click="${() =>
+          this.elementController.navigate("home")}">◆ KANBANK</strong>
+        <span class="nav-link"
+          @click="${() =>
+            this.elementController.navigate(
+              "home",
+            )}">Home <keycap-el key="^B"></keycap-el></span>
+        <span class="nav-link"
+          @click="${() =>
+            this.elementController.navigate(
+              "settings",
+            )}">Settings <keycap-el key="^,"></keycap-el></span>
         <div class="nav-right">
-          <span class="cmd-hint" @click="${this._openJumpMenu}">Jump <keycap-el key="^J"></keycap-el></span>
-          <span class="cmd-hint" @click="${this._openPinned}">Pinned <keycap-el key="⎇P"></keycap-el></span>
-          <span class="cmd-hint" @click="${this._openCommandBar}"><keycap-el key="⌘K"></keycap-el></span>
+          <span class="cmd-hint"
+            @click="${this
+              ._openJumpMenu}">Jump <keycap-el key="^J"></keycap-el></span>
+          <span class="cmd-hint"
+            @click="${this
+              ._openPinned}">Pinned <keycap-el key="⎇P"></keycap-el></span>
+          <span class="cmd-hint"
+            @click="${this
+              ._openCommandBar}"><keycap-el key="⌘K"></keycap-el></span>
         </div>
       </nav>
       <main role="main" tabindex="-1">

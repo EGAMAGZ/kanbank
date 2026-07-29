@@ -144,18 +144,36 @@ export class StepChecklist extends LitElement {
     if (!id) return;
     const step = this.steps.find((s) => s.id === id);
     if (!step) return;
-    this.dispatchEvent(new CustomEvent("step-toggle", { detail: { id, checked: !step.checked }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("step-toggle", {
+        detail: { id, checked: !step.checked },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private _deleteStep(e: Event): void {
     const id = (e.currentTarget as HTMLElement).dataset.id;
     if (!id) return;
-    this.dispatchEvent(new CustomEvent("step-delete", { detail: { id }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("step-delete", {
+        detail: { id },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private _handleAddStep(): void {
     if (!this.newStepText.trim()) return;
-    this.dispatchEvent(new CustomEvent("step-add", { detail: { text: this.newStepText.trim() }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("step-add", {
+        detail: { text: this.newStepText.trim() },
+        bubbles: true,
+        composed: true,
+      }),
+    );
     this.newStepText = "";
   }
 
@@ -170,27 +188,37 @@ export class StepChecklist extends LitElement {
     return html`
       <div>
         ${this.steps.length === 0
-          ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-sm) 0;">No steps yet</div>`
-          : this.steps.map((step) => html`
-            <div class="step">
-              <div class="step-checkbox ${step.checked ? "checked" : ""}"
-                data-id="${step.id}"
-                @click="${this._toggleStep}"
-              ></div>
-              <span class="step-text ${step.checked ? "done" : ""}">${step.text}</span>
-              <button class="step-delete" data-id="${step.id}" @click="${this._deleteStep}">✕</button>
-            </div>
-          `)}
+          ? html`
+            <div
+              style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-sm) 0;">No steps yet</div>
+          `
+          : this.steps.map((step) =>
+            html`
+              <div class="step">
+                <div class="step-checkbox ${step.checked ? "checked" : ""}"
+                  data-id="${step.id}"
+                  @click="${this._toggleStep}"
+                ></div>
+                <span class="step-text ${step.checked ? "done" : ""}">${step
+                  .text}</span>
+                <button class="step-delete" data-id="${step.id}"
+                  @click="${this._deleteStep}">✕</button>
+              </div>
+            `
+          )}
       </div>
       <div class="add-step">
         <input class="add-step-input"
           type="text"
           placeholder="Add a step..."
           .value="${this.newStepText}"
-          @input="${(e: InputEvent) => { this.newStepText = (e.target as HTMLInputElement).value; }}"
+          @input="${(e: InputEvent) => {
+            this.newStepText = (e.target as HTMLInputElement).value;
+          }}"
           @keydown="${this._handleKeydown}"
         />
-        <button class="add-step-btn" @click="${this._handleAddStep}" ?disabled="${!this.newStepText.trim()}">+</button>
+        <button class="add-step-btn" @click="${this._handleAddStep}"
+          ?disabled="${!this.newStepText.trim()}">+</button>
       </div>
     `;
   }

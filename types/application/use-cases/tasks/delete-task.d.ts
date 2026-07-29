@@ -5,11 +5,17 @@ import type { StepRepository } from "../../../domain/repositories/step.repositor
 import type { TimelineRepository } from "../../../domain/repositories/timeline.repository.js";
 import type { Id } from "../../../shared/types/index.js";
 export declare class DeleteTaskUseCase {
-    private taskRepo;
-    private commentRepo;
-    private imageRepo;
-    private stepRepo;
-    private timelineRepo;
-    constructor(taskRepo: TaskRepository, commentRepo: CommentRepository, imageRepo: ImageRepository, stepRepo: StepRepository, timelineRepo: TimelineRepository);
-    execute(id: Id<"Task">): Promise<void>;
+  private taskRepo;
+  private commentRepo;
+  private imageRepo;
+  private stepRepo;
+  private timelineRepo;
+  constructor(
+    taskRepo: TaskRepository,
+    commentRepo: CommentRepository,
+    imageRepo: ImageRepository,
+    stepRepo: StepRepository,
+    timelineRepo: TimelineRepository,
+  );
+  execute(id: Id<"Task">): Promise<void>;
 }

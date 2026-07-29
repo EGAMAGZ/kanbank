@@ -1,7 +1,7 @@
 export interface Timestamped {
-    createdAt: string;
-    updatedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 export interface WithOrder {
-    order: number;
+  order: number;
 }

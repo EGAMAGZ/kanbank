@@ -1,24 +1,32 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property, state, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 type Cmd = [string, string?, string?];
 
-const TOOLBAR_ITEMS: { icon: string; title: string; cmd: Cmd; key?: string }[] = [
-  { icon: "B", title: "Bold", cmd: ["bold"], key: "B" },
-  { icon: "I", title: "Italic", cmd: ["italic"], key: "I" },
-  { icon: "S", title: "Strikethrough", cmd: ["strikeThrough"] },
-  { icon: "U", title: "Underline", cmd: ["underline"], key: "U" },
-  { icon: "H", title: "Highlight", cmd: ["hiliteColor", "#FFE600"] },
-  { icon: "🔗", title: "Link", cmd: ["createLink", ""] },
-  { icon: "❝", title: "Blockquote", cmd: ["formatBlock", "<blockquote>"] },
-  { icon: "</>", title: "Code block", cmd: ["formatBlock", "<pre>"] },
-  { icon: "•", title: "Bullet list", cmd: ["insertUnorderedList"] },
-  { icon: "1.", title: "Numbered list", cmd: ["insertOrderedList"] },
-  { icon: "⊞", title: "Table", cmd: ["insertHTML", "<table border='1'><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table>"] },
-  { icon: "◀", title: "Align left", cmd: ["justifyLeft"] },
-  { icon: "≡", title: "Align center", cmd: ["justifyCenter"] },
-  { icon: "▶", title: "Align right", cmd: ["justifyRight"] },
-];
+const TOOLBAR_ITEMS: { icon: string; title: string; cmd: Cmd; key?: string }[] =
+  [
+    { icon: "B", title: "Bold", cmd: ["bold"], key: "B" },
+    { icon: "I", title: "Italic", cmd: ["italic"], key: "I" },
+    { icon: "S", title: "Strikethrough", cmd: ["strikeThrough"] },
+    { icon: "U", title: "Underline", cmd: ["underline"], key: "U" },
+    { icon: "H", title: "Highlight", cmd: ["hiliteColor", "#FFE600"] },
+    { icon: "🔗", title: "Link", cmd: ["createLink", ""] },
+    { icon: "❝", title: "Blockquote", cmd: ["formatBlock", "<blockquote>"] },
+    { icon: "</>", title: "Code block", cmd: ["formatBlock", "<pre>"] },
+    { icon: "•", title: "Bullet list", cmd: ["insertUnorderedList"] },
+    { icon: "1.", title: "Numbered list", cmd: ["insertOrderedList"] },
+    {
+      icon: "⊞",
+      title: "Table",
+      cmd: [
+        "insertHTML",
+        "<table border='1'><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table>",
+      ],
+    },
+    { icon: "◀", title: "Align left", cmd: ["justifyLeft"] },
+    { icon: "≡", title: "Align center", cmd: ["justifyCenter"] },
+    { icon: "▶", title: "Align right", cmd: ["justifyRight"] },
+  ];
 
 @customElement("wysiwyg-editor")
 export class WysiwygEditor extends LitElement {
@@ -159,7 +167,14 @@ export class WysiwygEditor extends LitElement {
   }
 
   private _checkActive(): void {
-    const cmds = ["bold", "italic", "strikeThrough", "underline", "insertUnorderedList", "insertOrderedList"];
+    const cmds = [
+      "bold",
+      "italic",
+      "strikeThrough",
+      "underline",
+      "insertUnorderedList",
+      "insertOrderedList",
+    ];
     const active = new Set<string>();
     for (const cmd of cmds) {
       if (document.queryCommandState(cmd)) active.add(cmd);
@@ -169,7 +184,13 @@ export class WysiwygEditor extends LitElement {
 
   private _emitChange(): void {
     const html = this.editorEl.innerHTML;
-    this.dispatchEvent(new CustomEvent("editor-change", { detail: { html }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("editor-change", {
+        detail: { html },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private _handleInput(): void {
@@ -177,9 +198,18 @@ export class WysiwygEditor extends LitElement {
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
-    if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); this._execCmd(["bold"]); }
-    if ((e.ctrlKey || e.metaKey) && e.key === "i") { e.preventDefault(); this._execCmd(["italic"]); }
-    if ((e.ctrlKey || e.metaKey) && e.key === "u") { e.preventDefault(); this._execCmd(["underline"]); }
+    if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+      e.preventDefault();
+      this._execCmd(["bold"]);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "i") {
+      e.preventDefault();
+      this._execCmd(["italic"]);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "u") {
+      e.preventDefault();
+      this._execCmd(["underline"]);
+    }
   }
 
   setValue(html: string): void {
@@ -199,14 +229,18 @@ export class WysiwygEditor extends LitElement {
 
     return html`
       <div class="toolbar">
-        ${TOOLBAR_ITEMS.map((item, i) => html`
-          ${spacer(i)}
-          <button
-            class="toolbar-btn ${this.activeCmds.has(item.cmd[0]) ? "active" : ""}"
-            @click="${() => this._execCmd(item.cmd)}"
-            title="${item.title}${item.key ? ` (Ctrl+${item.key})` : ""}"
-          >${item.icon}</button>
-        `)}
+        ${TOOLBAR_ITEMS.map((item, i) =>
+          html`
+            ${spacer(i)}
+            <button
+              class="toolbar-btn ${this.activeCmds.has(item.cmd[0])
+                ? "active"
+                : ""}"
+              @click="${() => this._execCmd(item.cmd)}"
+              title="${item.title}${item.key ? ` (Ctrl+${item.key})` : ""}"
+            >${item.icon}</button>
+          `
+        )}
       </div>
       <div
         class="editor-content"

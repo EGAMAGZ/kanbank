@@ -226,7 +226,13 @@ export class AutoCloseDial extends LitElement {
     this.value = val;
     this.enabled = true;
     this._saveValue();
-    this.dispatchEvent(new CustomEvent("dial-change", { detail: { value: val }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("dial-change", {
+        detail: { value: val },
+        bubbles: true,
+        composed: true,
+      }),
+    );
     this.requestUpdate();
   }
 
@@ -236,12 +242,13 @@ export class AutoCloseDial extends LitElement {
       <div class="dial-wrap">
         <div class="dial-container" @click="${this._handleDialClick}">
           ${this._ticks.map(
-            (t) => html`
-              <div
-                class="tick ${t.major ? "major" : ""}"
-                style="transform: rotate(${t.deg}deg)"
-              ></div>
-            `
+            (t) =>
+              html`
+                <div
+                  class="tick ${t.major ? "major" : ""}"
+                  style="transform: rotate(${t.deg}deg)"
+                ></div>
+              `,
           )}
           <div
             class="needle"
@@ -249,10 +256,14 @@ export class AutoCloseDial extends LitElement {
           ></div>
           <div class="center-dot"></div>
         </div>
-        <div class="dial-value">${this.enabled ? `${this.value} days` : "Off"}</div>
+        <div class="dial-value">${this.enabled
+          ? `${this.value} days`
+          : "Off"}</div>
         <div class="dial-toggle">
           <span class="toggle-label">Auto-close</span>
-          <div class="toggle-switch ${this.enabled ? "active" : ""}" @click="${this._toggle}">
+          <div class="toggle-switch ${this.enabled
+            ? "active"
+            : ""}" @click="${this._toggle}">
             <div class="toggle-knob"></div>
           </div>
         </div>

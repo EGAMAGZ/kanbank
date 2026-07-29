@@ -6,18 +6,18 @@ import type { Comment } from "../../domain/entities/comment.entity.js";
 import type { Step } from "../../domain/entities/step.entity.js";
 import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
 export interface ImageRecord {
-    id: string;
-    blob: Blob;
-    filename: string;
-    mimeType: string;
-    size: number;
+  id: string;
+  blob: Blob;
+  filename: string;
+  mimeType: string;
+  size: number;
 }
 export declare const db: Dexie & {
-    boards: EntityTable<Board, "id">;
-    states: EntityTable<State, "id">;
-    tasks: EntityTable<Task, "id">;
-    comments: EntityTable<Comment, "id">;
-    images: EntityTable<ImageRecord, "id">;
-    steps: EntityTable<Step, "id">;
-    timeline: EntityTable<TimelineEntry, "id">;
+  boards: EntityTable<Board, "id">;
+  states: EntityTable<State, "id">;
+  tasks: EntityTable<Task, "id">;
+  comments: EntityTable<Comment, "id">;
+  images: EntityTable<ImageRecord, "id">;
+  steps: EntityTable<Step, "id">;
+  timeline: EntityTable<TimelineEntry, "id">;
 };

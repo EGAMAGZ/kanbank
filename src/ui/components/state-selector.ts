@@ -78,12 +78,20 @@ export class StateSelector extends LitElement {
   `;
 
   private _selectState(stateId: string): void {
-    this.dispatchEvent(new CustomEvent("state-change", { detail: { stateId }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("state-change", {
+        detail: { stateId },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
     if (this.states.length === 0) return;
-    const currentIdx = this.focusedIndex >= 0 ? this.focusedIndex : this.states.findIndex((s) => s.id === this.activeStateId);
+    const currentIdx = this.focusedIndex >= 0
+      ? this.focusedIndex
+      : this.states.findIndex((s) => s.id === this.activeStateId);
     let newIdx = currentIdx;
 
     if (e.key === "ArrowDown" || e.key === "ArrowRight") {
@@ -108,7 +116,8 @@ export class StateSelector extends LitElement {
 
   render() {
     return html`
-      <div role="listbox" aria-label="State selector" @keydown="${this._handleKeydown}">
+      <div role="listbox" aria-label="State selector" @keydown="${this
+        ._handleKeydown}">
         ${this.states.map((state) => {
           const isActive = state.id === this.activeStateId;
           const color = getColor(state);

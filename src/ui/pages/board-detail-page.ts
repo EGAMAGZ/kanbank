@@ -47,7 +47,15 @@ const imageRepo = new DexieImageRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
 const updateBoard = new UpdateBoardUseCase(boardRepo);
-const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
+const deleteBoard = new DeleteBoardUseCase(
+  boardRepo,
+  stateRepo,
+  taskRepo,
+  commentRepo,
+  imageRepo,
+  stepRepo,
+  timelineRepo,
+);
 
 const COLUMN_COLORS: Record<string, string> = {
   "Not now": "#D4D4D4",
@@ -816,7 +824,9 @@ export class BoardDetailPage extends LitElement {
 
   private _handleCreateTaskShortcut = (): void => {
     if (this.detail) {
-      const maybeState = this.getSortedStates().find((s) => s.id === this.getMandatoryOrder().maybe);
+      const maybeState = this.getSortedStates().find((s) =>
+        s.id === this.getMandatoryOrder().maybe
+      );
       if (maybeState) this.openTaskModal();
     }
   };
@@ -828,18 +838,28 @@ export class BoardDetailPage extends LitElement {
       const mandatory = this.getMandatoryOrder();
       const doneState = sorted.find((s) => s.id === mandatory.last);
       const order = doneState ? doneState.order : sorted.length;
-      const newStateId = await createState.execute({ boardId: this.detail.board.id, title: "New state", color: "#1E40AF", order });
+      const newStateId = await createState.execute({
+        boardId: this.detail.board.id,
+        title: "New state",
+        color: "#1E40AF",
+        order,
+      });
       const newStateIds = sorted.map((s) => s.id);
       const doneIndex = newStateIds.indexOf(mandatory.last);
       newStateIds.splice(doneIndex, 0, newStateId as Id<"State">);
-      await reorderStates.execute({ boardId: this.detail.board.id, stateIds: newStateIds });
+      await reorderStates.execute({
+        boardId: this.detail.board.id,
+        stateIds: newStateIds,
+      });
       await this.loadBoard();
       const states = this.detail?.states ?? [];
       const created = states.find((s) => s.id === newStateId);
       if (created) {
         this.startEditState(created);
         await this.updateComplete;
-        const input = this.renderRoot.querySelector(".state-edit-input") as HTMLInputElement;
+        const input = this.renderRoot.querySelector(
+          ".state-edit-input",
+        ) as HTMLInputElement;
         if (input) input.focus();
       }
     } catch (e) {
@@ -853,9 +873,17 @@ export class BoardDetailPage extends LitElement {
     await this.loadBoard();
   }
 
-  private getMandatoryOrder(): { first: Id<"State">; maybe: Id<"State">; last: Id<"State"> } {
+  private getMandatoryOrder(): {
+    first: Id<"State">;
+    maybe: Id<"State">;
+    last: Id<"State">;
+  } {
     if (!this.detail) {
-      return { first: "" as Id<"State">, maybe: "" as Id<"State">, last: "" as Id<"State"> };
+      return {
+        first: "" as Id<"State">,
+        maybe: "" as Id<"State">,
+        last: "" as Id<"State">,
+      };
     }
     const sorted = [...this.detail.states].sort((a, b) => a.order - b.order);
     return {
@@ -883,7 +911,10 @@ export class BoardDetailPage extends LitElement {
       this.error = null;
       this.detail = await getBoard.execute(id as any);
       if (this.detail) {
-        const discarded = await autoDiscardCheck.execute(this.detail.tasks, this.detail.states);
+        const discarded = await autoDiscardCheck.execute(
+          this.detail.tasks,
+          this.detail.states,
+        );
         if (discarded > 0) {
           this.detail = await getBoard.execute(id as any);
         }
@@ -902,7 +933,9 @@ export class BoardDetailPage extends LitElement {
   private async handleSaveBoardTitle(): Promise<void> {
     if (!this.detail || !this.editingBoardTitleValue.trim()) return;
     try {
-      await updateBoard.execute(this.detail.board.id, { title: this.editingBoardTitleValue.trim() });
+      await updateBoard.execute(this.detail.board.id, {
+        title: this.editingBoardTitleValue.trim(),
+      });
       this.editingBoardTitle = false;
       await this.loadBoard();
     } catch (e) {
@@ -917,7 +950,11 @@ export class BoardDetailPage extends LitElement {
 
   private async handleDeleteBoard(): Promise<void> {
     if (!this.detail) return;
-    if (!confirm(`Delete "${this.detail.board.title}"? All states, tasks, and images will be permanently removed.`)) return;
+    if (
+      !confirm(
+        `Delete "${this.detail.board.title}"? All states, tasks, and images will be permanently removed.`,
+      )
+    ) return;
     try {
       await deleteBoard.execute(this.detail.board.id);
       this.pageController.navigate("home");
@@ -928,7 +965,10 @@ export class BoardDetailPage extends LitElement {
 
   private handleKeydown(e: KeyboardEvent): void {
     if (!this.detail) return;
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) return;
 
     const sorted = this.getSortedStates();
     const mandatory = this.getMandatoryOrder();
@@ -950,8 +990,8 @@ export class BoardDetailPage extends LitElement {
       const currentIdx = this.focusedColIdx >= 0
         ? this.focusedColIdx
         : this.expandedColumnId
-          ? sorted.findIndex((s) => s.id === this.expandedColumnId)
-          : maybeIdx;
+        ? sorted.findIndex((s) => s.id === this.expandedColumnId)
+        : maybeIdx;
       const delta = e.key === "ArrowLeft" ? -1 : 1;
       const nextIdx = (currentIdx + delta + sorted.length) % sorted.length;
       const nextState = sorted[nextIdx];
@@ -976,7 +1016,10 @@ export class BoardDetailPage extends LitElement {
       if (tasks.length === 0) return;
       e.preventDefault();
       const delta = e.key === "ArrowUp" ? -1 : 1;
-      this.focusedTaskIdx = Math.max(0, Math.min(tasks.length - 1, this.focusedTaskIdx + delta));
+      this.focusedTaskIdx = Math.max(
+        0,
+        Math.min(tasks.length - 1, this.focusedTaskIdx + delta),
+      );
       requestAnimationFrame(() => this._focusCurrentTask());
       return;
     }
@@ -1001,13 +1044,16 @@ export class BoardDetailPage extends LitElement {
       .filter((t) => t.stateId === stateId)
       .sort((a, b) => {
         if (a.isGold !== b.isGold) return a.isGold ? -1 : 1;
-        return new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime();
+        return new Date(a.lastActivityAt).getTime() -
+          new Date(b.lastActivityAt).getTime();
       });
   }
 
   private _focusCurrentTask(): void {
     if (this.focusedColIdx < 0 || this.focusedTaskIdx < 0) return;
-    const card = this.renderRoot.querySelector<HTMLElement>(".task-card.focused");
+    const card = this.renderRoot.querySelector<HTMLElement>(
+      ".task-card.focused",
+    );
     if (card) card.focus();
   }
 
@@ -1038,8 +1084,14 @@ export class BoardDetailPage extends LitElement {
     if (!taskId || !this.detail) return;
     const targetState = this.detail.states.find((s) => s.id === stateId);
     const targetIsNotNow = targetState?.title === "Not now";
-    const tasksInColumn = this.detail.tasks.filter((t) => t.stateId === stateId);
-    await moveTask.execute({ taskId, newStateId: stateId, order: tasksInColumn.length }, { targetIsNotNow });
+    const tasksInColumn = this.detail.tasks.filter((t) =>
+      t.stateId === stateId
+    );
+    await moveTask.execute({
+      taskId,
+      newStateId: stateId,
+      order: tasksInColumn.length,
+    }, { targetIsNotNow });
     await this.loadBoard();
   }
 
@@ -1056,7 +1108,10 @@ export class BoardDetailPage extends LitElement {
   private async saveEditState(state: State): Promise<void> {
     if (!this.editingStateTitle.trim()) return;
     try {
-      await updateState.execute(state.id, { title: this.editingStateTitle.trim(), color: this.editingStateColor });
+      await updateState.execute(state.id, {
+        title: this.editingStateTitle.trim(),
+        color: this.editingStateColor,
+      });
       this.editingStateId = null;
       await this.loadBoard();
     } catch (e) {
@@ -1069,7 +1124,9 @@ export class BoardDetailPage extends LitElement {
   }
 
   private async handleDeleteState(state: State): Promise<void> {
-    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) return;
+    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) {
+      return;
+    }
     try {
       await deleteState.execute(state.id);
       await this.loadBoard();
@@ -1081,7 +1138,8 @@ export class BoardDetailPage extends LitElement {
   private canMoveState(state: State): { left: boolean; right: boolean } {
     if (!this.detail) return { left: false, right: false };
     const mandatory = this.getMandatoryOrder();
-    const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
+    const isMandatory = state.id === mandatory.first ||
+      state.id === mandatory.maybe || state.id === mandatory.last;
     if (isMandatory) return { left: false, right: false };
     const sorted = this.getSortedStates();
     const idx = sorted.findIndex((s) => s.id === state.id);
@@ -1134,12 +1192,20 @@ export class BoardDetailPage extends LitElement {
     this.modalError = null;
   }
 
-  private async handleModalCreate(stateId: string, mode: "close" | "another" | "duplicate"): Promise<void> {
+  private async handleModalCreate(
+    stateId: string,
+    mode: "close" | "another" | "duplicate",
+  ): Promise<void> {
     if (!this.modalTitle.trim() || !this.detail) return;
     try {
       this.modalError = null;
       const description = this.modalDescription.trim() || undefined;
-      await createTask.execute({ boardId: this.detail.board.id, stateId, title: this.modalTitle.trim(), description });
+      await createTask.execute({
+        boardId: this.detail.board.id,
+        stateId,
+        title: this.modalTitle.trim(),
+        description,
+      });
       if (mode === "close") {
         this.closeTaskModal();
       } else if (mode === "another") {
@@ -1151,37 +1217,69 @@ export class BoardDetailPage extends LitElement {
       }
       await this.loadBoard();
     } catch (e) {
-      this.modalError = e instanceof Error ? e.message : "Failed to create task";
+      this.modalError = e instanceof Error
+        ? e.message
+        : "Failed to create task";
     }
   }
 
-  private renderTaskCard(task: Task, colColor: string, stateIdx: number, taskIdx: number): unknown {
+  private renderTaskCard(
+    task: Task,
+    colColor: string,
+    stateIdx: number,
+    taskIdx: number,
+  ): unknown {
     const days = inactiveDays(task.lastActivityAt);
     const mandatory = this.getMandatoryOrder();
     const isDone = task.stateId === mandatory.last;
     const isNotNow = task.stateId === mandatory.first;
     const boardSettings = this.detail?.board;
-    const autoCloseDays = boardSettings?.autoCloseEnabled ? boardSettings.autoCloseDays : null;
-    const daysUntilAutoClose = autoCloseDays !== null ? autoCloseDays - days : null;
-    const isFocused = this.focusedColIdx === stateIdx && this.focusedTaskIdx === taskIdx;
+    const autoCloseDays = boardSettings?.autoCloseEnabled
+      ? boardSettings.autoCloseDays
+      : null;
+    const daysUntilAutoClose = autoCloseDays !== null
+      ? autoCloseDays - days
+      : null;
+    const isFocused = this.focusedColIdx === stateIdx &&
+      this.focusedTaskIdx === taskIdx;
     return html`
       <div
-        class="task-card ${task.isGold ? "gold" : ""} ${isFocused ? "focused" : ""}"
+        class="task-card ${task.isGold ? "gold" : ""} ${isFocused
+          ? "focused"
+          : ""}"
         tabindex="-1"
         draggable="true"
         @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
         @click="${() => this.selectTask(task)}"
       >
         <div class="state-bar" style="background:${colColor}"></div>
-        ${isDone ? html`<done-stamp date="${formatDate(task.updatedAt)}" author="${CURRENT_USER.initials}" bg-color="#166534"></done-stamp>` : ""}
-        ${isNotNow ? html`<not-now-stamp date="${formatDate(task.notNowSince ?? task.updatedAt)}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}" bg-color="#8C8C8C"></not-now-stamp>` : ""}
+        ${isDone
+          ? html`
+            <done-stamp date="${formatDate(
+              task.updatedAt,
+            )}" author="${CURRENT_USER.initials}"
+              bg-color="#166534"></done-stamp>
+          `
+          : ""}
+        ${isNotNow
+          ? html`
+            <not-now-stamp date="${formatDate(
+              task.notNowSince ?? task.updatedAt,
+            )}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}"
+              bg-color="#8C8C8C"></not-now-stamp>
+          `
+          : ""}
         <div class="card-meta">
           <span class="seq-num">#${String(task.seq).padStart(3, "0")}</span>
           <span class="tag-dot" style="background:${colColor}"></span>
         </div>
         <div class="card-title">${task.title}</div>
-        ${daysUntilAutoClose !== null && daysUntilAutoClose > 0 && !isNotNow && !isDone
-          ? html`<div style="font-family:var(--font-mono);font-size:9px;color:var(--color-text-3);margin-bottom:var(--space-xs);">→ Not now in ${daysUntilAutoClose}d</div>`
+        ${daysUntilAutoClose !== null && daysUntilAutoClose > 0 && !isNotNow &&
+            !isDone
+          ? html`
+            <div
+              style="font-family:var(--font-mono);font-size:9px;color:var(--color-text-3);margin-bottom:var(--space-xs);">→ Not now in ${daysUntilAutoClose}d</div>
+          `
           : ""}
         <div class="card-footer">
           <div class="footer-left">
@@ -1189,8 +1287,12 @@ export class BoardDetailPage extends LitElement {
             <span class="card-date">${formatDate(task.createdAt)}</span>
           </div>
           ${days > 3
-            ? html`<span class="card-inactive ${days > 7 ? "stale" : ""}">${days}d idle</span>`
-            : days > 0 ? html`<span class="card-inactive">${days}d idle</span>` : ""}
+            ? html`<span class="card-inactive ${
+              days > 7 ? "stale" : ""
+            }">${days}d idle</span>`
+            : days > 0
+            ? html`<span class="card-inactive">${days}d idle</span>`
+            : ""}
         </div>
       </div>
     `;
@@ -1208,13 +1310,19 @@ export class BoardDetailPage extends LitElement {
 
     return html`
       <div
-        class="col-bar ${isActive ? "active" : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
+        class="col-bar ${isActive
+          ? "active"
+          : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
         @click="${() => this.toggleColumn(state.id)}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="bar-fill" style="height: ${isNotNow ? 100 : pct}%; background: ${isNotNow ? "var(--color-notnow)" : colColor}"></div>
+        <div class="bar-fill" style="height: ${isNotNow
+          ? 100
+          : pct}%; background: ${isNotNow
+          ? "var(--color-notnow)"
+          : colColor}"></div>
         <div class="bar-badge">${count}</div>
         <div class="bar-label">${state.title}</div>
         ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ""}
@@ -1227,12 +1335,15 @@ export class BoardDetailPage extends LitElement {
     const stateTasks = this._getStateTasks(state.id);
     const stateIdx = this.getSortedStates().findIndex((s) => s.id === state.id);
     const mandatory = this.getMandatoryOrder();
-    const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
+    const isMandatory = state.id === mandatory.first ||
+      state.id === mandatory.maybe || state.id === mandatory.last;
     const colColor = getColColor(state);
 
     return html`
       <div
-        class="col-expanded ${this.dragOverStateId === state.id ? "drag-over" : ""}"
+        class="col-expanded ${this.dragOverStateId === state.id
+          ? "drag-over"
+          : ""}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
@@ -1241,42 +1352,71 @@ export class BoardDetailPage extends LitElement {
           <div class="col-title-group">
             ${this.editingStateId === state.id
               ? html`
-                <input class="state-edit-input" type="text" .value="${this.editingStateTitle}"
-                  @input="${(e: Event) => { this.editingStateTitle = (e.target as HTMLInputElement).value; }}"
-                  @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.saveEditState(state); if (e.key === "Escape") this.cancelEditState(); }}"
+                <input class="state-edit-input" type="text" .value="${this
+                  .editingStateTitle}"
+                  @input="${(e: Event) => {
+                    this.editingStateTitle =
+                      (e.target as HTMLInputElement).value;
+                  }}"
+                  @keydown="${(e: KeyboardEvent) => {
+                    if (e.key === "Enter") this.saveEditState(state);
+                    if (e.key === "Escape") this.cancelEditState();
+                  }}"
                 />
-                <input class="state-edit-color" type="color" .value="${this.editingStateColor}"
-                  @input="${(e: Event) => { this.editingStateColor = (e.target as HTMLInputElement).value; }}"
+                <input class="state-edit-color" type="color" .value="${this
+                  .editingStateColor}"
+                  @input="${(e: Event) => {
+                    this.editingStateColor =
+                      (e.target as HTMLInputElement).value;
+                  }}"
                   @change="${() => this.saveEditState(state)}"
                 />
               `
               : html`<span class="col-title">${state.title}</span>`}
-            <span class="col-count">${this.detail.taskCounts[state.id] ?? 0}</span>
+            <span class="col-count">${this.detail.taskCounts[state.id] ??
+              0}</span>
           </div>
           <div class="col-actions">
-            <button @click="${() => this.startEditState(state)}" title="Edit">✎</button>
-            ${!isMandatory ? html`
-              <button @click="${() => this.handleDeleteState(state)}" title="Delete">✕</button>
-              ${(() => {
-                const { left, right } = this.canMoveState(state);
-                return html`
-                  <button ?disabled="${!left}" @click="${() => this.moveStateLeft(state)}" title="Move left">◀</button>
-                  <button ?disabled="${!right}" @click="${() => this.moveStateRight(state)}" title="Move right">▶</button>
-                `;
-              })()}
-            ` : ""}
+            <button @click="${() =>
+              this.startEditState(state)}" title="Edit">✎</button>
+            ${!isMandatory
+              ? html`
+                <button @click="${() =>
+                  this.handleDeleteState(state)}" title="Delete">✕</button>
+                ${(() => {
+                  const { left, right } = this.canMoveState(state);
+                  return html`
+                    <button ?disabled="${!left}" @click="${() =>
+                      this.moveStateLeft(state)}"
+                      title="Move left">◀</button>
+                    <button ?disabled="${!right}" @click="${() =>
+                      this.moveStateRight(state)}"
+                      title="Move right">▶</button>
+                  `;
+                })()}
+              `
+              : ""}
             ${state.id !== mandatory.maybe
-              ? html`<button @click="${() => { this.expandedColumnId = null; }}" title="Collapse">▶</button>`
+              ? html`<button @click="${() => {
+                this.expandedColumnId = null;
+              }}" title="Collapse">▶</button>`
               : ""}
           </div>
         </div>
         <div class="col-body">
           ${stateTasks.length === 0
             ? html`<div class="empty-col">empty</div>`
-            : stateTasks.map((task, taskIdx) => this.renderTaskCard(task, colColor, stateIdx, taskIdx))}
+            : stateTasks.map((task, taskIdx) =>
+              this.renderTaskCard(task, colColor, stateIdx, taskIdx)
+            )}
         </div>
         ${state.id === mandatory.maybe
-          ? html`<button class="add-task-btn" @click="${() => this.openTaskModal()}">+ ADD TASK <keycap-el key="⎇T"></keycap-el></button>`
+          ? html`
+            <button class="add-task-btn"
+              @click="${() =>
+                this
+                  .openTaskModal()}">+ ADD TASK <keycap-el key="⎇T"></keycap-el></button>
+          `
           : ""}
 
       </div>
@@ -1285,10 +1425,17 @@ export class BoardDetailPage extends LitElement {
 
   render() {
     if (this.error) {
-      return html`<div style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this.error}</div>`;
+      return html`
+        <div
+          style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this
+            .error}</div>
+      `;
     }
     if (!this.detail) {
-      return html`<div style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>`;
+      return html`
+        <div
+          style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>
+      `;
     }
 
     const { board } = this.detail;
@@ -1296,29 +1443,47 @@ export class BoardDetailPage extends LitElement {
     const mandatory = this.getMandatoryOrder();
     const maybeState = sorted.find((s) => s.id === mandatory.maybe);
     const leftStates = sorted.filter((s) => s.order < (maybeState?.order ?? 1));
-    const rightStates = sorted.filter((s) => s.order > (maybeState?.order ?? 1));
+    const rightStates = sorted.filter((s) =>
+      s.order > (maybeState?.order ?? 1)
+    );
 
     return html`
       <div class="board-header">
-        <span class="back" @click="${() => this.pageController.navigate("home")}">←</span>
+        <span class="back" @click="${() =>
+          this.pageController.navigate("home")}">←</span>
         ${this.editingBoardTitle
           ? html`
             <div class="title-edit-group">
-              <input class="header-title-input" type="text" .value="${this.editingBoardTitleValue}"
-                @input="${(e: Event) => { this.editingBoardTitleValue = (e.target as HTMLInputElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.handleSaveBoardTitle(); if (e.key === "Escape") this.handleCancelBoardTitle(); }}"
+              <input class="header-title-input" type="text" .value="${this
+                .editingBoardTitleValue}"
+                @input="${(e: Event) => {
+                  this.editingBoardTitleValue =
+                    (e.target as HTMLInputElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") this.handleSaveBoardTitle();
+                  if (e.key === "Escape") this.handleCancelBoardTitle();
+                }}"
               />
-              <button class="header-action" @click="${this.handleSaveBoardTitle}" title="Save">✓</button>
-              <button class="header-action" @click="${this.handleCancelBoardTitle}" title="Cancel">✕</button>
+              <button class="header-action" @click="${this
+                .handleSaveBoardTitle}" title="Save">✓</button>
+              <button class="header-action" @click="${this
+                .handleCancelBoardTitle}" title="Cancel">✕</button>
             </div>
           `
           : html`
             <h1>${board.title}</h1>
-            <button class="header-action" @click="${() => this.handleEditBoardTitle()}" title="Edit title">✎</button>
-            <button class="header-action header-action--delete" @click="${() => this.handleDeleteBoard()}" title="Delete board">🗑</button>
+            <button class="header-action" @click="${() =>
+              this.handleEditBoardTitle()}" title="Edit title">✎</button>
+            <button class="header-action header-action--delete" @click="${() =>
+              this.handleDeleteBoard()}"
+              title="Delete board">🗑</button>
           `}
-        <button class="add-column-btn" @click="${() => this.handleAutoCreateState()}">+ ESTADO</button>
-        <button class="activity-toggle ${this.showActivity ? "active" : ""}" @click="${() => this.showActivity = !this.showActivity}">
+        <button class="add-column-btn" @click="${() =>
+          this.handleAutoCreateState()}">+ ESTADO</button>
+        <button class="activity-toggle ${this.showActivity
+          ? "active"
+          : ""}" @click="${() => this.showActivity = !this.showActivity}">
           ${this.showActivity ? "HIDE FEED" : "FEED"}
         </button>
       </div>
@@ -1326,45 +1491,82 @@ export class BoardDetailPage extends LitElement {
       <div class="board-body">
         <div class="columns-wrap">
           ${leftStates.map((s) =>
-            this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s)
+            this.expandedColumnId === s.id
+              ? this.renderExpanded(s)
+              : this.renderBar(s)
           )}
           ${maybeState ? this.renderExpanded(maybeState) : ""}
           ${rightStates.map((s) =>
-            this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s)
+            this.expandedColumnId === s.id
+              ? this.renderExpanded(s)
+              : this.renderBar(s)
           )}
         </div>
-        ${this.showActivity ? html`
-          <div class="activity-panel">
-            <activity-feed
-              .stateTitles="${Object.fromEntries(this.detail.states.map(s => [s.id, s.title]))}"
-              .taskTitles="${Object.fromEntries(this.detail.tasks.map(t => [t.id, t.title]))}"
-            ></activity-feed>
-          </div>
-        ` : ""}
+        ${this.showActivity
+          ? html`
+            <div class="activity-panel">
+              <activity-feed
+                .stateTitles="${Object.fromEntries(
+                  this.detail.states.map((s) => [s.id, s.title]),
+                )}"
+                .taskTitles="${Object.fromEntries(
+                  this.detail.tasks.map((t) => [t.id, t.title]),
+                )}"
+              ></activity-feed>
+            </div>
+          `
+          : ""}
       </div>
 
       ${this.showTaskModal && maybeState
         ? html`
           <div class="modal-overlay" @click="${() => this.closeTaskModal()}">
-            <div class="modal-card" @click="${(e: Event) => e.stopPropagation()}">
+            <div class="modal-card" @click="${(e: Event) =>
+              e.stopPropagation()}">
               <h2>New task in Maybe?</h2>
               <label for="modal-title">Title</label>
               <input id="modal-title" type="text" placeholder="Task title..."
                 .value="${this.modalTitle}"
-                @input="${(e: Event) => { this.modalTitle = (e.target as HTMLInputElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") { e.preventDefault(); this.handleModalCreate(maybeState.id, "close"); } }}"
+                @input="${(e: Event) => {
+                  this.modalTitle = (e.target as HTMLInputElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.handleModalCreate(maybeState.id, "close");
+                  }
+                }}"
               />
               <label for="modal-desc" style="margin-top:var(--space-md);">Description</label>
               <textarea id="modal-desc" placeholder="Description (optional)..."
                 .value="${this.modalDescription}"
-                @input="${(e: Event) => { this.modalDescription = (e.target as HTMLTextAreaElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleModalCreate(maybeState.id, "close"); } }}"
+                @input="${(e: Event) => {
+                  this.modalDescription =
+                    (e.target as HTMLTextAreaElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    this.handleModalCreate(maybeState.id, "close");
+                  }
+                }}"
               ></textarea>
-              ${this.modalError ? html`<div class="modal-error">${this.modalError}</div>` : ""}
+              ${this.modalError
+                ? html`<div class="modal-error">${this.modalError}</div>`
+                : ""}
               <div class="modal-btn-row">
-                <button class="btn btn-cancel" @click="${() => this.closeTaskModal()}">Cancel</button>
-                <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, "close")}">Create</button>
-                <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, "another")}">+ another</button>
+                <button class="btn btn-cancel" @click="${() =>
+                  this.closeTaskModal()}">Cancel</button>
+                <button class="btn btn-primary" @click="${() =>
+                  this.handleModalCreate(
+                    maybeState.id,
+                    "close",
+                  )}">Create</button>
+                <button class="btn btn-primary" @click="${() =>
+                  this.handleModalCreate(
+                    maybeState.id,
+                    "another",
+                  )}">+ another</button>
               </div>
             </div>
           </div>

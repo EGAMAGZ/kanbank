@@ -17,7 +17,10 @@ export class DexieStepRepository implements StepRepository {
     return step.id;
   }
 
-  async update(id: Id<"Step">, changes: Partial<Pick<Step, "text" | "checked" | "order">>): Promise<void> {
+  async update(
+    id: Id<"Step">,
+    changes: Partial<Pick<Step, "text" | "checked" | "order">>,
+  ): Promise<void> {
     await db.steps.update(id, changes);
   }
 

@@ -44,14 +44,28 @@ const stateRepo = new DexieStateRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
 const updateTask = new UpdateTaskUseCase(taskRepo);
-const deleteTask = new DeleteTaskUseCase(taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
+const deleteTask = new DeleteTaskUseCase(
+  taskRepo,
+  commentRepo,
+  imageRepo,
+  stepRepo,
+  timelineRepo,
+);
 const attachImage = new AttachImageUseCase(taskRepo, imageRepo);
 const detachImage = new DetachImageUseCase(taskRepo, imageRepo);
 const addComment = new AddCommentUseCase(commentRepo, taskRepo);
 const updateComment = new UpdateCommentUseCase(commentRepo, taskRepo);
 const deleteComment = new DeleteCommentUseCase(commentRepo, taskRepo);
-const attachCommentImage = new AttachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
-const detachCommentImage = new DetachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
+const attachCommentImage = new AttachImageCommentUseCase(
+  commentRepo,
+  taskRepo,
+  imageRepo,
+);
+const detachCommentImage = new DetachImageCommentUseCase(
+  commentRepo,
+  taskRepo,
+  imageRepo,
+);
 const createStep = new CreateStepUseCase(stepRepo);
 const updateStep = new UpdateStepUseCase(stepRepo);
 const deleteStep = new DeleteStepUseCase(stepRepo);
@@ -199,7 +213,8 @@ export class TaskDetailPage extends LitElement {
       justify-content: center;
       font-size: 20px;
       background: var(--color-white);
-      transition: background var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      transition: background var(--ease-brutal), transform var(--ease-brutal),
+        box-shadow var(--ease-brutal);
       box-shadow: 4px 4px 0 var(--color-black);
       padding: 0;
       flex-shrink: 0;
@@ -263,7 +278,8 @@ export class TaskDetailPage extends LitElement {
       font-family: var(--font-mono);
       font-size: var(--text-sm);
       font-weight: 700;
-      transition: background var(--ease-brutal), color var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      transition: background var(--ease-brutal), color var(--ease-brutal), transform
+        var(--ease-brutal), box-shadow var(--ease-brutal);
       box-shadow: 4px 4px 0 var(--color-black);
     }
 
@@ -575,8 +591,13 @@ export class TaskDetailPage extends LitElement {
   }
 
   private _handleGlobalKeydown(e: KeyboardEvent): void {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-    if ((e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true") return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) return;
+    if (
+      (e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true"
+    ) return;
 
     if (e.key === "Escape") {
       if (this.editingTaskDesc) {
@@ -635,7 +656,9 @@ export class TaskDetailPage extends LitElement {
       if (editor && editor.setValue) {
         editor.setValue(this.editDescription);
       }
-      const titleInput = this.renderRoot.querySelector("#edit-title-input") as HTMLInputElement;
+      const titleInput = this.renderRoot.querySelector(
+        "#edit-title-input",
+      ) as HTMLInputElement;
       if (titleInput) titleInput.focus();
     }, 50);
   }
@@ -754,7 +777,9 @@ export class TaskDetailPage extends LitElement {
       toStateId: stateId,
       userId: CURRENT_USER.initials,
       userName: CURRENT_USER.name,
-      message: `moved from "${oldState?.title ?? "?"}" to "${newState?.title ?? "?"}"`,
+      message: `moved from "${oldState?.title ?? "?"}" to "${
+        newState?.title ?? "?"
+      }"`,
     });
     await this._loadTask();
   }
@@ -763,7 +788,10 @@ export class TaskDetailPage extends LitElement {
     if (!this.newCommentHtml.trim() || !this.task) return;
     try {
       this.error = null;
-      await addComment.execute({ taskId: this.task.id, markdown: this.newCommentHtml.trim() });
+      await addComment.execute({
+        taskId: this.task.id,
+        markdown: this.newCommentHtml.trim(),
+      });
       await addTimeline.execute({
         taskId: this.task.id,
         type: "commented",
@@ -773,7 +801,9 @@ export class TaskDetailPage extends LitElement {
       });
       this.newCommentHtml = "";
       this.comments = await commentRepo.findByTask(this.task.id);
-      const editor = this.renderRoot.querySelector("#new-comment-editor") as any;
+      const editor = this.renderRoot.querySelector(
+        "#new-comment-editor",
+      ) as any;
       if (editor && editor.setValue) editor.setValue("");
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to add comment";
@@ -793,7 +823,9 @@ export class TaskDetailPage extends LitElement {
   private async saveEditComment(c: Comment): Promise<void> {
     if (!this.editingCommentText.trim()) return;
     try {
-      await updateComment.execute(c.id, { markdown: this.editingCommentText.trim() });
+      await updateComment.execute(c.id, {
+        markdown: this.editingCommentText.trim(),
+      });
       this.editingCommentId = null;
       this.editingCommentText = "";
       this.comments = await commentRepo.findByTask(c.taskId);
@@ -827,7 +859,11 @@ export class TaskDetailPage extends LitElement {
   private async handleStepAdd(e: Event): Promise<void> {
     if (!this.task) return;
     const { text } = (e as CustomEvent).detail;
-    await createStep.execute({ taskId: this.task.id, text, order: this.steps.length });
+    await createStep.execute({
+      taskId: this.task.id,
+      text,
+      order: this.steps.length,
+    });
     await this._loadTask();
   }
 
@@ -844,12 +880,19 @@ export class TaskDetailPage extends LitElement {
   }
 
   private _formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const date = dateStr.includes("T")
+      ? new Date(dateStr)
+      : new Date(dateStr + "T12:00:00");
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }
 
   private _stampDate(dateStr: string): string {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(dateStr));
+    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
+      .format(new Date(dateStr));
   }
 
   private _relativeTime(dateStr: string): string {
@@ -870,14 +913,25 @@ export class TaskDetailPage extends LitElement {
 
   render() {
     if (this.error) {
-      return html`<div style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this.error}</div>`;
+      return html`
+        <div
+          style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this
+            .error}</div>
+      `;
     }
     if (!this.task) {
-      return html`<div style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>`;
+      return html`
+        <div
+          style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>
+      `;
     }
 
     const inactive = this._inactiveDays(this.task.lastActivityAt);
-    const autoCloseMsg = inactive > 0 ? `Moves to 'Not Now' in ${Math.max(0, 7 - inactive)} days if there's no activity` : "";
+    const autoCloseMsg = inactive > 0
+      ? `Moves to 'Not Now' in ${
+        Math.max(0, 7 - inactive)
+      } days if there's no activity`
+      : "";
     const currentState = this.states.find((s) => s.id === this.task!.stateId);
     return html`
       <div class="page-wrapper">
@@ -887,67 +941,113 @@ export class TaskDetailPage extends LitElement {
         </div>
 
         <!-- Auto-close message -->
-        ${autoCloseMsg ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>` : ""}
+        ${autoCloseMsg
+          ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>`
+          : ""}
 
         <!-- Not now notice -->
-        ${this.task.notNowSince ? html`
-          <div class="not-now-notice">
-            <span style="font-size:14px;">📬</span>
-            Auto-moved to "Not now" on ${this._formatDate(this.task.notNowSince)}
-          </div>
-        ` : ""}
+        ${this.task.notNowSince
+          ? html`
+            <div class="not-now-notice">
+              <span style="font-size:14px;">📬</span>
+              Auto-moved to "Not now" on ${this._formatDate(
+                this.task.notNowSince,
+              )}
+            </div>
+          `
+          : ""}
 
         <!-- Header -->
         <div class="header">
-          <button class="corner-btn gold-btn ${this.task.isGold ? "active" : ""}" @click="${this.toggleGold}" title="Toggle gold">
+          <button class="corner-btn gold-btn ${this.task.isGold
+            ? "active"
+            : ""}" @click="${this.toggleGold}" title="Toggle gold">
             ${this.task.isGold ? "★" : "☆"}
           </button>
           <div class="header-left">
-            ${this.editingTaskDesc ? html`
-              <div class="edit-form">
-                <input id="edit-title-input" type="text" .value="${this.editTitle}"
-                  @input="${(e: InputEvent) => { this.editTitle = (e.target as HTMLInputElement).value; }}"
-                  @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.saveEditTask(); if (e.key === "Escape") this.cancelEditTask(); }}"
-                />
-              </div>
-            ` : html`
-              <div class="title-block ${this.task.isGold ? "gold" : ""}">
-                ${currentState ? html`<div class="state-bar" style="background:${getStateColor(currentState)}"></div>` : ""}
-                ${this._isDone ? html`<done-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#166534"></done-stamp>` : ""}
-                ${this._isNotNow ? html`<not-now-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#8C8C8C"></not-now-stamp>` : ""}
-                <div class="title-row">
-                  <div class="title-content">
-                    <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
-                      <span class="meta-item">#${String(this.task.seq).padStart(3, "0")}</span>
-                      ${this.task.category ? html`<span class="meta-item cat">${this.task.category}</span>` : ""}
-                      ${this.task.isGold ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>` : ""}
+            ${this.editingTaskDesc
+              ? html`
+                <div class="edit-form">
+                  <input id="edit-title-input" type="text" .value="${this
+                    .editTitle}"
+                    @input="${(e: InputEvent) => {
+                      this.editTitle = (e.target as HTMLInputElement).value;
+                    }}"
+                    @keydown="${(e: KeyboardEvent) => {
+                      if (e.key === "Enter") this.saveEditTask();
+                      if (e.key === "Escape") this.cancelEditTask();
+                    }}"
+                  />
+                </div>
+              `
+              : html`
+                <div class="title-block ${this.task.isGold ? "gold" : ""}">
+                  ${currentState
+                    ? html`<div class="state-bar" style="background:${
+                      getStateColor(currentState)
+                    }"></div>`
+                    : ""}
+                  ${this._isDone
+                    ? html`<done-stamp date="${
+                      this._stampDate(this.task.updatedAt)
+                    }" author="Auto" bg-color="#166534"></done-stamp>`
+                    : ""}
+                  ${this._isNotNow
+                    ? html`
+                      <not-now-stamp date="${this._stampDate(
+                        this.task.updatedAt,
+                      )}" author="Auto"
+                        bg-color="#8C8C8C"></not-now-stamp>
+                    `
+                    : ""}
+                  <div class="title-row">
+                    <div class="title-content">
+                      <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
+                        <span class="meta-item">#${String(this.task.seq)
+                          .padStart(3, "0")}</span>
+                        ${this.task.category
+                          ? html`<span class="meta-item cat">${this.task.category}</span>`
+                          : ""}
+                        ${this.task.isGold
+                          ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>`
+                          : ""}
+                      </div>
+                      <h1>${this.task.title}</h1>
                     </div>
-                    <h1>${this.task.title}</h1>
+                    <state-selector
+                      .states="${this.states}"
+                      activeStateId="${this.task.stateId}"
+                      @state-change="${this.handleStateChange}"
+                    ></state-selector>
                   </div>
-                  <state-selector
-                    .states="${this.states}"
-                    activeStateId="${this.task.stateId}"
-                    @state-change="${this.handleStateChange}"
-                  ></state-selector>
+                  <div class="meta-row" style="margin:0;">
+                    <span class="meta-avatar">${CURRENT_USER.initials}</span>
+                    <span class="meta-item">created ${this._relativeTime(
+                      this.task.createdAt,
+                    )}</span>
+                    <span class="meta-item">updated ${this._relativeTime(
+                      this.task.updatedAt,
+                    )}</span>
+                    ${this.task.dueDate
+                      ? html`<span class="meta-item">due ${
+                        this._formatDate(this.task.dueDate)
+                      }</span>`
+                      : ""}
+                  </div>
                 </div>
-                <div class="meta-row" style="margin:0;">
-                  <span class="meta-avatar">${CURRENT_USER.initials}</span>
-                  <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
-                  <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
-                  ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
-                </div>
-              </div>
-            `}
+              `}
 
             <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
-                ?hidePrimary="${this._isDone}"
+                ?hidePrimary="${this._isDone || this.editingTaskDesc}"
                 @mark-done="${this.markAsDone}"
                 @edit-task="${this.startEditTask}"
               ></quick-actions>
             </div>
           </div>
-          <button class="corner-btn pin-btn ${this.task.pinned ? "active" : ""}" @click="${this.togglePin}" title="Toggle pin">
+          <button class="corner-btn pin-btn ${this.task.pinned
+            ? "active"
+            : ""}" @click="${this.togglePin}" title="Toggle pin">
             ${this.task.pinned ? "📌" : "📍"}
           </button>
         </div>
@@ -958,27 +1058,43 @@ export class TaskDetailPage extends LitElement {
           <div class="section-header">
             <h3>Description</h3>
           </div>
-          ${this.editingTaskDesc ? html`
-            <div class="desc-editor-wrap">
-              <wysiwyg-editor id="desc-editor" .value="${this.editDescription}" placeholder="Write a description..." @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
-            </div>
+          ${this.editingTaskDesc
+            ? html`
+              <div class="desc-editor-wrap">
+                <wysiwyg-editor id="desc-editor" .value="${this
+                  .editDescription}"
+                  placeholder="Write a description..."
+                  @editor-change="${this
+                    ._handleDescEditorChange}"></wysiwyg-editor>
+              </div>
               <div class="edit-form">
-                <div style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
-                  <label style="font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;">Due date</label>
+                <div
+                  style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
+                  <label
+                    style="font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;">Due date</label>
                   <input type="date" .value="${this.editDueDate}"
-                    @input="${(e: InputEvent) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
+                    @input="${(e: InputEvent) => {
+                      this.editDueDate = (e.target as HTMLInputElement).value;
+                    }}"
                     style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);"
                   />
                 </div>
                 <div class="btn-row">
-                  <button class="btn btn-primary" @click="${this.saveEditTask}">Save</button>
-                  <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
+                  <button class="btn btn-primary" @click="${this
+                    .saveEditTask}">Save</button>
+                  <button class="btn btn-cancel" @click="${this
+                    .cancelEditTask}">Cancel</button>
                 </div>
               </div>
-            ` : this.task.description ? html`
-              <div style="font-size:var(--text-base);line-height:var(--leading-loose);" .innerHTML="${this.task.description}"></div>
-            ` : html`
-              <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No description</div>
+            `
+            : this.task.description
+            ? html`
+              <div style="font-size:var(--text-base);line-height:var(--leading-loose);"
+                .innerHTML="${this.task.description}"></div>
+            `
+            : html`
+              <div
+                style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No description</div>
             `}
           </div>
 
@@ -986,7 +1102,8 @@ export class TaskDetailPage extends LitElement {
           <div class="section">
             <div class="section-header">
               <h3>Checklist</h3>
-              <span class="count">${this.steps.filter((s) => s.checked).length}/${this.steps.length}</span>
+              <span class="count">${this.steps.filter((s) => s.checked)
+                .length}/${this.steps.length}</span>
             </div>
             <step-checklist
               .steps="${this.steps}"
@@ -1017,49 +1134,77 @@ export class TaskDetailPage extends LitElement {
               <span class="count">${this.comments.length}</span>
             </div>
 
-            ${this.comments.map((c) => html`
-              <div class="comment">
-                ${this.editingCommentId === c.id ? html`
-                  <div>
-                    <textarea style="width:100%;min-height:80px;padding:var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
-                      .value="${this.editingCommentText}"
-                      @input="${(e: InputEvent) => { this.editingCommentText = (e.target as HTMLTextAreaElement).value; }}"
-                    ></textarea>
-                    <div class="btn-row" style="margin-top:var(--space-sm);">
-                      <button class="btn btn-primary" @click="${() => this.saveEditComment(c)}">Save</button>
-                      <button class="btn btn-cancel" @click="${this.cancelEditComment}">Cancel</button>
-                    </div>
-                  </div>
-                ` : html`
-                  <div class="comment-header">
-                    <div class="comment-author">
-                      <span class="comment-avatar">${CURRENT_USER.initials}</span>
-                      <span class="comment-date">${this._relativeTime(c.createdAt)}</span>
-                    </div>
-                    <div class="comment-actions">
-                      <button @click="${() => this.startEditComment(c)}">Edit</button>
-                      <button @click="${() => this.handleDeleteComment(c)}">Delete</button>
-                    </div>
-                  </div>
-                  <div class="comment-body" .innerHTML="${c.markdown}"></div>
-                  <attachment-list .images="${c.images}" deletable
-                    @attachment-remove="${(e: Event) => this.handleDetachCommentImage(e, c)}"
-                    @attachment-add="${(e: Event) => this.handleAttachCommentImage(e, c)}"
-                  ></attachment-list>
-                `}
-              </div>
-            `)}
+            ${this.comments.map((c) =>
+              html`
+                <div class="comment">
+                  ${this.editingCommentId === c.id
+                    ? html`
+                      <div>
+                        <textarea
+                          style="width:100%;min-height:80px;padding:var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
+                          .value="${this.editingCommentText}"
+                          @input="${(e: InputEvent) => {
+                            this.editingCommentText =
+                              (e.target as HTMLTextAreaElement).value;
+                          }}"
+                        ></textarea>
+                        <div class="btn-row" style="margin-top:var(--space-sm);">
+                          <button class="btn btn-primary" @click="${() =>
+                            this.saveEditComment(c)}">Save</button>
+                          <button class="btn btn-cancel" @click="${this
+                            .cancelEditComment}">Cancel</button>
+                        </div>
+                      </div>
+                    `
+                    : html`
+                      <div class="comment-header">
+                        <div class="comment-author">
+                          <span class="comment-avatar">${CURRENT_USER
+                            .initials}</span>
+                          <span class="comment-date">${this._relativeTime(
+                            c.createdAt,
+                          )}</span>
+                        </div>
+                        <div class="comment-actions">
+                          <button @click="${() =>
+                            this.startEditComment(c)}">Edit</button>
+                          <button @click="${() =>
+                            this.handleDeleteComment(c)}">Delete</button>
+                        </div>
+                      </div>
+                      <div class="comment-body" .innerHTML="${c
+                        .markdown}"></div>
+                      <attachment-list .images="${c.images}" deletable
+                        @attachment-remove="${(e: Event) =>
+                          this.handleDetachCommentImage(e, c)}"
+                        @attachment-add="${(e: Event) =>
+                          this.handleAttachCommentImage(e, c)}"
+                      ></attachment-list>
+                    `}
+                </div>
+              `
+            )}
 
             <div style="margin-top:var(--space-md);">
               <div class="add-comment-wrap">
-                <wysiwyg-editor id="new-comment-editor" .value="${this.newCommentHtml}" placeholder="Write a comment..." .minHeight="${80}" @editor-change="${this._handleCommentEditorChange}"></wysiwyg-editor>
+                <wysiwyg-editor id="new-comment-editor" .value="${this
+                  .newCommentHtml}" placeholder="Write a comment..." .minHeight="${80}" @editor-change="${this
+                  ._handleCommentEditorChange}"></wysiwyg-editor>
                 <div class="comment-editor-actions">
-                  <button class="btn btn-primary" @click="${this.handleAddComment}" ?disabled="${!this.newCommentHtml.trim()}">Add Comment</button>
+                  <button class="btn btn-primary" @click="${this
+                    .handleAddComment}" ?disabled="${!this.newCommentHtml
+                    .trim()}">Add Comment</button>
                 </div>
               </div>
             </div>
 
-            ${this.error ? html`<div style="color:var(--color-error);font-size:var(--text-sm);margin-top:var(--space-sm);font-family:var(--font-mono);">${this.error}</div>` : ""}
+            ${this.error
+              ? html`
+                <div
+                  style="color:var(--color-error);font-size:var(--text-sm);margin-top:var(--space-sm);font-family:var(--font-mono);">${this
+                    .error}</div>
+              `
+              : ""}
           </div>
 
           <!-- Full History Timeline -->
@@ -1069,26 +1214,53 @@ export class TaskDetailPage extends LitElement {
               <span class="count">${this.timeline.length}</span>
             </div>
             <div class="timeline">
-              ${this.timeline.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No history yet</div>` : ""}
-              ${this.timeline.slice(0, this.historyShowAll ? undefined : 5).map((entry) => html`
-                <div class="timeline-item">
-                  <span class="timeline-icon">${entry.type === "created" ? "+" : entry.type === "moved" ? "→" : entry.type === "commented" ? "💬" : entry.type === "completed" ? "✓" : entry.type === "auto-closed" ? "📬" : entry.type === "gold-toggled" ? "★" : "✎"}</span>
-                  <div class="timeline-body">
-                    <div class="timeline-msg">${entry.message}</div>
-                    <div class="timeline-meta">${entry.userName} · ${this._relativeTime(entry.timestamp)}</div>
-                  </div>
-                </div>
-              `)}
-              ${this.timeline.length > 5 && !this.historyShowAll ? html`
-                <div style="text-align:center;padding:var(--space-sm);cursor:pointer;font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;border-top:2px solid var(--color-black);"
-                  @click="${() => { this.historyShowAll = true; }}"
-                >+ ${this.timeline.length - 5} more</div>
-              ` : ""}
+              ${this.timeline.length === 0
+                ? html`
+                  <div
+                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No history yet</div>
+                `
+                : ""}
+              ${this.timeline.slice(0, this.historyShowAll ? undefined : 5).map(
+                (entry) =>
+                  html`
+                    <div class="timeline-item">
+                      <span class="timeline-icon">${entry.type === "created"
+                        ? "+"
+                        : entry.type === "moved"
+                        ? "→"
+                        : entry.type === "commented"
+                        ? "💬"
+                        : entry.type === "completed"
+                        ? "✓"
+                        : entry.type === "auto-closed"
+                        ? "📬"
+                        : entry.type === "gold-toggled"
+                        ? "★"
+                        : "✎"}</span>
+                      <div class="timeline-body">
+                        <div class="timeline-msg">${entry.message}</div>
+                        <div class="timeline-meta">${entry.userName} · ${this
+                          ._relativeTime(entry.timestamp)}</div>
+                      </div>
+                    </div>
+                  `,
+              )}
+              ${this.timeline.length > 5 && !this.historyShowAll
+                ? html`
+                  <div
+                    style="text-align:center;padding:var(--space-sm);cursor:pointer;font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;border-top:2px solid var(--color-black);"
+                    @click="${() => {
+                      this.historyShowAll = true;
+                    }}"
+                  >+ ${this.timeline.length - 5} more</div>
+                `
+                : ""}
             </div>
           </div>
 
           <div class="delete-task-wrapper">
-            <button class="delete-task-btn" @click="${this.handleDeleteTask}">Delete this task</button>
+            <button class="delete-task-btn" @click="${this
+              .handleDeleteTask}">Delete this task</button>
           </div>
         </div>
       </div>

@@ -223,40 +223,55 @@ export class SettingsPage extends LitElement {
       <div class="section">
         <h2 class="section-title">Select Board</h2>
         <select class="board-select" @change="${this._handleBoardSelect}">
-          ${this.boards.map((b) => html`
-            <option value="${b.id}" ?selected="${b.id === this.selectedBoardId}">${b.title}</option>
-          `)}
+          ${this.boards.map((b) =>
+            html`
+              <option value="${b
+                .id}" ?selected="${b.id === this.selectedBoardId}">${b
+                .title}</option>
+            `
+          )}
         </select>
       </div>
 
-      ${this.selectedBoard ? html`
-        <div class="section">
-          <h2 class="section-title">Auto-Close</h2>
-          <p>Automatically move inactive tasks to "Not now" after a configured number of days.</p>
+      ${this.selectedBoard
+        ? html`
+          <div class="section">
+            <h2 class="section-title">Auto-Close</h2>
+            <p>Automatically move inactive tasks to "Not now" after a configured number of days.</p>
 
-          <div class="toggle-row">
-            <span class="toggle-label">Enable auto-close</span>
-            <div class="toggle-switch ${this.autoCloseEnabled ? "active" : ""}"
-              @click="${() => { this.autoCloseEnabled = !this.autoCloseEnabled; }}">
-              <div class="toggle-knob"></div>
+            <div class="toggle-row">
+              <span class="toggle-label">Enable auto-close</span>
+              <div class="toggle-switch ${this.autoCloseEnabled
+                ? "active"
+                : ""}"
+                @click="${() => {
+                  this.autoCloseEnabled = !this.autoCloseEnabled;
+                }}">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+
+            ${this.autoCloseEnabled
+              ? html`
+                <div class="dial-wrap">
+                  <auto-close-dial .value="${this
+                    .autoCloseDays}" .enabled="${this.autoCloseEnabled}"
+                    @dial-change="${this._handleDialChange}"></auto-close-dial>
+                </div>
+              `
+              : ""}
+
+            <div style="margin-top:var(--space-md);">
+              <button class="btn-save" @click="${this
+                ._saveSettings}">SAVE SETTINGS</button>
             </div>
           </div>
-
-          ${this.autoCloseEnabled ? html`
-            <div class="dial-wrap">
-              <auto-close-dial .value="${this.autoCloseDays}" .enabled="${this.autoCloseEnabled}" @dial-change="${this._handleDialChange}"></auto-close-dial>
-            </div>
-          ` : ""}
-
-          <div style="margin-top:var(--space-md);">
-            <button class="btn-save" @click="${this._saveSettings}">SAVE SETTINGS</button>
+        `
+        : html`
+          <div class="section">
+            <p style="text-align:center;">No boards available. Create a board first.</p>
           </div>
-        </div>
-      ` : html`
-        <div class="section">
-          <p style="text-align:center;">No boards available. Create a board first.</p>
-        </div>
-      `}
+        `}
     `;
   }
 }

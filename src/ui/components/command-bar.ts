@@ -179,7 +179,9 @@ export class CommandBar extends LitElement {
     this._updateResults();
     // Focus input after render
     await this.updateComplete;
-    const input = this.renderRoot.querySelector(".cmd-input") as HTMLInputElement;
+    const input = this.renderRoot.querySelector(
+      ".cmd-input",
+    ) as HTMLInputElement;
     if (input) input.focus();
   }
 
@@ -250,7 +252,10 @@ export class CommandBar extends LitElement {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      this.selectedIndex = Math.min(this.selectedIndex + 1, this.results.length - 1);
+      this.selectedIndex = Math.min(
+        this.selectedIndex + 1,
+        this.results.length - 1,
+      );
       this._scrollIntoView();
       return;
     }
@@ -271,7 +276,9 @@ export class CommandBar extends LitElement {
   }
 
   private _scrollIntoView(): void {
-    const el = this.renderRoot.querySelector(".cmd-result.selected") as HTMLElement;
+    const el = this.renderRoot.querySelector(
+      ".cmd-result.selected",
+    ) as HTMLElement;
     if (el) el.scrollIntoView({ block: "nearest" });
   }
 
@@ -284,7 +291,8 @@ export class CommandBar extends LitElement {
   render() {
     return html`
       <div @click="${this._onBackdropClick}">
-        <div class="cmd-container" @click="${(e: Event) => e.stopPropagation()}">
+        <div class="cmd-container" @click="${(e: Event) =>
+          e.stopPropagation()}">
           <div class="cmd-input-wrap">
             <span class="cmd-prompt">$</span>
             <input
@@ -300,18 +308,25 @@ export class CommandBar extends LitElement {
             ${this.results.length === 0
               ? html`<div class="cmd-empty">No results</div>`
               : this.results.map(
-                  (r, i) => html`
+                (r, i) =>
+                  html`
                     <div
-                      class="cmd-result ${i === this.selectedIndex ? "selected" : ""}"
+                      class="cmd-result ${i === this.selectedIndex
+                        ? "selected"
+                        : ""}"
                       @click="${r.action}"
-                      @mouseenter="${() => { this.selectedIndex = i; }}"
+                      @mouseenter="${() => {
+                        this.selectedIndex = i;
+                      }}"
                     >
-                      <span class="cmd-type-badge">${r.type === "board" ? "B" : ">"}</span>
+                      <span class="cmd-type-badge">${r.type === "board"
+                        ? "B"
+                        : ">"}</span>
                       <span class="cmd-label">${r.label}</span>
                       <span class="cmd-detail">${r.detail}</span>
                     </div>
-                  `
-                )}
+                  `,
+              )}
           </div>
           <div class="cmd-hints">
             <span><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>

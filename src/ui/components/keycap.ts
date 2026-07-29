@@ -44,14 +44,14 @@ export class Keycap extends LitElement {
         ? `⌘${this.key.slice(1).toUpperCase()}`
         : `Ctrl+${this.key.slice(1).toUpperCase()}`
       : this.key.startsWith("^")
-        ? `Ctrl+${this.key.slice(1).toUpperCase()}`
-        : this.key.startsWith("⎇")
-          ? isMac
-            ? `⌥${this.key.slice(1).toUpperCase()}`
-            : `Alt+${this.key.slice(1).toUpperCase()}`
-          : this.key === "\u2325"
-            ? "Option"
-            : this.key;
+      ? `Ctrl+${this.key.slice(1).toUpperCase()}`
+      : this.key.startsWith("⎇")
+      ? isMac
+        ? `⌥${this.key.slice(1).toUpperCase()}`
+        : `Alt+${this.key.slice(1).toUpperCase()}`
+      : this.key === "\u2325"
+      ? "Option"
+      : this.key;
     return html`<kbd>${label}</kbd>`;
   }
 }

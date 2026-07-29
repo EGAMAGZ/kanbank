@@ -1,1 +1,3 @@
-export declare function initChannelBridge(publish: (channel: string, value: unknown) => void): void;
+export declare function initChannelBridge(
+  publish: (channel: string, value: unknown) => void,
+): void;

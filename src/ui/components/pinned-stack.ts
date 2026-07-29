@@ -312,8 +312,13 @@ export class PinnedStack extends LitElement {
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
   `;
 
@@ -321,8 +326,12 @@ export class PinnedStack extends LitElement {
     super.connectedCallback();
     window.addEventListener("pinned-changed", this._onPinnedChanged);
     this.subscriptions.push(
-      eventBus.subscribe("task.updated", () => { this._loadData(); }),
-      eventBus.subscribe("task.moved", () => { this._loadData(); }),
+      eventBus.subscribe("task.updated", () => {
+        this._loadData();
+      }),
+      eventBus.subscribe("task.moved", () => {
+        this._loadData();
+      }),
     );
     await this._loadData();
   }
@@ -339,7 +348,9 @@ export class PinnedStack extends LitElement {
 
   private async _loadData(): Promise<void> {
     const all = await taskRepo.findPinned();
-    all.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    all.sort((a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
     this.tasks = all;
     const boardIds = new Set(this.tasks.map((t) => t.boardId));
     const stateIds = new Set(this.tasks.map((t) => t.stateId));
@@ -385,12 +396,17 @@ export class PinnedStack extends LitElement {
     const count = this.tasks.length;
 
     return html`
-      <div class="stack-collapsed" @click="${this._toggle}" title="Pinned cards (Alt+P)">
+      <div class="stack-collapsed" @click="${this
+        ._toggle}" title="Pinned cards (Alt+P)">
         ${preview.map((t, i) => {
           const state = this.states.get(t.stateId);
           return html`
             <div class="mini-card ${t.isGold ? "gold" : ""}">
-              ${state ? html`<div class="mini-state-bar" style="background:${getStateColor(state)}"></div>` : ""}
+              ${state
+                ? html`<div class="mini-state-bar" style="background:${
+                  getStateColor(state)
+                }"></div>`
+                : ""}
               <div class="mini-top">
                 <span class="mini-state">${state?.title ?? "?"}</span>
                 <span class="mini-idx">#${i + 1}</span>
@@ -400,39 +416,55 @@ export class PinnedStack extends LitElement {
           `;
         })}
         ${count > 0 ? html`<span class="stack-badge">${count}</span>` : ""}
-        ${count === 0 ? html`
-          <div class="mini-card" style="display:flex;align-items:center;justify-content:center;font-size:14px;border-style:dashed;">
-            📌
-          </div>
-        ` : ""}
+        ${count === 0
+          ? html`
+            <div class="mini-card"
+              style="display:flex;align-items:center;justify-content:center;font-size:14px;border-style:dashed;">
+              📌
+            </div>
+          `
+          : ""}
       </div>
 
-      ${this.expanded && count > 0 ? html`
-        <div class="overlay" @click="${this._toggle}"></div>
-        <div class="stack-expanded">
-          <div class="stack-header">
-            <span class="title">📌 Pinned (${count})</span>
-            <button class="close-btn" @click="${this._toggle}">✕</button>
-          </div>
-          <div class="stack-body">
-            ${this.tasks.map((task) => {
-              const board = this.boards.get(task.boardId);
-              const state = this.states.get(task.stateId);
-              return html`
-                <div class="pinned-item ${task.isGold ? "gold" : ""}" @click="${() => this._navigate(task)}">
-                  ${state ? html`<div class="pinned-state-bar" style="background:${getStateColor(state)}"></div>` : ""}
-                  <span class="pinned-board-chip">${board?.title ?? "?"}</span>
-                  <div class="pinned-info">
-                    <div class="pinned-title">${task.title}</div>
-                    <div class="pinned-time">${this._formatTime(task.updatedAt)}</div>
+      ${this.expanded && count > 0
+        ? html`
+          <div class="overlay" @click="${this._toggle}"></div>
+          <div class="stack-expanded">
+            <div class="stack-header">
+              <span class="title">📌 Pinned (${count})</span>
+              <button class="close-btn" @click="${this._toggle}">✕</button>
+            </div>
+            <div class="stack-body">
+              ${this.tasks.map((task) => {
+                const board = this.boards.get(task.boardId);
+                const state = this.states.get(task.stateId);
+                return html`
+                  <div class="pinned-item ${task.isGold
+                    ? "gold"
+                    : ""}" @click="${() => this._navigate(task)}">
+                    ${state
+                      ? html`<div class="pinned-state-bar" style="background:${
+                        getStateColor(state)
+                      }"></div>`
+                      : ""}
+                    <span class="pinned-board-chip">${board?.title ??
+                      "?"}</span>
+                    <div class="pinned-info">
+                      <div class="pinned-title">${task.title}</div>
+                      <div class="pinned-time">${this._formatTime(
+                        task.updatedAt,
+                      )}</div>
+                    </div>
+                    ${state
+                      ? html`<span class="pinned-status">${state.title}</span>`
+                      : ""}
                   </div>
-                  ${state ? html`<span class="pinned-status">${state.title}</span>` : ""}
-                </div>
-              `;
-            })}
+                `;
+              })}
+            </div>
           </div>
-        </div>
-      ` : ""}
+        `
+        : ""}
     `;
   }
 }

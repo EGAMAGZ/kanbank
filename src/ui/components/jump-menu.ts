@@ -96,7 +96,9 @@ export class JumpMenu extends LitElement {
     }
 
     @keyframes blink {
-      50% { opacity: 0; }
+      50% {
+        opacity: 0;
+      }
     }
 
     .jump-body {
@@ -274,12 +276,16 @@ export class JumpMenu extends LitElement {
     this.boards = await listBoards.execute();
     this._updateResults();
     await this.updateComplete;
-    const input = this.renderRoot.querySelector(".jump-input") as HTMLInputElement;
+    const input = this.renderRoot.querySelector(
+      ".jump-input",
+    ) as HTMLInputElement;
     if (input) input.focus();
   }
 
   private _close(): void {
-    this.dispatchEvent(new CustomEvent("jump-close", { bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("jump-close", { bubbles: true, composed: true }),
+    );
     this.remove();
   }
 
@@ -427,7 +433,9 @@ export class JumpMenu extends LitElement {
   }
 
   private _scrollIntoView(): void {
-    const el = this.renderRoot.querySelector(".jump-result.selected") as HTMLElement;
+    const el = this.renderRoot.querySelector(
+      ".jump-result.selected",
+    ) as HTMLElement;
     if (el) el.scrollIntoView({ block: "nearest" });
   }
 
@@ -443,7 +451,8 @@ export class JumpMenu extends LitElement {
 
     return html`
       <div @click="${this._onBackdropClick}">
-        <div class="jump-container" @click="${(e: Event) => e.stopPropagation()}">
+        <div class="jump-container" @click="${(e: Event) =>
+          e.stopPropagation()}">
           <div class="jump-input-wrap">
             <span class="jump-prompt">⌂</span>
             <input
@@ -456,42 +465,52 @@ export class JumpMenu extends LitElement {
             />
           </div>
 
-          ${!this.query ? html`
-            <div class="jump-quick-access">
-              ${quickActions.map((r) => html`
-                <button class="jump-quick-btn" @click="${r.action}">
-                  <span class="jump-quick-key">${r.key}</span>
-                  <span class="jump-quick-label">${r.label}</span>
-                </button>
-              `)}
-            </div>
-          ` : ""}
+          ${!this.query
+            ? html`
+              <div class="jump-quick-access">
+                ${quickActions.map((r) =>
+                  html`
+                    <button class="jump-quick-btn" @click="${r.action}">
+                      <span class="jump-quick-key">${r.key}</span>
+                      <span class="jump-quick-label">${r.label}</span>
+                    </button>
+                  `
+                )}
+              </div>
+            `
+            : ""}
 
           <div class="jump-body">
             ${regularResults.length === 0
               ? html`<div class="jump-empty">No results</div>`
               : regularResults.map((r, i) => {
-                  if (r.type === "section") {
-                    return html`
-                      <div class="jump-section-header">
-                        <span class="section-label">${r.label}</span>
-                        <div class="section-line"></div>
-                      </div>
-                    `;
-                  }
-                  const actualIndex = i;
+                if (r.type === "section") {
                   return html`
-                    <div
-                      class="jump-result ${actualIndex === this.selectedIndex ? "selected" : ""}"
-                      @click="${r.action}"
-                      @mouseenter="${() => { this.selectedIndex = actualIndex; }}"
-                    >
-                      <span class="jump-type-badge">${r.type === "board" ? "B" : ">"}</span>
-                      <span class="jump-label">${r.label}</span>
-                      <span class="jump-detail">${r.detail}</span>
+                    <div class="jump-section-header">
+                      <span class="section-label">${r.label}</span>
+                      <div class="section-line"></div>
                     </div>
                   `;
-                })}
+                }
+                const actualIndex = i;
+                return html`
+                  <div
+                    class="jump-result ${actualIndex === this.selectedIndex
+                      ? "selected"
+                      : ""}"
+                    @click="${r.action}"
+                    @mouseenter="${() => {
+                      this.selectedIndex = actualIndex;
+                    }}"
+                  >
+                    <span class="jump-type-badge">${r.type === "board"
+                      ? "B"
+                      : ">"}</span>
+                    <span class="jump-label">${r.label}</span>
+                    <span class="jump-detail">${r.detail}</span>
+                  </div>
+                `;
+              })}
           </div>
 
           <div class="jump-hints">

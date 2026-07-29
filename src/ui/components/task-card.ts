@@ -152,7 +152,10 @@ export class TaskCard extends LitElement {
     return html`
       <div class="card ${this.task.isGold ? "gold" : ""}">
         <div class="meta-row">
-          <span class="seq-num">#${String(this.index + 1).padStart(3, "0")}</span>
+          <span class="seq-num">#${String(this.index + 1).padStart(
+            3,
+            "0",
+          )}</span>
           <span class="tag-dot" style="background:${this.columnColor}"></span>
         </div>
         <div class="title">${this.task.title}</div>
@@ -162,8 +165,12 @@ export class TaskCard extends LitElement {
             <span class="date">${formatRelative(this.task.createdAt)}</span>
           </div>
           ${days > 3
-            ? html`<span class="inactive ${days > 7 ? "stale" : ""}">${days}d idle</span>`
-            : days > 0 ? html`<span class="inactive">${days}d idle</span>` : ""}
+            ? html`<span class="inactive ${
+              days > 7 ? "stale" : ""
+            }">${days}d idle</span>`
+            : days > 0
+            ? html`<span class="inactive">${days}d idle</span>`
+            : ""}
         </div>
       </div>
     `;

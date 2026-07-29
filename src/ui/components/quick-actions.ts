@@ -28,7 +28,8 @@ export class QuickActions extends LitElement {
       font-family: var(--font-mono);
       background: var(--color-white);
       color: var(--color-black);
-      transition: background var(--ease-brutal), color var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      transition: background var(--ease-brutal), color var(--ease-brutal), transform
+        var(--ease-brutal), box-shadow var(--ease-brutal);
       box-shadow: 4px 4px 0 var(--color-black);
       min-height: 38px;
     }
@@ -64,16 +65,20 @@ export class QuickActions extends LitElement {
   `;
 
   private _emit(name: string): void {
-    this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent(name, { bubbles: true, composed: true }),
+    );
   }
 
   render() {
     if (this.hidePrimary) return html``;
     return html`
-      <button class="action-btn primary" @click="${() => this._emit("mark-done")}">
+      <button class="action-btn primary" @click="${() =>
+        this._emit("mark-done")}">
         DONE <keycap-el key="⌘D"></keycap-el>
       </button>
-      <button class="action-btn primary" @click="${() => this._emit("edit-task")}">
+      <button class="action-btn primary" @click="${() =>
+        this._emit("edit-task")}">
         EDIT <keycap-el key="⌘E"></keycap-el>
       </button>
     `;
