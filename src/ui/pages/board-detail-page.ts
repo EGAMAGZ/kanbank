@@ -15,6 +15,10 @@ import { ReorderStatesUseCase } from "../../application/use-cases/states/reorder
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
+import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
+import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
+import { UpdateBoardUseCase } from "../../application/use-cases/boards/update-board.js";
+import { DeleteBoardUseCase } from "../../application/use-cases/boards/delete-board.js";
 import { inactiveDays } from "../../shared/utils/dates.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
@@ -31,6 +35,16 @@ const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
 const deleteState = new DeleteStateUseCase(stateRepo, taskRepo);
 const reorderStates = new ReorderStatesUseCase(stateRepo);
+const commentRepo = new DexieCommentRepository();
+const imageRepo = new DexieImageRepository();
+const updateBoard = new UpdateBoardUseCase(boardRepo);
+const deleteBoard = new DeleteBoardUseCase(
+  boardRepo,
+  stateRepo,
+  taskRepo,
+  commentRepo,
+  imageRepo,
+);
 
 @customElement("board-detail-page")
 export class BoardDetailPage extends LitElement {
@@ -70,6 +84,11 @@ export class BoardDetailPage extends LitElement {
   private modalDescription = "";
   @state()
   private modalError: string | null = null;
+
+  @state()
+  private editingBoardTitle = false;
+  @state()
+  private editingBoardTitleValue = "";
 
   @state()
   private pinnedTasks: Task[] = [];
@@ -113,6 +132,52 @@ export class BoardDetailPage extends LitElement {
 
     .board-header .back:hover {
       color: var(--color-text);
+    }
+
+    .header-action {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: var(--text-base);
+      padding: var(--space-xs);
+      color: var(--color-text-2);
+      transition: color var(--ease-brutal);
+      align-self: center;
+      line-height: 1;
+    }
+
+    .header-action:hover {
+      color: var(--color-text);
+    }
+
+    .header-action--delete:hover {
+      color: var(--color-error);
+    }
+
+    .title-edit-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex: 1;
+    }
+
+    .header-title-input {
+      flex: 1;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-4xl);
+      letter-spacing: -0.04em;
+      line-height: var(--leading-tight);
+      border: 2px solid var(--color-black);
+      padding: var(--space-xs) var(--space-sm);
+      outline: none;
+      background: var(--color-white);
+      transition: box-shadow var(--ease-brutal);
+      min-width: 200px;
+    }
+
+    .header-title-input:focus {
+      box-shadow: 2px 2px 0 var(--color-accent);
     }
 
     .add-column-btn {
@@ -652,6 +717,45 @@ export class BoardDetailPage extends LitElement {
 
   updated(): void {
     this.renderPinnedOverlay();
+  }
+
+  private handleEditBoardTitle(): void {
+    if (!this.detail) return;
+    this.editingBoardTitleValue = this.detail.board.title;
+    this.editingBoardTitle = true;
+  }
+
+  private async handleSaveBoardTitle(): Promise<void> {
+    if (!this.detail || !this.editingBoardTitleValue.trim()) return;
+    try {
+      await updateBoard.execute(this.detail.board.id, {
+        title: this.editingBoardTitleValue.trim(),
+      });
+      this.editingBoardTitle = false;
+      await this.loadBoard();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to update title";
+    }
+  }
+
+  private handleCancelBoardTitle(): void {
+    this.editingBoardTitle = false;
+    this.editingBoardTitleValue = "";
+  }
+
+  private async handleDeleteBoard(): Promise<void> {
+    if (!this.detail) return;
+    if (
+      !confirm(
+        `Delete "${this.detail.board.title}"? All states, tasks, and images will be permanently removed.`,
+      )
+    ) return;
+    try {
+      await deleteBoard.execute(this.detail.board.id);
+      this.pageController.navigate("home");
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to delete board";
+    }
   }
 
   private async loadBoard(): Promise<void> {
@@ -1384,7 +1488,33 @@ export class BoardDetailPage extends LitElement {
       <div class="board-header">
         <span class="back" @click="${() =>
           this.pageController.navigate("home")}">&#8592;</span>
-        <h1>${board.title}</h1>
+        ${this.editingBoardTitle
+          ? html`
+            <div class="title-edit-group">
+              <input class="header-title-input" type="text"
+                .value="${this.editingBoardTitleValue}"
+                @input="${(e: Event) => {
+                  this.editingBoardTitleValue =
+                    (e.target as HTMLInputElement).value;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") this.handleSaveBoardTitle();
+                  if (e.key === "Escape") this.handleCancelBoardTitle();
+                }}"
+              />
+              <button class="header-action" @click="${this
+                .handleSaveBoardTitle}" title="Save">&#10003;</button>
+              <button class="header-action" @click="${this
+                .handleCancelBoardTitle}" title="Cancel">&#10005;</button>
+            </div>
+          `
+          : html`
+            <h1>${board.title}</h1>
+            <button class="header-action" @click="${() =>
+              this.handleEditBoardTitle()}" title="Edit title">&#9998;</button>
+            <button class="header-action header-action--delete" @click="${() =>
+              this.handleDeleteBoard()}" title="Delete board">&#128465;</button>
+          `}
         ${this.showColumnForm
           ? html`
             <div class="column-form">
