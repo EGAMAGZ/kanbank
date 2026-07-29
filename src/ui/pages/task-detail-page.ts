@@ -567,12 +567,12 @@ export class TaskDetailPage extends LitElement {
       this.goBack();
       return;
     }
-    if (e.key === "e" && !e.ctrlKey && !e.metaKey) {
+    if (e.key === "e" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       this.startEditTask();
       return;
     }
-    if (e.key === "d" && !e.ctrlKey && !e.metaKey) {
+    if (e.key === "d" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       this.markAsDone();
       return;
@@ -910,10 +910,10 @@ export class TaskDetailPage extends LitElement {
 
             <div class="actions-col">
               <button class="action-btn primary" @click="${this.startEditTask}">
-                EDIT <keycap-el key="E"></keycap-el>
+                EDIT <keycap-el key="⌘E"></keycap-el>
               </button>
               <button class="action-btn primary" @click="${this.markAsDone}">
-                DONE <keycap-el key="D"></keycap-el>
+                DONE <keycap-el key="⌘D"></keycap-el>
               </button>
               <button class="action-btn" @click="${this.toggleGold}">
                 ${this.task.isGold ? "★" : "☆"} GOLD

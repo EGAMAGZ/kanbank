@@ -38,13 +38,20 @@ export class Keycap extends LitElement {
   `;
 
   render() {
-    const label = this.key.startsWith("^")
-      ? `Ctrl+${this.key.slice(1).toUpperCase()}`
-      : this.key.startsWith("⎇")
-        ? `Alt+${this.key.slice(1).toUpperCase()}`
-        : this.key === "\u2325"
-          ? "Option"
-          : this.key;
+    const isMac = navigator.platform.toUpperCase().includes("MAC");
+    const label = this.key.startsWith("⌘")
+      ? isMac
+        ? `⌘${this.key.slice(1).toUpperCase()}`
+        : `Ctrl+${this.key.slice(1).toUpperCase()}`
+      : this.key.startsWith("^")
+        ? `Ctrl+${this.key.slice(1).toUpperCase()}`
+        : this.key.startsWith("⎇")
+          ? isMac
+            ? `⌥${this.key.slice(1).toUpperCase()}`
+            : `Alt+${this.key.slice(1).toUpperCase()}`
+          : this.key === "\u2325"
+            ? "Option"
+            : this.key;
     return html`<kbd>${label}</kbd>`;
   }
 }
