@@ -9,6 +9,9 @@ import { DexieStateRepository } from "../../infrastructure/repositories/dexie-st
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
 import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
+import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
+import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
+import { activityStore, type ActivityEvent } from "../services/activity-store.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 
 const boardRepo = new DexieBoardRepository();
@@ -16,9 +19,11 @@ const stateRepo = new DexieStateRepository();
 const taskRepo = new DexieTaskRepository();
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
+const stepRepo = new DexieStepRepository();
+const timelineRepo = new DexieTimelineRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
 const createBoard = new CreateBoardUseCase(boardRepo, stateRepo);
-const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo);
+const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
 
 const BENTO_COLORS = ["#1E40AF", "#D97706", "#059669", "#7C3AED", "#DC2626"];
 
@@ -34,6 +39,11 @@ export class BoardListPage extends LitElement {
   private newTitle = "";
   @state()
   private newDescription = "";
+
+  @state()
+  private activityEvents: ActivityEvent[] = [];
+
+  private _pollTimer: ReturnType<typeof setInterval> | null = null;
 
   static styles = css`
     :host {
@@ -67,6 +77,110 @@ export class BoardListPage extends LitElement {
       background: var(--color-white);
       border: var(--line-thick) solid var(--color-black);
       padding: 2px var(--space-sm);
+    }
+
+    /* Activity feed 3-column layout */
+    .activity-section {
+      margin-bottom: var(--space-3xl);
+    }
+
+    .activity-section-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-2xl);
+      letter-spacing: -0.03em;
+      margin-bottom: var(--space-lg);
+      border-bottom: 4px solid var(--color-black);
+      padding-bottom: var(--space-sm);
+    }
+
+    .activity-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--space-lg);
+    }
+
+    .activity-col {
+      border: 4px solid var(--color-black);
+      box-shadow: 6px 6px 0 var(--color-black);
+      background: var(--color-white);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .activity-col-header {
+      padding: var(--space-sm) var(--space-md);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-base);
+      color: var(--color-white);
+      border-bottom: 4px solid var(--color-black);
+    }
+
+    .activity-col-header.added { background: var(--color-accent); }
+    .activity-col-header.updated { background: var(--color-warning); }
+    .activity-col-header.done { background: var(--color-success); }
+
+    .activity-col-body {
+      flex: 1;
+      min-height: 120px;
+    }
+
+    .activity-col-body:empty::after {
+      content: "No activity";
+      display: block;
+      padding: var(--space-md);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 2px solid var(--color-black);
+    }
+
+    .activity-icon {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .activity-icon.created { background: var(--color-accent); color: var(--color-white); }
+    .activity-icon.moved { background: var(--color-accent); color: var(--color-white); }
+    .activity-icon.updated { background: var(--color-warning); color: var(--color-white); }
+    .activity-icon.commented { background: var(--color-accent-2); color: var(--color-white); }
+    .activity-icon.completed { background: var(--color-success); color: var(--color-white); }
+
+    .activity-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-label {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .activity-time {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
     }
 
     .board-grid {
@@ -286,6 +400,17 @@ export class BoardListPage extends LitElement {
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.loadBoards();
+    this._pollTimer = setInterval(() => {
+      this.activityEvents = activityStore.getAll();
+    }, 2000);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
   }
 
   private async loadBoards(): Promise<void> {
@@ -322,12 +447,79 @@ export class BoardListPage extends LitElement {
     this.pageController.navigate("board-detail", { id });
   }
 
+  private _groupEventsByType(): { added: ActivityEvent[]; updated: ActivityEvent[]; done: ActivityEvent[] } {
+    const added = this.activityEvents.filter((e) => e.type === "created").slice(0, 5);
+    const updated = this.activityEvents.filter((e) => e.type === "updated" || e.type === "moved" || e.type === "commented").slice(0, 5);
+    const done = this.activityEvents.filter((e) => e.type === "completed").slice(0, 5);
+    return { added, updated, done };
+  }
+
   render() {
+    const { added, updated, done } = this._groupEventsByType();
+
     return html`
       <h1 class="page-title">
-        Boards
-        <span class="count">${this.boards.length}</span>
+        Home
+        <span class="count">${this.activityEvents.length}</span>
       </h1>
+
+      <div class="activity-section">
+        <h2 class="activity-section-title">Activity</h2>
+        <div class="activity-columns">
+          <div class="activity-col">
+            <div class="activity-col-header added">Added</div>
+            <div class="activity-col-body">
+              ${added.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No new items</div>` : ""}
+              ${added.map((ev) => html`
+                <div class="activity-item">
+                  <span class="activity-icon created">+</span>
+                  <div class="activity-info">
+                    <div class="activity-label">${ev.label}</div>
+                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              `)}
+            </div>
+          </div>
+
+          <div class="activity-col">
+            <div class="activity-col-header updated">Updated</div>
+            <div class="activity-col-body">
+              ${updated.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No updates</div>` : ""}
+              ${updated.map((ev) => html`
+                <div class="activity-item">
+                  <span class="activity-icon ${ev.type === "commented" ? "commented" : "updated"}">${ev.type === "commented" ? "💬" : ev.type === "moved" ? "→" : "✎"}</span>
+                  <div class="activity-info">
+                    <div class="activity-label">${ev.label}</div>
+                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              `)}
+            </div>
+          </div>
+
+          <div class="activity-col">
+            <div class="activity-col-header done">Done</div>
+            <div class="activity-col-body">
+              ${done.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">Nothing done yet</div>` : ""}
+              ${done.map((ev) => html`
+                <div class="activity-item">
+                  <span class="activity-icon completed">✓</span>
+                  <div class="activity-info">
+                    <div class="activity-label">${ev.label}</div>
+                    <div class="activity-time">${new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              `)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="activity-section-title" style="margin-top:var(--space-2xl);">
+        Boards
+        <span style="font-family:var(--font-mono);font-size:var(--text-base);border:3px solid var(--color-black);padding:2px var(--space-sm);margin-left:var(--space-sm);">${this.boards.length}</span>
+      </h2>
 
       <div class="board-grid">
         ${this.boards.length === 0 && !this.showCreateForm

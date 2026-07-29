@@ -5,7 +5,7 @@ import type { Task } from "../../domain/entities/task.entity.js";
 
 const COLUMN_COLORS: Record<string, string> = {
   "Not now": "#D4D4D4",
-  "Maybe?": "#E5B800",
+  "Maybe?": "#FFFFFF",
   "In Progress": "#1E40AF",
   "Done": "#166534",
 };

@@ -1,7 +1,7 @@
 import { LitElement } from "lit";
 export declare class AutoCloseDial extends LitElement {
-    private value;
-    private enabled;
+    value: number;
+    enabled: boolean;
     static styles: import("lit").CSSResult;
     private _maxValue;
     private _ticks;

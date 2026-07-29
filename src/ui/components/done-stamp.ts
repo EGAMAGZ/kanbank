@@ -7,6 +7,8 @@ export class DoneStamp extends LitElement {
   date = "";
   @property({ type: String })
   author = "AG";
+  @property({ type: String, attribute: "bg-color" })
+  bgColor = "#166534";
 
   static styles = css`
     :host {
@@ -20,7 +22,6 @@ export class DoneStamp extends LitElement {
 
     .stamp {
       border: 3px solid var(--color-black);
-      background: var(--color-error);
       color: var(--color-white);
       padding: var(--space-xs) var(--space-sm);
       font-family: var(--font-mono);
@@ -66,7 +67,7 @@ export class DoneStamp extends LitElement {
 
   render() {
     return html`
-      <div class="stamp">
+      <div class="stamp" style="background:${this.bgColor}">
         <div class="label">DONE</div>
         <div class="date-line">${this.date} ${this.author}</div>
       </div>

@@ -19,7 +19,7 @@ export class DexieBoardRepository implements BoardRepository {
 
   async update(
     id: Id<"Board">,
-    changes: Partial<Pick<Board, "title" | "description" | "updatedAt">>,
+    changes: Partial<Pick<Board, "title" | "description" | "updatedAt" | "autoCloseDays" | "autoCloseEnabled" | "publicLink" | "accessControl">>,
   ): Promise<void> {
     await db.boards.update(id, changes);
   }

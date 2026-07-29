@@ -161,9 +161,9 @@ export class TaskCard extends LitElement {
             <span class="avatar">${CURRENT_USER.initials}</span>
             <span class="date">${formatRelative(this.task.createdAt)}</span>
           </div>
-          ${days > 0
+          ${days > 3
             ? html`<span class="inactive ${days > 7 ? "stale" : ""}">${days}d idle</span>`
-            : ""}
+            : days > 0 ? html`<span class="inactive">${days}d idle</span>` : ""}
         </div>
       </div>
     `;

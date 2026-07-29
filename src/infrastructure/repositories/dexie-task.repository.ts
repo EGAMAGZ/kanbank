@@ -20,6 +20,11 @@ export class DexieTaskRepository implements TaskRepository {
     return db.tasks.filter((t) => t.pinned === true).toArray();
   }
 
+  async getNextSeq(): Promise<number> {
+    const last = await db.tasks.orderBy("seq").last();
+    return (last?.seq ?? 0) + 1;
+  }
+
   async create(task: Task): Promise<Id<"Task">> {
     await db.tasks.add(task);
     return task.id;
@@ -40,6 +45,8 @@ export class DexieTaskRepository implements TaskRepository {
         | "dueDate"
         | "notNowSince"
         | "isGold"
+        | "category"
+        | "subscriberIds"
       >
     >,
   ): Promise<void> {

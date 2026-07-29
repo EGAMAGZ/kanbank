@@ -6,8 +6,9 @@ export declare class DexieTaskRepository implements TaskRepository {
     findByState(stateId: Id<"State">): Promise<Task[]>;
     findById(id: Id<"Task">): Promise<Task | undefined>;
     findPinned(): Promise<Task[]>;
+    getNextSeq(): Promise<number>;
     create(task: Task): Promise<Id<"Task">>;
-    update(id: Id<"Task">, changes: Partial<Pick<Task, "title" | "description" | "stateId" | "images" | "lastActivityAt" | "updatedAt" | "pinned" | "dueDate" | "notNowSince" | "isGold">>): Promise<void>;
+    update(id: Id<"Task">, changes: Partial<Pick<Task, "title" | "description" | "stateId" | "images" | "lastActivityAt" | "updatedAt" | "pinned" | "dueDate" | "notNowSince" | "isGold" | "category" | "subscriberIds">>): Promise<void>;
     delete(id: Id<"Task">): Promise<void>;
     move(id: Id<"Task">, newStateId: Id<"State">, _order: number): Promise<void>;
     search(boardId: Id<"Board">, query: string): Promise<Task[]>;

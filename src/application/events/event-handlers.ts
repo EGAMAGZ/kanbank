@@ -35,4 +35,19 @@ export function registerEventHandlers(taskRepo: TaskRepository): void {
       await updateActivity(payload.taskId);
     }
   });
+
+  eventBus.subscribe("step.created", async (event) => {
+    const payload = event.payload as { taskId: string };
+    await updateActivity(payload.taskId);
+  });
+
+  eventBus.subscribe("step.updated", async (event) => {
+    const payload = event.payload as { taskId: string };
+    await updateActivity(payload.taskId);
+  });
+
+  eventBus.subscribe("step.deleted", async (event) => {
+    const payload = event.payload as { taskId: string };
+    await updateActivity(payload.taskId);
+  });
 }

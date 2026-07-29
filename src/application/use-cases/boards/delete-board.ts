@@ -3,6 +3,8 @@ import type { StateRepository } from "../../../domain/repositories/state.reposit
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
 import type { ImageRepository } from "../../../domain/repositories/image.repository.js";
+import type { StepRepository } from "../../../domain/repositories/step.repository.js";
+import type { TimelineRepository } from "../../../domain/repositories/timeline.repository.js";
 import { EntityNotFoundError } from "../../../domain/errors/domain-errors.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 import type { Id } from "../../../shared/types/index.js";
@@ -14,6 +16,8 @@ export class DeleteBoardUseCase {
     private taskRepo: TaskRepository,
     private commentRepo: CommentRepository,
     private imageRepo: ImageRepository,
+    private stepRepo: StepRepository,
+    private timelineRepo: TimelineRepository,
   ) {}
 
   async execute(id: Id<"Board">): Promise<void> {
@@ -36,6 +40,8 @@ export class DeleteBoardUseCase {
       for (const img of task.images) {
         await this.imageRepo.delete(img.id);
       }
+      await this.stepRepo.deleteByTask(task.id);
+      await this.timelineRepo.deleteByTask(task.id);
       await this.taskRepo.delete(task.id);
     }
 

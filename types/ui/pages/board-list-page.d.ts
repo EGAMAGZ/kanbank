@@ -6,12 +6,16 @@ export declare class BoardListPage extends LitElement {
     private showCreateForm;
     private newTitle;
     private newDescription;
+    private activityEvents;
+    private _pollTimer;
     static styles: import("lit").CSSResult;
     connectedCallback(): Promise<void>;
+    disconnectedCallback(): void;
     private loadBoards;
     private getCardColor;
     private handleCreate;
     private handleDelete;
     private navigateToBoard;
+    private _groupEventsByType;
     render(): import("lit").TemplateResult<1>;
 }

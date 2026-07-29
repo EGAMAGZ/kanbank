@@ -18,9 +18,11 @@ export class CreateTaskUseCase {
 
     const now = toISODate();
     const taskId = generateId<"Task">();
+    const seq = await this.taskRepo.getNextSeq();
 
     const task = createTask({
       id: taskId,
+      seq,
       boardId: parsed.data.boardId as any,
       stateId: parsed.data.stateId as any,
       title: parsed.data.title,

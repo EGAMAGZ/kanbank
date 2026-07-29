@@ -4,6 +4,9 @@ import { customElement, state } from "lit/decorators.js";
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
 import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
+import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
+import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
+import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
 import { UpdateTaskUseCase } from "../../application/use-cases/tasks/update-task.js";
 import { DeleteTaskUseCase } from "../../application/use-cases/tasks/delete-task.js";
 import { AttachImageUseCase } from "../../application/use-cases/tasks/attach-image.js";
@@ -13,19 +16,35 @@ import { UpdateCommentUseCase } from "../../application/use-cases/comments/updat
 import { DeleteCommentUseCase } from "../../application/use-cases/comments/delete-comment.js";
 import { AttachImageCommentUseCase } from "../../application/use-cases/comments/attach-image-comment.js";
 import { DetachImageCommentUseCase } from "../../application/use-cases/comments/detach-image-comment.js";
+import { CreateStepUseCase } from "../../application/use-cases/steps/create-step.js";
+import { UpdateStepUseCase } from "../../application/use-cases/steps/update-step.js";
+import { DeleteStepUseCase } from "../../application/use-cases/steps/delete-step.js";
+import { AddTimelineEntryUseCase } from "../../application/use-cases/timeline/add-timeline-entry.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 import type { Comment } from "../../domain/entities/comment.entity.js";
+import type { Step } from "../../domain/entities/step.entity.js";
+import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
+import type { State } from "../../domain/entities/state.entity.js";
 import type { Id } from "../../shared/types/index.js";
-import "../../ui/components/markdown-viewer.js";
-import "../../ui/components/image-gallery.js";
-import "../../ui/components/image-upload.js";
 import { CURRENT_USER } from "../../ui/components/task-card.js";
+import "../../ui/components/wysiwyg-editor.js";
+import "../../ui/components/done-stamp.js";
+import "../../ui/components/not-now-stamp.js";
+import "../../ui/components/step-checklist.js";
+import "../../ui/components/attachment-list.js";
+import "../../ui/components/state-selector.js";
+import "../../ui/components/quick-actions.js";
+import "../../ui/components/keycap.js";
+import "../../ui/components/not-now-stamp.js";
 
 const taskRepo = new DexieTaskRepository();
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
+const stateRepo = new DexieStateRepository();
+const stepRepo = new DexieStepRepository();
+const timelineRepo = new DexieTimelineRepository();
 const updateTask = new UpdateTaskUseCase(taskRepo);
-const deleteTask = new DeleteTaskUseCase(taskRepo, commentRepo, imageRepo);
+const deleteTask = new DeleteTaskUseCase(taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
 const attachImage = new AttachImageUseCase(taskRepo, imageRepo);
 const detachImage = new DetachImageUseCase(taskRepo, imageRepo);
 const addComment = new AddCommentUseCase(commentRepo, taskRepo);
@@ -33,6 +52,18 @@ const updateComment = new UpdateCommentUseCase(commentRepo, taskRepo);
 const deleteComment = new DeleteCommentUseCase(commentRepo, taskRepo);
 const attachCommentImage = new AttachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
 const detachCommentImage = new DetachImageCommentUseCase(commentRepo, taskRepo, imageRepo);
+const createStep = new CreateStepUseCase(stepRepo);
+const updateStep = new UpdateStepUseCase(stepRepo);
+const deleteStep = new DeleteStepUseCase(stepRepo);
+const addTimeline = new AddTimelineEntryUseCase(timelineRepo);
+
+const STATE_COLORS: Record<string, string> = {
+  "Maybe?": "#FFFFFF",
+};
+
+function getStateColor(state: State): string {
+  return STATE_COLORS[state.title] ?? state.color;
+}
 
 @customElement("task-detail-page")
 export class TaskDetailPage extends LitElement {
@@ -44,58 +75,98 @@ export class TaskDetailPage extends LitElement {
   @state()
   private comments: Comment[] = [];
   @state()
+  private steps: Step[] = [];
+  @state()
+  private timeline: TimelineEntry[] = [];
+  private historyShowAll = false;
+  @state()
+  private states: State[] = [];
+  @state()
   private error: string | null = null;
 
   @state()
-  private editingTask = false;
+  private editingTaskDesc = false;
   @state()
   private editTitle = "";
   @state()
-  private editDescription = "";
+  private editDueDate = "";
 
   @state()
-  private newComment = "";
-  @state()
-  private commentError: string | null = null;
+  private newCommentHtml = "";
 
   @state()
   private editingCommentId: string | null = null;
   @state()
   private editingCommentText = "";
 
-  @state()
-  private editDueDate = "";
+  private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
+
+  private get _isDone(): boolean {
+    if (!this.task || !this.states.length) return false;
+    const doneState = this.states.find((s) => s.title === "Done");
+    return !!doneState && this.task.stateId === doneState.id;
+  }
+
+  private get _isNotNow(): boolean {
+    if (!this.task || !this.states.length) return false;
+    const notNowState = this.states.find((s) => s.title === "Not now");
+    return !!notNowState && this.task.stateId === notNowState.id;
+  }
 
   static styles = css`
     :host {
       display: block;
-      max-width: 780px;
-      margin: 0 auto;
-      padding: var(--space-2xl) var(--gutter-lg);
-      overflow-y: auto;
       height: 100%;
+      overflow: hidden;
     }
 
-    .header {
+    .task-layout {
       display: flex;
-      align-items: flex-start;
-      gap: var(--space-lg);
-      margin-bottom: var(--space-2xl);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .state-rail {
+      width: 140px;
+      min-width: 140px;
+      border-right: 4px solid var(--color-black);
+      padding: var(--space-md);
+      background: var(--color-bg);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .state-rail-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: var(--space-sm);
+      color: var(--color-text-3);
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-xl) var(--space-2xl);
+      max-width: 860px;
+      margin: 0 auto;
+      min-width: 0;
     }
 
     .back {
-      width: 36px;
-      height: 36px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      border: var(--line-thick) solid var(--color-black);
+      gap: var(--space-xs);
+      margin-bottom: var(--space-md);
       cursor: pointer;
-      font-size: 18px;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
       font-weight: 700;
+      border: 3px solid var(--color-black);
+      padding: var(--space-xs) var(--space-md);
       background: var(--color-white);
-      flex-shrink: 0;
-      margin-top: var(--space-xs);
       transition: background var(--ease-brutal);
     }
 
@@ -103,17 +174,33 @@ export class TaskDetailPage extends LitElement {
       background: var(--color-bg);
     }
 
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-lg);
+    }
+
     .title-block {
       flex: 1;
-      border: var(--line-thicker) solid var(--color-black);
-      box-shadow: var(--shadow-brutal-md);
-      padding: var(--space-xl);
+      position: relative;
+      border: 4px solid var(--color-black);
+      box-shadow: 6px 6px 0 var(--color-black);
+      padding: var(--space-lg);
       background: var(--color-white);
+      min-width: 0;
+    }
+
+    .title-block .state-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
     }
 
     .title-block.gold {
       background: var(--color-gold);
-      border-width: var(--line-thicker);
     }
 
     .title-block h1 {
@@ -123,9 +210,10 @@ export class TaskDetailPage extends LitElement {
       font-size: var(--text-2xl);
       letter-spacing: -0.03em;
       line-height: var(--leading-tight);
+      word-break: break-word;
     }
 
-    .actions {
+    .actions-col {
       display: flex;
       flex-direction: column;
       gap: var(--space-sm);
@@ -133,19 +221,28 @@ export class TaskDetailPage extends LitElement {
     }
 
     .action-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
       padding: var(--space-xs) var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
+      border: 3px solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-xs);
       font-weight: 700;
       font-family: var(--font-mono);
       background: var(--color-white);
-      transition: background var(--ease-brutal);
-      text-align: center;
+      transition: background var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      box-shadow: 4px 4px 0 var(--color-black);
     }
 
     .action-btn:hover {
-      background: var(--color-bg);
+      transform: translate(1px, 1px);
+      box-shadow: 3px 3px 0 var(--color-black);
+    }
+
+    .action-btn:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 var(--color-black);
     }
 
     .action-btn.primary {
@@ -162,14 +259,10 @@ export class TaskDetailPage extends LitElement {
       color: var(--color-white);
     }
 
-    .action-btn.gold-active {
-      background: var(--color-gold);
-    }
-
     .meta-row {
       display: flex;
       align-items: center;
-      gap: var(--space-md);
+      gap: var(--space-sm);
       margin-bottom: var(--space-lg);
       flex-wrap: wrap;
     }
@@ -182,47 +275,83 @@ export class TaskDetailPage extends LitElement {
       padding: 2px var(--space-sm);
     }
 
+    .meta-item.gold-bg {
+      background: var(--color-gold);
+    }
+
+    .meta-item.cat {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+
+    .meta-avatar {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--color-black);
+      background: var(--color-accent-2);
+      color: var(--color-white);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
     .section {
       margin-bottom: var(--space-2xl);
     }
 
-    .section h3 {
-      margin: 0 0 var(--space-md);
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+      border-bottom: 3px solid var(--color-black);
+      padding-bottom: var(--space-xs);
+    }
+
+    .section-header h3 {
+      margin: 0;
       font-family: var(--font-display);
       font-size: var(--text-lg);
       font-weight: 800;
       letter-spacing: -0.02em;
-      border-bottom: var(--line-thick) solid var(--color-black);
-      padding-bottom: var(--space-xs);
     }
 
-    .description {
-      margin-bottom: var(--space-2xl);
-      font-size: var(--text-base);
-      line-height: var(--leading-loose);
-    }
-
-    .edit-form input,
-    .edit-form textarea {
-      width: 100%;
-      padding: var(--space-sm) var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
-      box-sizing: border-box;
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      outline: none;
+    .section-header .count {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      border: 2px solid var(--color-black);
+      padding: 1px var(--space-xs);
       background: var(--color-white);
     }
 
-    .edit-form input:focus,
-    .edit-form textarea:focus {
-      box-shadow: 3px 3px 0 var(--color-accent);
+    .auto-close-msg {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+      border: 2px dashed var(--color-warning);
+      padding: var(--space-xs) var(--space-sm);
+      margin-bottom: var(--space-md);
     }
 
-    .edit-form textarea {
-      min-height: 120px;
-      resize: vertical;
-      margin-top: var(--space-sm);
+    .edit-form input {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 3px solid var(--color-black);
+      box-sizing: border-box;
+      font-family: var(--font-body);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      outline: none;
+      background: var(--color-white);
+      margin-bottom: var(--space-sm);
+    }
+
+    .edit-form input:focus {
+      box-shadow: 3px 3px 0 var(--color-accent);
     }
 
     .edit-form .btn-row {
@@ -233,7 +362,7 @@ export class TaskDetailPage extends LitElement {
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
+      border: 3px solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
@@ -242,7 +371,7 @@ export class TaskDetailPage extends LitElement {
     }
 
     .btn-primary {
-      box-shadow: var(--shadow-brutal);
+      box-shadow: 4px 4px 0 var(--color-black);
       background: var(--color-accent);
       color: var(--color-white);
     }
@@ -253,7 +382,7 @@ export class TaskDetailPage extends LitElement {
     }
 
     .btn-primary:active {
-      transform: translate(5px, 5px);
+      transform: translate(4px, 4px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
@@ -266,11 +395,16 @@ export class TaskDetailPage extends LitElement {
       background: var(--color-bg);
     }
 
+    .desc-editor-wrap {
+      margin-bottom: var(--space-lg);
+    }
+
     .comment {
       padding: var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
+      border: 3px solid var(--color-black);
       margin-bottom: var(--space-md);
       background: var(--color-white);
+      position: relative;
     }
 
     .comment-header {
@@ -326,84 +460,126 @@ export class TaskDetailPage extends LitElement {
       background: var(--color-bg);
     }
 
-    .comment-edit textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: var(--space-sm) var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
-      box-sizing: border-box;
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      margin-top: var(--space-sm);
-      outline: none;
+    .comment-body {
+      font-size: var(--text-base);
+      line-height: var(--leading-loose);
     }
 
-    .comment-edit textarea:focus {
-      box-shadow: 3px 3px 0 var(--color-accent);
+    .timeline {
+      position: relative;
     }
 
-    .comment-edit .btn-row {
+    .timeline-item {
       display: flex;
       gap: var(--space-sm);
-      margin-top: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 2px solid var(--color-black);
+      align-items: flex-start;
     }
 
-    .comment-error {
-      color: var(--color-error);
-      font-size: var(--text-sm);
-      margin-top: var(--space-sm);
+    .timeline-icon {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--color-black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
     }
 
-    .add-comment textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: var(--space-sm) var(--space-md);
-      border: var(--line-thick) solid var(--color-black);
-      box-sizing: border-box;
+    .timeline-body {
+      flex: 1;
+    }
+
+    .timeline-msg {
       font-family: var(--font-body);
       font-size: var(--text-sm);
-      outline: none;
+      font-weight: 600;
+    }
+
+    .timeline-meta {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+    }
+
+    .add-comment-wrap {
+      border: 3px solid var(--color-black);
       background: var(--color-white);
     }
 
-    .add-comment textarea:focus {
-      box-shadow: 3px 3px 0 var(--color-accent);
+    .comment-editor-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding: var(--space-sm);
+      border-top: 3px solid var(--color-black);
+      background: var(--color-bg);
     }
 
-    .edit-form .field-row {
+    .not-now-notice {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      border: 3px solid #555;
+      background: #eee;
+      padding: var(--space-sm);
+      margin-bottom: var(--space-md);
       display: flex;
       align-items: center;
       gap: var(--space-sm);
-      margin-top: var(--space-sm);
     }
 
-    .edit-form .field-row label {
-      font-size: var(--text-xs);
-      font-weight: 700;
-      font-family: var(--font-mono);
-      min-width: 80px;
+    .task-card-wrapper {
+      position: relative;
     }
-
-    .edit-form .field-row input[type="date"] {
-      padding: var(--space-xs) var(--space-sm);
-      border: var(--line-thick) solid var(--color-black);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      outline: none;
-    }
-
-    .edit-form .field-row input[type="date"]:focus {
-      box-shadow: 3px 3px 0 var(--color-accent);
-    }
-
   `;
 
-  async onPageEnter(): Promise<void> {
-    await this.loadTask();
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.boundKeydown = this._handleGlobalKeydown.bind(this);
+    document.addEventListener("keydown", this.boundKeydown);
   }
 
-  private async loadTask(): Promise<void> {
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.boundKeydown) {
+      document.removeEventListener("keydown", this.boundKeydown);
+      this.boundKeydown = null;
+    }
+  }
+
+  async onPageEnter(): Promise<void> {
+    await this._loadTask();
+  }
+
+  private _handleGlobalKeydown(e: KeyboardEvent): void {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if ((e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true") return;
+
+    if (e.key === "Escape") {
+      if (this.editingTaskDesc) {
+        this.editingTaskDesc = false;
+        return;
+      }
+      this.goBack();
+      return;
+    }
+    if (e.key === "e" && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      this.startEditTask();
+      return;
+    }
+    if (e.key === "d" && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      this.markAsDone();
+      return;
+    }
+  }
+
+  private async _loadTask(): Promise<void> {
     const id = this.params?.id;
     if (!id) return;
     try {
@@ -411,6 +587,10 @@ export class TaskDetailPage extends LitElement {
       this.task = (await taskRepo.findById(id as Id<"Task">)) ?? null;
       if (this.task) {
         this.comments = await commentRepo.findByTask(this.task.id);
+        this.steps = await stepRepo.findByTask(this.task.id);
+        const boardStates = await stateRepo.findByBoard(this.task.boardId);
+        this.states = boardStates.sort((a, b) => a.order - b.order);
+        this.timeline = await timelineRepo.findByTask(this.task.id);
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to load task";
@@ -427,28 +607,68 @@ export class TaskDetailPage extends LitElement {
 
   private startEditTask(): void {
     if (!this.task) return;
-    this.editingTask = true;
+    this.editingTaskDesc = true;
     this.editTitle = this.task.title;
-    this.editDescription = this.task.description;
     this.editDueDate = this.task.dueDate ?? "";
+    setTimeout(() => {
+      const editor = this.renderRoot.querySelector("#desc-editor") as any;
+      if (editor && editor.setValue) {
+        editor.setValue(this.task!.description);
+      }
+      const titleInput = this.renderRoot.querySelector("#edit-title-input") as HTMLInputElement;
+      if (titleInput) titleInput.focus();
+    }, 50);
   }
 
   private cancelEditTask(): void {
-    this.editingTask = false;
+    this.editingTaskDesc = false;
+  }
+
+  private _handleCommentEditorChange(e: CustomEvent): void {
+    this.newCommentHtml = e.detail.html;
   }
 
   private async saveEditTask(): Promise<void> {
     if (!this.task || !this.editTitle.trim()) return;
     try {
+      const descEditor = this.renderRoot.querySelector("#desc-editor") as any;
+      const description = descEditor?.value || "";
       await updateTask.execute(this.task.id, {
         title: this.editTitle.trim(),
-        description: this.editDescription.trim() || undefined,
+        description: description || undefined,
         dueDate: this.editDueDate || null,
       });
-      this.editingTask = false;
-      await this.loadTask();
+      await addTimeline.execute({
+        taskId: this.task.id,
+        type: "updated",
+        userId: CURRENT_USER.initials,
+        userName: CURRENT_USER.name,
+        message: "edited task",
+      });
+      this.editingTaskDesc = false;
+      await this._loadTask();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to update task";
+    }
+  }
+
+  private async markAsDone(): Promise<void> {
+    if (!this.task) return;
+    const doneState = this.states.find((s) => s.title === "Done");
+    if (!doneState) return;
+    try {
+      await updateTask.execute(this.task.id, { stateId: doneState.id });
+      await addTimeline.execute({
+        taskId: this.task.id,
+        type: "completed",
+        toStateId: doneState.id,
+        userId: CURRENT_USER.initials,
+        userName: CURRENT_USER.name,
+        message: "marked as done",
+      });
+      await this._loadTask();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to mark as done";
     }
   }
 
@@ -466,31 +686,75 @@ export class TaskDetailPage extends LitElement {
     for (const file of files) {
       await attachImage.execute(this.task.id, file);
     }
-    await this.loadTask();
+    await this._loadTask();
   }
 
   private async handleDetachTaskImage(e: Event): Promise<void> {
     const { imageId } = (e as CustomEvent).detail;
     if (!imageId || !this.task) return;
     await detachImage.execute(this.task.id, imageId);
-    await this.loadTask();
+    await this._loadTask();
   }
 
   private async toggleGold(): Promise<void> {
     if (!this.task) return;
-    await updateTask.execute(this.task.id, { isGold: !this.task.isGold });
-    await this.loadTask();
+    const newGold = !this.task.isGold;
+    await updateTask.execute(this.task.id, { isGold: newGold });
+    await addTimeline.execute({
+      taskId: this.task.id,
+      type: "gold-toggled",
+      userId: CURRENT_USER.initials,
+      userName: CURRENT_USER.name,
+      message: newGold ? "★ golden ticket" : "removed gold",
+    });
+    await this._loadTask();
+  }
+
+  private async togglePin(): Promise<void> {
+    if (!this.task) return;
+    const newPin = !this.task.pinned;
+    await updateTask.execute(this.task.id, { pinned: newPin });
+    await this._loadTask();
+    window.dispatchEvent(new CustomEvent("pinned-changed"));
+  }
+
+  private async handleStateChange(e: Event): Promise<void> {
+    if (!this.task) return;
+    const { stateId } = (e as CustomEvent).detail;
+    const oldState = this.states.find((s) => s.id === this.task!.stateId);
+    const newState = this.states.find((s) => s.id === stateId);
+    if (stateId === this.task.stateId) return;
+    await updateTask.execute(this.task.id, { stateId });
+    await addTimeline.execute({
+      taskId: this.task.id,
+      type: "moved",
+      fromStateId: oldState?.id,
+      toStateId: stateId,
+      userId: CURRENT_USER.initials,
+      userName: CURRENT_USER.name,
+      message: `moved from "${oldState?.title ?? "?"}" to "${newState?.title ?? "?"}"`,
+    });
+    await this._loadTask();
   }
 
   private async handleAddComment(): Promise<void> {
-    if (!this.newComment.trim() || !this.task) return;
+    if (!this.newCommentHtml.trim() || !this.task) return;
     try {
-      this.commentError = null;
-      await addComment.execute({ taskId: this.task.id, markdown: this.newComment.trim() });
-      this.newComment = "";
+      this.error = null;
+      await addComment.execute({ taskId: this.task.id, markdown: this.newCommentHtml.trim() });
+      await addTimeline.execute({
+        taskId: this.task.id,
+        type: "commented",
+        userId: CURRENT_USER.initials,
+        userName: CURRENT_USER.name,
+        message: "added a comment",
+      });
+      this.newCommentHtml = "";
       this.comments = await commentRepo.findByTask(this.task.id);
+      const editor = this.renderRoot.querySelector("#new-comment-editor") as any;
+      if (editor && editor.setValue) editor.setValue("");
     } catch (e) {
-      this.commentError = e instanceof Error ? e.message : "Failed to add comment";
+      this.error = e instanceof Error ? e.message : "Failed to add comment";
     }
   }
 
@@ -512,7 +776,7 @@ export class TaskDetailPage extends LitElement {
       this.editingCommentText = "";
       this.comments = await commentRepo.findByTask(c.taskId);
     } catch (e) {
-      this.commentError = e instanceof Error ? e.message : "Failed to update comment";
+      this.error = e instanceof Error ? e.message : "Failed to update comment";
     }
   }
 
@@ -538,6 +802,50 @@ export class TaskDetailPage extends LitElement {
     this.comments = await commentRepo.findByTask(c.taskId);
   }
 
+  private async handleStepAdd(e: Event): Promise<void> {
+    if (!this.task) return;
+    const { text } = (e as CustomEvent).detail;
+    await createStep.execute({ taskId: this.task.id, text, order: this.steps.length });
+    await this._loadTask();
+  }
+
+  private async handleStepToggle(e: Event): Promise<void> {
+    const { id, checked } = (e as CustomEvent).detail;
+    await updateStep.execute(id, { checked });
+    await this._loadTask();
+  }
+
+  private async handleStepDelete(e: Event): Promise<void> {
+    const { id } = (e as CustomEvent).detail;
+    await deleteStep.execute(id);
+    await this._loadTask();
+  }
+
+  private _formatDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  private _stampDate(dateStr: string): string {
+    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(dateStr));
+  }
+
+  private _relativeTime(dateStr: string): string {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return "today";
+    if (days === 1) return "yesterday";
+    return `${days}d ago`;
+  }
+
+  private _inactiveDays(dateStr: string): number {
+    const now = new Date();
+    const d = new Date(dateStr);
+    return Math.floor((now.getTime() - d.getTime()) / 86400000);
+  }
+
   render() {
     if (this.error) {
       return html`<div style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this.error}</div>`;
@@ -546,121 +854,227 @@ export class TaskDetailPage extends LitElement {
       return html`<div style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>`;
     }
 
+    const inactive = this._inactiveDays(this.task.lastActivityAt);
+    const autoCloseMsg = inactive > 0 ? `Moves to 'Not Now' in ${Math.max(0, 7 - inactive)} days if there's no activity` : "";
+    const currentState = this.states.find((s) => s.id === this.task!.stateId);
     return html`
-      <div class="header">
-        <span class="back" @click="${this.goBack}">←</span>
-        ${this.editingTask
-          ? html`
-            <div class="edit-form" style="flex:1;">
-              <input type="text" .value="${this.editTitle}"
-                @input="${(e: Event) => { this.editTitle = (e.target as HTMLInputElement).value; }}"
-              />
-              <textarea .value="${this.editDescription}"
-                @input="${(e: Event) => { this.editDescription = (e.target as HTMLTextAreaElement).value; }}"
-                placeholder="Description (markdown)..."
-              ></textarea>
-              <div class="field-row">
-                <label for="edit-due">Due date</label>
-                <input id="edit-due" type="date" .value="${this.editDueDate}"
-                  @input="${(e: Event) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
+      <div class="task-layout">
+        <div class="state-rail">
+          <div class="state-rail-label">Status</div>
+          <state-selector
+            .states="${this.states}"
+            activeStateId="${this.task.stateId}"
+            @state-change="${this.handleStateChange}"
+          ></state-selector>
+        </div>
+
+        <div class="main-content">
+          <!-- Back button -->
+          <div class="back" @click="${this.goBack}">
+            ← Back to board <keycap-el key="Esc"></keycap-el>
+          </div>
+
+          <!-- Auto-close message -->
+          ${autoCloseMsg ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>` : ""}
+
+          <!-- Not now notice -->
+          ${this.task.notNowSince ? html`
+            <div class="not-now-notice">
+              <span style="font-size:14px;">📬</span>
+              Auto-moved to "Not now" on ${this._formatDate(this.task.notNowSince)}
+            </div>
+          ` : ""}
+
+          <!-- Header -->
+          <div class="header">
+            ${this.editingTaskDesc ? html`
+              <div class="edit-form" style="flex:1;">
+                <input id="edit-title-input" type="text" .value="${this.editTitle}"
+                  @input="${(e: InputEvent) => { this.editTitle = (e.target as HTMLInputElement).value; }}"
+                  @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.saveEditTask(); if (e.key === "Escape") this.cancelEditTask(); }}"
                 />
               </div>
-              <div class="btn-row">
-                <button class="btn btn-primary" @click="${this.saveEditTask}">Save</button>
-                <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
+            ` : html`
+              <div class="title-block ${this.task.isGold ? "gold" : ""}">
+                ${currentState ? html`<div class="state-bar" style="background:${getStateColor(currentState)}"></div>` : ""}
+                ${this._isDone ? html`<done-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#166534"></done-stamp>` : ""}
+                ${this._isNotNow ? html`<not-now-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#8C8C8C"></not-now-stamp>` : ""}
+                <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
+                  <span class="meta-item">#${String(this.task.seq).padStart(3, "0")}</span>
+                  ${this.task.category ? html`<span class="meta-item cat">${this.task.category}</span>` : ""}
+                  ${this.task.isGold ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>` : ""}
+                </div>
+                <h1>${this.task.title}</h1>
               </div>
-            </div>
-          `
-          : html`
-            <div class="title-block ${this.task.isGold ? "gold" : ""}">
-              <h1>${this.task.title}</h1>
-            </div>
-            <div class="actions">
-              <button class="action-btn" @click="${this.startEditTask}">EDIT</button>
-              <button class="action-btn ${this.task.isGold ? "gold-active" : ""}" @click="${this.toggleGold}">
-                ${this.task.isGold ? "★ GOLD" : "☆ GOLD"}
+            `}
+
+            <div class="actions-col">
+              <button class="action-btn primary" @click="${this.startEditTask}">
+                EDIT <keycap-el key="E"></keycap-el>
+              </button>
+              <button class="action-btn primary" @click="${this.markAsDone}">
+                DONE <keycap-el key="D"></keycap-el>
+              </button>
+              <button class="action-btn" @click="${this.toggleGold}">
+                ${this.task.isGold ? "★" : "☆"} GOLD
               </button>
               <button class="action-btn danger" @click="${this.handleDeleteTask}">DELETE</button>
             </div>
-          `}
-      </div>
-
-      ${!this.editingTask
-        ? html`
-          <div class="meta-row">
-            <span class="meta-item">#${CURRENT_USER.initials}</span>
-            <span class="meta-item">created ${new Date(this.task.createdAt).toLocaleDateString()}</span>
-            ${this.task.dueDate ? html`<span class="meta-item">due ${new Date(this.task.dueDate).toLocaleDateString()}</span>` : ""}
-            ${this.task.isGold ? html`<span class="meta-item" style="background:var(--color-gold);">★ GOLDEN TICKET</span>` : ""}
           </div>
 
-        `
-        : ""}
+          <!-- Meta row -->
+          <div class="meta-row">
+            <span class="meta-avatar">${CURRENT_USER.initials}</span>
+            <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
+            <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
+            ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
+          </div>
 
-      ${!this.editingTask && this.task.description
-        ? html`
+          <!-- Quick actions -->
+          <div style="margin-bottom:var(--space-lg);">
+            <quick-actions
+              ?isGold="${this.task.isGold}"
+              ?isPinned="${this.task.pinned}"
+              ?hasCover="${false}"
+              @toggle-gold="${this.toggleGold}"
+              @toggle-pin="${this.togglePin}"
+            ></quick-actions>
+          </div>
+
+          <!-- Description section -->
           <div class="section">
-            <h3>Description</h3>
-            <div class="description">
-              <markdown-viewer .content="${this.task.description}"></markdown-viewer>
+            <div class="section-header">
+              <h3>Description</h3>
+            </div>
+            ${this.editingTaskDesc ? html`
+              <div class="desc-editor-wrap">
+                <wysiwyg-editor id="desc-editor" .value="${this.task.description}" placeholder="Write a description..."></wysiwyg-editor>
+              </div>
+              <div class="edit-form">
+                <div style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
+                  <label style="font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;">Due date</label>
+                  <input type="date" .value="${this.editDueDate}"
+                    @input="${(e: InputEvent) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
+                    style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);"
+                  />
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-primary" @click="${this.saveEditTask}">Save</button>
+                  <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
+                </div>
+              </div>
+            ` : this.task.description ? html`
+              <div style="font-size:var(--text-base);line-height:var(--leading-loose);">${this.task.description}</div>
+            ` : html`
+              <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No description</div>
+            `}
+          </div>
+
+          <!-- Checklist / Steps -->
+          <div class="section">
+            <div class="section-header">
+              <h3>Checklist</h3>
+              <span class="count">${this.steps.filter((s) => s.checked).length}/${this.steps.length}</span>
+            </div>
+            <step-checklist
+              .steps="${this.steps}"
+              @step-add="${this.handleStepAdd}"
+              @step-toggle="${this.handleStepToggle}"
+              @step-delete="${this.handleStepDelete}"
+            ></step-checklist>
+          </div>
+
+          <!-- Attachments -->
+          <div class="section">
+            <div class="section-header">
+              <h3>Attachments</h3>
+              <span class="count">${this.task.images.length}</span>
+            </div>
+            <attachment-list
+              .images="${this.task.images}"
+              deletable
+              @attachment-remove="${this.handleDetachTaskImage}"
+              @attachment-add="${this.handleAttachTaskImage}"
+            ></attachment-list>
+          </div>
+
+          <!-- Comments -->
+          <div class="section">
+            <div class="section-header">
+              <h3>Comments</h3>
+              <span class="count">${this.comments.length}</span>
+            </div>
+
+            ${this.comments.map((c) => html`
+              <div class="comment">
+                ${this.editingCommentId === c.id ? html`
+                  <div>
+                    <textarea style="width:100%;min-height:80px;padding:var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
+                      .value="${this.editingCommentText}"
+                      @input="${(e: InputEvent) => { this.editingCommentText = (e.target as HTMLTextAreaElement).value; }}"
+                    ></textarea>
+                    <div class="btn-row" style="margin-top:var(--space-sm);">
+                      <button class="btn btn-primary" @click="${() => this.saveEditComment(c)}">Save</button>
+                      <button class="btn btn-cancel" @click="${this.cancelEditComment}">Cancel</button>
+                    </div>
+                  </div>
+                ` : html`
+                  <div class="comment-header">
+                    <div class="comment-author">
+                      <span class="comment-avatar">${CURRENT_USER.initials}</span>
+                      <span class="comment-date">${this._relativeTime(c.createdAt)}</span>
+                    </div>
+                    <div class="comment-actions">
+                      <button @click="${() => this.startEditComment(c)}">Edit</button>
+                      <button @click="${() => this.handleDeleteComment(c)}">Delete</button>
+                    </div>
+                  </div>
+                  <div class="comment-body">${c.markdown}</div>
+                  <attachment-list .images="${c.images}" deletable
+                    @attachment-remove="${(e: Event) => this.handleDetachCommentImage(e, c)}"
+                    @attachment-add="${(e: Event) => this.handleAttachCommentImage(e, c)}"
+                  ></attachment-list>
+                `}
+              </div>
+            `)}
+
+            <div style="margin-top:var(--space-md);">
+              <div class="add-comment-wrap">
+                <wysiwyg-editor id="new-comment-editor" .value="${this.newCommentHtml}" placeholder="Write a comment..." .minHeight="${80}" @editor-change="${this._handleCommentEditorChange}"></wysiwyg-editor>
+                <div class="comment-editor-actions">
+                  <button class="btn btn-primary" @click="${this.handleAddComment}" ?disabled="${!this.newCommentHtml.trim()}">Add Comment</button>
+                </div>
+              </div>
+            </div>
+
+            ${this.error ? html`<div style="color:var(--color-error);font-size:var(--text-sm);margin-top:var(--space-sm);font-family:var(--font-mono);">${this.error}</div>` : ""}
+          </div>
+
+          <!-- Full History Timeline -->
+          <div class="section">
+            <div class="section-header">
+              <h3>Full History</h3>
+              <span class="count">${this.timeline.length}</span>
+            </div>
+            <div class="timeline">
+              ${this.timeline.length === 0 ? html`<div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No history yet</div>` : ""}
+              ${this.timeline.slice(0, this.historyShowAll ? undefined : 5).map((entry) => html`
+                <div class="timeline-item">
+                  <span class="timeline-icon">${entry.type === "created" ? "+" : entry.type === "moved" ? "→" : entry.type === "commented" ? "💬" : entry.type === "completed" ? "✓" : entry.type === "auto-closed" ? "📬" : entry.type === "gold-toggled" ? "★" : "✎"}</span>
+                  <div class="timeline-body">
+                    <div class="timeline-msg">${entry.message}</div>
+                    <div class="timeline-meta">${entry.userName} · ${this._relativeTime(entry.timestamp)}</div>
+                  </div>
+                </div>
+              `)}
+              ${this.timeline.length > 5 && !this.historyShowAll ? html`
+                <div style="text-align:center;padding:var(--space-sm);cursor:pointer;font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;border-top:2px solid var(--color-black);"
+                  @click="${() => { this.historyShowAll = true; }}"
+                >+ ${this.timeline.length - 5} more</div>
+              ` : ""}
             </div>
           </div>
-        `
-        : ""}
-
-      <div class="section">
-        <h3>Images</h3>
-        <image-gallery .images="${this.task.images}" deletable
-          @image-removed="${this.handleDetachTaskImage}"></image-gallery>
-        <image-upload @image-selected="${this.handleAttachTaskImage}"></image-upload>
-      </div>
-
-      <div class="section">
-        <h3>Comments (${this.comments.length})</h3>
-        ${this.comments.map((c) => html`
-          <div class="comment">
-            ${this.editingCommentId === c.id
-              ? html`
-                <div class="comment-edit">
-                  <textarea .value="${this.editingCommentText}"
-                    @input="${(e: Event) => { this.editingCommentText = (e.target as HTMLTextAreaElement).value; }}"
-                  ></textarea>
-                  <div class="btn-row">
-                    <button class="btn btn-primary" @click="${() => this.saveEditComment(c)}">Save</button>
-                    <button class="btn btn-cancel" @click="${this.cancelEditComment}">Cancel</button>
-                  </div>
-                </div>
-              `
-              : html`
-                <div class="comment-header">
-                  <div class="comment-author">
-                    <span class="comment-avatar">${CURRENT_USER.initials}</span>
-                    <span class="comment-date">${new Date(c.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <div class="comment-actions">
-                    <button @click="${() => this.startEditComment(c)}">Edit</button>
-                    <button @click="${() => this.handleDeleteComment(c)}">Delete</button>
-                  </div>
-                </div>
-                <markdown-viewer .content="${c.markdown}"></markdown-viewer>
-                <image-gallery .images="${c.images}" deletable
-                  @image-removed="${(e: Event) => this.handleDetachCommentImage(e, c)}"></image-gallery>
-                <image-upload @image-selected="${(e: Event) => this.handleAttachCommentImage(e, c)}"></image-upload>
-              `}
-          </div>
-        `)}
-        ${this.commentError ? html`<div class="comment-error">${this.commentError}</div>` : ""}
-      </div>
-
-      <div class="section add-comment">
-        <h3>Add Comment</h3>
-        <textarea
-          placeholder="Write a comment (markdown)..."
-          .value="${this.newComment}"
-          @input="${(e: Event) => { this.newComment = (e.target as HTMLTextAreaElement).value; }}"
-          @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { this.handleAddComment(); } }}"
-        ></textarea>
-        <button class="btn btn-primary" style="margin-top:var(--space-sm);" @click="${this.handleAddComment}">Add Comment</button>
+        </div>
       </div>
     `;
   }

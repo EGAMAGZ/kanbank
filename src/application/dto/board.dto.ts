@@ -10,6 +10,10 @@ export type CreateBoardInput = z.infer<typeof CreateBoardSchema>;
 export const UpdateBoardSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
+  autoCloseDays: z.number().int().min(0).max(30).optional(),
+  autoCloseEnabled: z.boolean().optional(),
+  publicLink: z.boolean().optional(),
+  accessControl: z.enum(["everyone", "restricted"]).optional(),
 });
 
 export type UpdateBoardInput = z.infer<typeof UpdateBoardSchema>;

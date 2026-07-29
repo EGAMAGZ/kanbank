@@ -7,7 +7,7 @@ export interface BoardRepository {
   create(board: Board): Promise<Id<"Board">>;
   update(
     id: Id<"Board">,
-    changes: Partial<Pick<Board, "title" | "description" | "updatedAt">>,
+    changes: Partial<Pick<Board, "title" | "description" | "updatedAt" | "autoCloseDays" | "autoCloseEnabled" | "publicLink" | "accessControl">>,
   ): Promise<void>;
   delete(id: Id<"Board">): Promise<void>;
 }

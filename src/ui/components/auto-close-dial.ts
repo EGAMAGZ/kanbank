@@ -1,12 +1,12 @@
 import { css, html, LitElement } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 
 @customElement("auto-close-dial")
 export class AutoCloseDial extends LitElement {
-  @state()
-  private value = 7;
-  @state()
-  private enabled = false;
+  @property({ type: Number })
+  value = 7;
+  @property({ type: Boolean })
+  enabled = false;
 
   static styles = css`
     :host {
@@ -219,13 +219,14 @@ export class AutoCloseDial extends LitElement {
     const cy = rect.top + rect.height / 2;
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
-    let deg = Math.atan2(dy, dx) * (180 / Math.PI);
+    let deg = Math.atan2(dx, -dy) * (180 / Math.PI);
     if (deg < -135) deg = -135;
     if (deg > 135) deg = 135;
     const val = this._degToValue(deg);
     this.value = val;
     this.enabled = true;
     this._saveValue();
+    this.dispatchEvent(new CustomEvent("dial-change", { detail: { value: val }, bubbles: true, composed: true }));
     this.requestUpdate();
   }
 

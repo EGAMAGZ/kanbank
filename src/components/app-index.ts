@@ -9,21 +9,30 @@ import { DexieStateRepository } from "../infrastructure/repositories/dexie-state
 import { DexieTaskRepository } from "../infrastructure/repositories/dexie-task.repository.js";
 import { DexieCommentRepository } from "../infrastructure/repositories/dexie-comment.repository.js";
 import { DexieImageRepository } from "../infrastructure/storage/image-storage.service.js";
+import { DexieStepRepository } from "../infrastructure/repositories/dexie-step.repository.js";
+import { DexieTimelineRepository } from "../infrastructure/repositories/dexie-timeline.repository.js";
 import { initApp } from "../infrastructure/initialization/app-init.js";
 import { initChannelBridge } from "../ui/events/channel-bridge.js";
+import "../ui/components/keycap.js";
+import "../ui/components/pinned-stack.js";
+import "../ui/components/jump-menu.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
 const taskRepo = new DexieTaskRepository();
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
+const stepRepo = new DexieStepRepository();
+const timelineRepo = new DexieTimelineRepository();
 
-initApp({ boardRepo, stateRepo, taskRepo, commentRepo, imageRepo });
+initApp({ boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo });
 
 startApp({
   routes,
   mainNode: "app-content",
 });
+
+const mod = (e: KeyboardEvent) => e.metaKey || e.ctrlKey;
 
 @customElement("app-index")
 export class AppIndex extends LitElement {
@@ -39,6 +48,7 @@ export class AppIndex extends LitElement {
   }
 
   private _cmdBarEl: HTMLElement | null = null;
+  private _jumpMenuEl: HTMLElement | null = null;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -53,9 +63,43 @@ export class AppIndex extends LitElement {
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if ((e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true") return;
+
+    if (e.key === "k" && mod(e)) {
       e.preventDefault();
       this._openCommandBar();
+      return;
+    }
+
+    if (e.key === "j" && mod(e)) {
+      e.preventDefault();
+      this._openJumpMenu();
+      return;
+    }
+
+    if (e.key === "p" && e.altKey) {
+      e.preventDefault();
+      this._openPinned();
+      return;
+    }
+
+    if (e.key === "b" && mod(e)) {
+      e.preventDefault();
+      this.elementController.navigate("home");
+      return;
+    }
+
+    if (e.key === "," && mod(e)) {
+      e.preventDefault();
+      this.elementController.navigate("settings");
+      return;
+    }
+
+    if (e.key === "t" && e.altKey) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("create-task"));
+      return;
     }
   };
 
@@ -71,18 +115,39 @@ export class AppIndex extends LitElement {
     });
   }
 
+  private _openJumpMenu(): void {
+    if (this._jumpMenuEl?.isConnected) return;
+    this._jumpMenuEl = document.createElement("jump-menu");
+    this._jumpMenuEl.addEventListener("jump-close", () => {
+      this._jumpMenuEl?.remove();
+      this._jumpMenuEl = null;
+    });
+    document.body.appendChild(this._jumpMenuEl);
+  }
+
+  private _openPinned(): void {
+    const pinned = document.querySelector("pinned-stack");
+    if (pinned) {
+      (pinned as any).toggle?.();
+    }
+  }
+
   render() {
     return html`
       <nav>
         <strong class="logo" @click="${() => this.elementController.navigate("home")}">◆ KANBANK</strong>
-        <span class="nav-link" @click="${() => this.elementController.navigate("settings")}">Settings</span>
+        <span class="nav-link" @click="${() => this.elementController.navigate("home")}">Home <keycap-el key="^B"></keycap-el></span>
+        <span class="nav-link" @click="${() => this.elementController.navigate("settings")}">Settings <keycap-el key="^,"></keycap-el></span>
         <div class="nav-right">
-          <span class="cmd-hint" @click="${this._openCommandBar}">⌘K</span>
+          <span class="cmd-hint" @click="${this._openJumpMenu}">Jump <keycap-el key="^J"></keycap-el></span>
+          <span class="cmd-hint" @click="${this._openPinned}">Pinned <keycap-el key="⎇P"></keycap-el></span>
+          <span class="cmd-hint" @click="${this._openCommandBar}"><keycap-el key="⌘K"></keycap-el></span>
         </div>
       </nav>
       <main role="main" tabindex="-1">
         <slot></slot>
       </main>
+      <pinned-stack></pinned-stack>
     `;
   }
 }

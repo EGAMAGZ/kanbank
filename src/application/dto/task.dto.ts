@@ -18,6 +18,8 @@ export const UpdateTaskSchema = z.object({
   dueDate: z.string().nullable().optional(),
   notNowSince: z.string().nullable().optional(),
   isGold: z.boolean().optional(),
+  category: z.string().max(20).optional(),
+  subscriberIds: z.array(z.string()).optional(),
 });
 
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;

@@ -1,6 +1,8 @@
 import { LitElement } from "lit";
 import { PageController } from "@open-cells/page-controller";
 import "../../ui/components/done-stamp.js";
+import "../../ui/components/not-now-stamp.js";
+import "../../ui/components/keycap.js";
 import "../../ui/components/activity-feed.js";
 export declare class BoardDetailPage extends LitElement {
     pageController: PageController;
@@ -9,9 +11,6 @@ export declare class BoardDetailPage extends LitElement {
     private error;
     private expandedColumnId;
     private dragOverStateId;
-    private newColumnTitle;
-    private newColumnColor;
-    private showColumnForm;
     private editingStateId;
     private editingStateTitle;
     private editingStateColor;
@@ -26,6 +25,8 @@ export declare class BoardDetailPage extends LitElement {
     static styles: import("lit").CSSResult;
     connectedCallback(): void;
     disconnectedCallback(): void;
+    private _handleCreateTaskShortcut;
+    private handleAutoCreateState;
     onPageEnter(): Promise<void>;
     private getMandatoryOrder;
     private getSortedStates;
@@ -42,7 +43,6 @@ export declare class BoardDetailPage extends LitElement {
     private handleDragLeave;
     private handleDrop;
     private selectTask;
-    private handleCreateState;
     private startEditState;
     private saveEditState;
     private cancelEditState;

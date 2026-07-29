@@ -6,6 +6,7 @@ export interface TaskRepository {
   findByState(stateId: Id<"State">): Promise<Task[]>;
   findById(id: Id<"Task">): Promise<Task | undefined>;
   findPinned(): Promise<Task[]>;
+  getNextSeq(): Promise<number>;
   create(task: Task): Promise<Id<"Task">>;
   update(
     id: Id<"Task">,
@@ -22,6 +23,8 @@ export interface TaskRepository {
         | "dueDate"
         | "notNowSince"
         | "isGold"
+        | "category"
+        | "subscriberIds"
       >
     >,
   ): Promise<void>;

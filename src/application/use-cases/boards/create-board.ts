@@ -38,7 +38,7 @@ export class CreateBoardUseCase {
 
     await this.boardRepo.create(board);
 
-    const mandatoryColors = ["#cc6600", "#0066cc", "#28a745"];
+    const mandatoryColors = ["#cc6600", "#FFFFFF", "#28a745"];
     for (let i = 0; i < MANDATORY_STATES.length; i++) {
       const stateId = generateId<"State">();
       const state = createState({

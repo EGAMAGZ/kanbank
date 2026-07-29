@@ -17,6 +17,8 @@ import { DexieStateRepository } from "../../infrastructure/repositories/dexie-st
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
 import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
+import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
+import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
 import { UpdateBoardUseCase } from "../../application/use-cases/boards/update-board.js";
 import { DeleteBoardUseCase } from "../../application/use-cases/boards/delete-board.js";
 import { inactiveDays } from "../../shared/utils/dates.js";
@@ -24,6 +26,8 @@ import type { Task } from "../../domain/entities/task.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
 import type { Id } from "../../shared/types/index.js";
 import "../../ui/components/done-stamp.js";
+import "../../ui/components/not-now-stamp.js";
+import "../../ui/components/keycap.js";
 import { CURRENT_USER } from "../../ui/components/task-card.js";
 import "../../ui/components/activity-feed.js";
 
@@ -40,12 +44,14 @@ const deleteState = new DeleteStateUseCase(stateRepo, taskRepo);
 const reorderStates = new ReorderStatesUseCase(stateRepo);
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
+const stepRepo = new DexieStepRepository();
+const timelineRepo = new DexieTimelineRepository();
 const updateBoard = new UpdateBoardUseCase(boardRepo);
-const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo);
+const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo, stepRepo, timelineRepo);
 
 const COLUMN_COLORS: Record<string, string> = {
   "Not now": "#D4D4D4",
-  "Maybe?": "#E5B800",
+  "Maybe?": "#FFFFFF",
   "In Progress": "#1E40AF",
   "Done": "#166534",
 };
@@ -74,13 +80,6 @@ export class BoardDetailPage extends LitElement {
 
   @state()
   private dragOverStateId = "";
-
-  @state()
-  private newColumnTitle = "";
-  @state()
-  private newColumnColor = "#1E40AF";
-  @state()
-  private showColumnForm = false;
 
   @state()
   private editingStateId: string | null = null;
@@ -446,6 +445,14 @@ export class BoardDetailPage extends LitElement {
       flex-shrink: 0;
     }
 
+    .task-card .state-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+    }
+
     .task-card:active {
       cursor: grabbing;
     }
@@ -780,6 +787,7 @@ export class BoardDetailPage extends LitElement {
     super.connectedCallback();
     this.boundKeydown = this.handleKeydown.bind(this);
     document.addEventListener("keydown", this.boundKeydown);
+    window.addEventListener("create-task", this._handleCreateTaskShortcut);
   }
 
   disconnectedCallback(): void {
@@ -787,6 +795,40 @@ export class BoardDetailPage extends LitElement {
     if (this.boundKeydown) {
       document.removeEventListener("keydown", this.boundKeydown);
       this.boundKeydown = null;
+    }
+    window.removeEventListener("create-task", this._handleCreateTaskShortcut);
+  }
+
+  private _handleCreateTaskShortcut = (): void => {
+    if (this.detail) {
+      const maybeState = this.getSortedStates().find((s) => s.id === this.getMandatoryOrder().maybe);
+      if (maybeState) this.openTaskModal();
+    }
+  };
+
+  private async handleAutoCreateState(): Promise<void> {
+    if (!this.detail) return;
+    try {
+      const sorted = this.getSortedStates();
+      const mandatory = this.getMandatoryOrder();
+      const doneState = sorted.find((s) => s.id === mandatory.last);
+      const order = doneState ? doneState.order : sorted.length;
+      const newStateId = await createState.execute({ boardId: this.detail.board.id, title: "New state", color: "#1E40AF", order });
+      const newStateIds = sorted.map((s) => s.id);
+      const doneIndex = newStateIds.indexOf(mandatory.last);
+      newStateIds.splice(doneIndex, 0, newStateId as Id<"State">);
+      await reorderStates.execute({ boardId: this.detail.board.id, stateIds: newStateIds });
+      await this.loadBoard();
+      const states = this.detail?.states ?? [];
+      const created = states.find((s) => s.id === newStateId);
+      if (created) {
+        this.startEditState(created);
+        await this.updateComplete;
+        const input = this.renderRoot.querySelector(".state-edit-input") as HTMLInputElement;
+        if (input) input.focus();
+      }
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to create state";
     }
   }
 
@@ -933,27 +975,6 @@ export class BoardDetailPage extends LitElement {
     this.pageController.navigate("task-detail", { id: task.id });
   }
 
-  private async handleCreateState(): Promise<void> {
-    if (!this.newColumnTitle.trim() || !this.detail) return;
-    try {
-      const sorted = this.getSortedStates();
-      const mandatory = this.getMandatoryOrder();
-      const doneState = sorted.find((s) => s.id === mandatory.last);
-      const order = doneState ? doneState.order : sorted.length;
-      const newStateId = await createState.execute({ boardId: this.detail.board.id, title: this.newColumnTitle.trim(), color: this.newColumnColor, order });
-      const newStateIds = sorted.map((s) => s.id);
-      const doneIndex = newStateIds.indexOf(mandatory.last);
-      newStateIds.splice(doneIndex, 0, newStateId as Id<"State">);
-      await reorderStates.execute({ boardId: this.detail.board.id, stateIds: newStateIds });
-      this.newColumnTitle = "";
-      this.newColumnColor = "#1E40AF";
-      this.showColumnForm = false;
-      await this.loadBoard();
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to create state";
-    }
-  }
-
   private startEditState(state: State): void {
     this.editingStateId = state.id;
     this.editingStateTitle = state.title;
@@ -1062,10 +1083,14 @@ export class BoardDetailPage extends LitElement {
     }
   }
 
-  private renderTaskCard(task: Task, index: number, colColor: string): unknown {
+  private renderTaskCard(task: Task, colColor: string): unknown {
     const days = inactiveDays(task.lastActivityAt);
     const mandatory = this.getMandatoryOrder();
     const isDone = task.stateId === mandatory.last;
+    const isNotNow = task.stateId === mandatory.first;
+    const boardSettings = this.detail?.board;
+    const autoCloseDays = boardSettings?.autoCloseEnabled ? boardSettings.autoCloseDays : null;
+    const daysUntilAutoClose = autoCloseDays !== null ? autoCloseDays - days : null;
     return html`
       <div
         class="task-card ${task.isGold ? "gold" : ""}"
@@ -1073,20 +1098,25 @@ export class BoardDetailPage extends LitElement {
         @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
         @click="${() => this.selectTask(task)}"
       >
-        ${isDone ? html`<done-stamp date="${formatDate(task.updatedAt)}" author="${CURRENT_USER.initials}"></done-stamp>` : ""}
+        <div class="state-bar" style="background:${colColor}"></div>
+        ${isDone ? html`<done-stamp date="${formatDate(task.updatedAt)}" author="${CURRENT_USER.initials}" bg-color="#166534"></done-stamp>` : ""}
+        ${isNotNow ? html`<not-now-stamp date="${formatDate(task.notNowSince ?? task.updatedAt)}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}" bg-color="#8C8C8C"></not-now-stamp>` : ""}
         <div class="card-meta">
-          <span class="seq-num">#${String(index + 1).padStart(3, "0")}</span>
+          <span class="seq-num">#${String(task.seq).padStart(3, "0")}</span>
           <span class="tag-dot" style="background:${colColor}"></span>
         </div>
         <div class="card-title">${task.title}</div>
+        ${daysUntilAutoClose !== null && daysUntilAutoClose > 0 && !isNotNow && !isDone
+          ? html`<div style="font-family:var(--font-mono);font-size:9px;color:var(--color-text-3);margin-bottom:var(--space-xs);">→ Not now in ${daysUntilAutoClose}d</div>`
+          : ""}
         <div class="card-footer">
           <div class="footer-left">
             <span class="avatar">${CURRENT_USER.initials}</span>
             <span class="card-date">${formatDate(task.createdAt)}</span>
           </div>
-          ${days > 0
+          ${days > 3
             ? html`<span class="card-inactive ${days > 7 ? "stale" : ""}">${days}d idle</span>`
-            : ""}
+            : days > 0 ? html`<span class="card-inactive">${days}d idle</span>` : ""}
         </div>
       </div>
     `;
@@ -1110,7 +1140,7 @@ export class BoardDetailPage extends LitElement {
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="bar-fill" style="height: ${isNotNow ? 100 : pct}%; background: ${isNotNow ? "var(--color-warning)" : colColor}"></div>
+        <div class="bar-fill" style="height: ${isNotNow ? 100 : pct}%; background: ${isNotNow ? "var(--color-notnow)" : colColor}"></div>
         <div class="bar-badge">${count}</div>
         <div class="bar-label">${state.title}</div>
         ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ""}
@@ -1122,7 +1152,10 @@ export class BoardDetailPage extends LitElement {
     if (!this.detail) return html``;
     const stateTasks = this.detail.tasks
       .filter((t) => t.stateId === state.id)
-      .sort((a, b) => new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime());
+      .sort((a, b) => {
+        if (a.isGold !== b.isGold) return a.isGold ? -1 : 1;
+        return new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime();
+      });
     const mandatory = this.getMandatoryOrder();
     const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
     const colColor = getColColor(state);
@@ -1144,14 +1177,15 @@ export class BoardDetailPage extends LitElement {
                 />
                 <input class="state-edit-color" type="color" .value="${this.editingStateColor}"
                   @input="${(e: Event) => { this.editingStateColor = (e.target as HTMLInputElement).value; }}"
+                  @change="${() => this.saveEditState(state)}"
                 />
               `
               : html`<span class="col-title">${state.title}</span>`}
             <span class="col-count">${this.detail.taskCounts[state.id] ?? 0}</span>
           </div>
           <div class="col-actions">
+            <button @click="${() => this.startEditState(state)}" title="Edit">✎</button>
             ${!isMandatory ? html`
-              <button @click="${() => this.startEditState(state)}" title="Edit">✎</button>
               <button @click="${() => this.handleDeleteState(state)}" title="Delete">✕</button>
               ${(() => {
                 const { left, right } = this.canMoveState(state);
@@ -1166,28 +1200,15 @@ export class BoardDetailPage extends LitElement {
               : ""}
           </div>
         </div>
-        <div class="col-body" style="background:${colColor}">
+        <div class="col-body" style="background:${state.id === mandatory.maybe ? "var(--color-white)" : colColor}">
           ${stateTasks.length === 0
             ? html`<div class="empty-col">empty</div>`
-            : stateTasks.map((task, i) => this.renderTaskCard(task, i, colColor))}
+            : stateTasks.map((task) => this.renderTaskCard(task, colColor))}
         </div>
         ${state.id === mandatory.maybe
-          ? html`<button class="add-task-btn" @click="${() => this.openTaskModal()}">+ ADD TASK</button>`
+          ? html`<button class="add-task-btn" @click="${() => this.openTaskModal()}">+ ADD TASK <keycap-el key="⎇T"></keycap-el></button>`
           : ""}
-        ${this.showColumnForm
-          ? html`
-            <div class="column-form">
-              <input type="text" placeholder="Column name..." .value="${this.newColumnTitle}"
-                @input="${(e: Event) => { this.newColumnTitle = (e.target as HTMLInputElement).value; }}"
-                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.handleCreateState(); if (e.key === "Escape") { this.showColumnForm = false; this.newColumnTitle = ""; }}}"
-              />
-              <input type="color" .value="${this.newColumnColor}"
-                @input="${(e: Event) => { this.newColumnColor = (e.target as HTMLInputElement).value; }}"
-              />
-              <button @click="${this.handleCreateState}">ADD</button>
-            </div>
-          `
-          : ""}
+
       </div>
     `;
   }
@@ -1226,9 +1247,7 @@ export class BoardDetailPage extends LitElement {
             <button class="header-action" @click="${() => this.handleEditBoardTitle()}" title="Edit title">✎</button>
             <button class="header-action header-action--delete" @click="${() => this.handleDeleteBoard()}" title="Delete board">🗑</button>
           `}
-        ${!this.showColumnForm
-          ? html`<button class="add-column-btn" @click="${() => { this.showColumnForm = true; }}">+ COLUMN</button>`
-          : ""}
+        <button class="add-column-btn" @click="${() => this.handleAutoCreateState()}">+ ESTADO</button>
         <button class="activity-toggle ${this.showActivity ? "active" : ""}" @click="${() => this.showActivity = !this.showActivity}">
           ${this.showActivity ? "HIDE FEED" : "FEED"}
         </button>

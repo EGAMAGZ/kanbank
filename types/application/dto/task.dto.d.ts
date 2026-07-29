@@ -15,6 +15,8 @@ export declare const UpdateTaskSchema: z.ZodObject<{
     dueDate: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     notNowSince: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     isGold: z.ZodOptional<z.ZodBoolean>;
+    category: z.ZodOptional<z.ZodString>;
+    subscriberIds: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
 export declare const MoveTaskSchema: z.ZodObject<{

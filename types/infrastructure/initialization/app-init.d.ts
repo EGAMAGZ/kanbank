@@ -3,11 +3,15 @@ import type { StateRepository } from "../../domain/repositories/state.repository
 import type { TaskRepository } from "../../domain/repositories/task.repository.js";
 import type { CommentRepository } from "../../domain/repositories/comment.repository.js";
 import type { ImageRepository } from "../../domain/repositories/image.repository.js";
+import type { StepRepository } from "../../domain/repositories/step.repository.js";
+import type { TimelineRepository } from "../../domain/repositories/timeline.repository.js";
 export interface AppRepositories {
     boardRepo: BoardRepository;
     stateRepo: StateRepository;
     taskRepo: TaskRepository;
     commentRepo: CommentRepository;
     imageRepo: ImageRepository;
+    stepRepo: StepRepository;
+    timelineRepo: TimelineRepository;
 }
 export declare function initApp(repos: AppRepositories): void;
