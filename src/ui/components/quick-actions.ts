@@ -1,15 +1,19 @@
 import { css, html, LitElement } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import "../../ui/components/keycap.js";
 
 @customElement("quick-actions")
 export class QuickActions extends LitElement {
+  @property({ type: Boolean })
+  hidePrimary = false;
+
   static styles = css`
     :host {
       display: flex;
       gap: var(--space-sm);
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
     }
 
     .action-btn {
@@ -64,6 +68,7 @@ export class QuickActions extends LitElement {
   }
 
   render() {
+    if (this.hidePrimary) return html``;
     return html`
       <button class="action-btn primary" @click="${() => this._emit("mark-done")}">
         DONE <keycap-el key="⌘D"></keycap-el>

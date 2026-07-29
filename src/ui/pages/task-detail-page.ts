@@ -122,11 +122,15 @@ export class TaskDetailPage extends LitElement {
       overflow: hidden;
     }
 
-    .main-content {
+    .page-wrapper {
       overflow-y: auto;
       height: 100%;
       padding: var(--space-xl) var(--space-2xl);
-      max-width: 860px;
+    }
+
+    .main-content {
+      width: 75%;
+      max-width: 960px;
       margin: 0 auto;
     }
 
@@ -876,7 +880,7 @@ export class TaskDetailPage extends LitElement {
     const autoCloseMsg = inactive > 0 ? `Moves to 'Not Now' in ${Math.max(0, 7 - inactive)} days if there's no activity` : "";
     const currentState = this.states.find((s) => s.id === this.task!.stateId);
     return html`
-      <div class="main-content">
+      <div class="page-wrapper">
         <!-- Back button -->
         <div class="back" @click="${this.goBack}">
           ← Back to board <keycap-el key="Esc"></keycap-el>
@@ -937,6 +941,7 @@ export class TaskDetailPage extends LitElement {
 
             <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
+                ?hidePrimary="${this._isDone}"
                 @mark-done="${this.markAsDone}"
                 @edit-task="${this.startEditTask}"
               ></quick-actions>
@@ -947,6 +952,7 @@ export class TaskDetailPage extends LitElement {
           </button>
         </div>
 
+        <div class="main-content">
         <!-- Description section -->
         <div class="section">
           <div class="section-header">
