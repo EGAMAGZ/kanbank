@@ -324,6 +324,7 @@ export class PinnedStack extends LitElement {
 
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
+    document.addEventListener("keydown", this._handleKeydown);
     window.addEventListener("pinned-changed", this._onPinnedChanged);
     this.subscriptions.push(
       eventBus.subscribe("task.updated", () => {
@@ -338,6 +339,7 @@ export class PinnedStack extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    document.removeEventListener("keydown", this._handleKeydown);
     window.removeEventListener("pinned-changed", this._onPinnedChanged);
     this.subscriptions.forEach((s) => s.unsubscribe());
   }
@@ -375,6 +377,13 @@ export class PinnedStack extends LitElement {
   private _toggle(): void {
     this.toggle();
   }
+
+  private _handleKeydown = (e: KeyboardEvent): void => {
+    if (e.altKey && (e.key === "p" || e.key === "P")) {
+      e.preventDefault();
+      this._toggle();
+    }
+  };
 
   private _navigate(task: Task): void {
     this.elementController.navigate("task-detail", { id: task.id });
