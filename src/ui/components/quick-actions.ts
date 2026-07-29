@@ -1,15 +1,9 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement } from "lit/decorators.js";
 import "../../ui/components/keycap.js";
 
 @customElement("quick-actions")
 export class QuickActions extends LitElement {
-  @property({ type: Boolean })
-  isGold = false;
-
-  @property({ type: Boolean })
-  isPinned = false;
-
   static styles = css`
     :host {
       display: flex;
@@ -63,30 +57,6 @@ export class QuickActions extends LitElement {
       background: var(--color-error);
       color: var(--color-white);
     }
-
-    .action-btn.gold.active {
-      background: var(--color-gold);
-      color: var(--color-black);
-    }
-
-    .action-btn.gold.active:hover {
-      background: var(--color-white);
-      color: var(--color-black);
-    }
-
-    .action-btn.pin:hover {
-      background: var(--color-bg);
-    }
-
-    .action-btn.pin.active {
-      background: var(--color-black);
-      color: var(--color-white);
-    }
-
-    .action-btn.pin.active:hover {
-      background: var(--color-bg);
-      color: var(--color-black);
-    }
   `;
 
   private _emit(name: string): void {
@@ -98,14 +68,8 @@ export class QuickActions extends LitElement {
       <button class="action-btn primary" @click="${() => this._emit("mark-done")}">
         DONE <keycap-el key="⌘D"></keycap-el>
       </button>
-      <button class="action-btn gold ${this.isGold ? "active" : ""}" @click="${() => this._emit("toggle-gold")}">
-        ${this.isGold ? "★" : "☆"} GOLD
-      </button>
       <button class="action-btn primary" @click="${() => this._emit("edit-task")}">
         EDIT <keycap-el key="⌘E"></keycap-el>
-      </button>
-      <button class="action-btn pin ${this.isPinned ? "active" : ""}" @click="${() => this._emit("toggle-pin")}">
-        ${this.isPinned ? "📌 UNPIN" : "📍 PIN"}
       </button>
       <button class="action-btn danger" @click="${() => this._emit("delete-task")}">DELETE</button>
     `;

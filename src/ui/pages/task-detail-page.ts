@@ -184,6 +184,43 @@ export class TaskDetailPage extends LitElement {
       min-width: 0;
     }
 
+    .corner-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 4px solid var(--color-black);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: var(--color-white);
+      transition: background var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      box-shadow: 4px 4px 0 var(--color-black);
+      padding: 0;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: var(--space-lg);
+    }
+
+    .corner-btn:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 3px 3px 0 var(--color-black);
+    }
+
+    .corner-btn:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
+    .corner-btn.gold-btn.active {
+      background: var(--color-gold);
+    }
+
+    .corner-btn.pin-btn.active {
+      background: var(--color-black);
+    }
+
     .title-block .state-bar {
       position: absolute;
       top: 0;
@@ -828,6 +865,9 @@ export class TaskDetailPage extends LitElement {
 
         <!-- Header -->
         <div class="header">
+          <button class="corner-btn gold-btn ${this.task.isGold ? "active" : ""}" @click="${this.toggleGold}" title="Toggle gold">
+            ${this.task.isGold ? "★" : "☆"}
+          </button>
           <div class="header-left">
             ${this.editingTaskDesc ? html`
               <div class="edit-form">
@@ -867,17 +907,15 @@ export class TaskDetailPage extends LitElement {
 
             <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
-                ?isGold="${this.task.isGold}"
-                ?isPinned="${this.task.pinned}"
                 @mark-done="${this.markAsDone}"
                 @delete-task="${this.handleDeleteTask}"
-                @toggle-gold="${this.toggleGold}"
                 @edit-task="${this.startEditTask}"
-                @toggle-pin="${this.togglePin}"
               ></quick-actions>
             </div>
           </div>
-
+          <button class="corner-btn pin-btn ${this.task.pinned ? "active" : ""}" @click="${this.togglePin}" title="Toggle pin">
+            ${this.task.pinned ? "📌" : "📍"}
+          </button>
         </div>
 
         <!-- Description section -->
