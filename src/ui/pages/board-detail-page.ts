@@ -105,6 +105,12 @@ export class BoardDetailPage extends LitElement {
   @state()
   private showActivity = false;
 
+  @state()
+  private focusedColIdx = -1;
+
+  @state()
+  private focusedTaskIdx = -1;
+
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
 
   static styles = css`
@@ -474,6 +480,15 @@ export class BoardDetailPage extends LitElement {
       box-shadow: 10px 10px 0 var(--color-black);
     }
 
+    .task-card.focused {
+      transform: rotate(-1deg);
+      box-shadow: 7px 7px 0 var(--color-black);
+    }
+
+    .task-card.focused.gold {
+      transform: rotate(-2deg);
+    }
+
     .task-card.gold::before {
       content: "★ GOLDEN TICKET";
       display: block;
@@ -833,6 +848,8 @@ export class BoardDetailPage extends LitElement {
   }
 
   async onPageEnter(): Promise<void> {
+    this.focusedColIdx = -1;
+    this.focusedTaskIdx = -1;
     await this.loadBoard();
   }
 
@@ -922,21 +939,76 @@ export class BoardDetailPage extends LitElement {
         this.closeTaskModal();
       } else {
         this.expandedColumnId = null;
+        this.focusedColIdx = -1;
+        this.focusedTaskIdx = -1;
       }
       return;
     }
 
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
-      const currentIdx = this.expandedColumnId
-        ? sorted.findIndex((s) => s.id === this.expandedColumnId)
-        : maybeIdx;
-      let nextIdx = e.key === "ArrowLeft" ? Math.max(0, currentIdx - 1) : Math.min(sorted.length - 1, currentIdx + 1);
+      const currentIdx = this.focusedColIdx >= 0
+        ? this.focusedColIdx
+        : this.expandedColumnId
+          ? sorted.findIndex((s) => s.id === this.expandedColumnId)
+          : maybeIdx;
+      const delta = e.key === "ArrowLeft" ? -1 : 1;
+      const nextIdx = (currentIdx + delta + sorted.length) % sorted.length;
       const nextState = sorted[nextIdx];
       if (nextState) {
-        this.toggleColumn(nextState.id);
+        if (nextState.id !== mandatory.maybe) {
+          this.expandedColumnId = nextState.id;
+        } else {
+          this.expandedColumnId = null;
+        }
       }
+      this.focusedColIdx = nextIdx;
+      this.focusedTaskIdx = 0;
+      requestAnimationFrame(() => this._focusCurrentTask());
+      return;
     }
+
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      if (this.focusedColIdx < 0) return;
+      const state = sorted[this.focusedColIdx];
+      if (!state) return;
+      const tasks = this._getStateTasks(state.id);
+      if (tasks.length === 0) return;
+      e.preventDefault();
+      const delta = e.key === "ArrowUp" ? -1 : 1;
+      this.focusedTaskIdx = Math.max(0, Math.min(tasks.length - 1, this.focusedTaskIdx + delta));
+      requestAnimationFrame(() => this._focusCurrentTask());
+      return;
+    }
+
+    if (e.key === "Enter") {
+      if (this.focusedColIdx < 0 || this.focusedTaskIdx < 0) return;
+      const state = sorted[this.focusedColIdx];
+      if (!state) return;
+      const tasks = this._getStateTasks(state.id);
+      const task = tasks[this.focusedTaskIdx];
+      if (task) {
+        e.preventDefault();
+        this.selectTask(task);
+      }
+      return;
+    }
+  }
+
+  private _getStateTasks(stateId: string): Task[] {
+    if (!this.detail) return [];
+    return this.detail.tasks
+      .filter((t) => t.stateId === stateId)
+      .sort((a, b) => {
+        if (a.isGold !== b.isGold) return a.isGold ? -1 : 1;
+        return new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime();
+      });
+  }
+
+  private _focusCurrentTask(): void {
+    if (this.focusedColIdx < 0 || this.focusedTaskIdx < 0) return;
+    const card = this.renderRoot.querySelector<HTMLElement>(".task-card.focused");
+    if (card) card.focus();
   }
 
   private toggleColumn(stateId: string): void {
@@ -1083,7 +1155,7 @@ export class BoardDetailPage extends LitElement {
     }
   }
 
-  private renderTaskCard(task: Task, colColor: string): unknown {
+  private renderTaskCard(task: Task, colColor: string, stateIdx: number, taskIdx: number): unknown {
     const days = inactiveDays(task.lastActivityAt);
     const mandatory = this.getMandatoryOrder();
     const isDone = task.stateId === mandatory.last;
@@ -1091,9 +1163,11 @@ export class BoardDetailPage extends LitElement {
     const boardSettings = this.detail?.board;
     const autoCloseDays = boardSettings?.autoCloseEnabled ? boardSettings.autoCloseDays : null;
     const daysUntilAutoClose = autoCloseDays !== null ? autoCloseDays - days : null;
+    const isFocused = this.focusedColIdx === stateIdx && this.focusedTaskIdx === taskIdx;
     return html`
       <div
-        class="task-card ${task.isGold ? "gold" : ""}"
+        class="task-card ${task.isGold ? "gold" : ""} ${isFocused ? "focused" : ""}"
+        tabindex="-1"
         draggable="true"
         @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
         @click="${() => this.selectTask(task)}"
@@ -1150,12 +1224,8 @@ export class BoardDetailPage extends LitElement {
 
   private renderExpanded(state: State): unknown {
     if (!this.detail) return html``;
-    const stateTasks = this.detail.tasks
-      .filter((t) => t.stateId === state.id)
-      .sort((a, b) => {
-        if (a.isGold !== b.isGold) return a.isGold ? -1 : 1;
-        return new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime();
-      });
+    const stateTasks = this._getStateTasks(state.id);
+    const stateIdx = this.getSortedStates().findIndex((s) => s.id === state.id);
     const mandatory = this.getMandatoryOrder();
     const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
     const colColor = getColColor(state);
@@ -1203,7 +1273,7 @@ export class BoardDetailPage extends LitElement {
         <div class="col-body" style="background:${state.id === mandatory.maybe ? "var(--color-white)" : colColor}">
           ${stateTasks.length === 0
             ? html`<div class="empty-col">empty</div>`
-            : stateTasks.map((task) => this.renderTaskCard(task, colColor))}
+            : stateTasks.map((task, taskIdx) => this.renderTaskCard(task, colColor, stateIdx, taskIdx))}
         </div>
         ${state.id === mandatory.maybe
           ? html`<button class="add-task-btn" @click="${() => this.openTaskModal()}">+ ADD TASK <keycap-el key="⎇T"></keycap-el></button>`
