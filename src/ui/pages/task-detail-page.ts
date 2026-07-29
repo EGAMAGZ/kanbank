@@ -873,6 +873,12 @@ export class TaskDetailPage extends LitElement {
     await this._loadTask();
   }
 
+  private async handleStepUpdate(e: Event): Promise<void> {
+    const { id, text } = (e as CustomEvent).detail;
+    await updateStep.execute(id, { text });
+    await this._loadTask();
+  }
+
   private async handleStepDelete(e: Event): Promise<void> {
     const { id } = (e as CustomEvent).detail;
     await deleteStep.execute(id);
@@ -965,77 +971,109 @@ export class TaskDetailPage extends LitElement {
             ${this.task.isGold ? "★" : "☆"}
           </button>
           <div class="header-left">
-            ${this.editingTaskDesc
-              ? html`
-                <div class="edit-form">
-                  <input id="edit-title-input" type="text" .value="${this
-                    .editTitle}"
-                    @input="${(e: InputEvent) => {
-                      this.editTitle = (e.target as HTMLInputElement).value;
-                    }}"
-                    @keydown="${(e: KeyboardEvent) => {
-                      if (e.key === "Enter") this.saveEditTask();
-                      if (e.key === "Escape") this.cancelEditTask();
-                    }}"
-                  />
-                </div>
-              `
-              : html`
-                <div class="title-block ${this.task.isGold ? "gold" : ""}">
-                  ${currentState
-                    ? html`<div class="state-bar" style="background:${
-                      getStateColor(currentState)
-                    }"></div>`
-                    : ""}
-                  ${this._isDone
-                    ? html`<done-stamp date="${
-                      this._stampDate(this.task.updatedAt)
-                    }" author="Auto" bg-color="#166534"></done-stamp>`
-                    : ""}
-                  ${this._isNotNow
-                    ? html`
-                      <not-now-stamp date="${this._stampDate(
-                        this.task.updatedAt,
-                      )}" author="Auto"
-                        bg-color="#8C8C8C"></not-now-stamp>
-                    `
-                    : ""}
-                  <div class="title-row">
-                    <div class="title-content">
-                      <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
-                        <span class="meta-item">#${String(this.task.seq)
-                          .padStart(3, "0")}</span>
-                        ${this.task.category
-                          ? html`<span class="meta-item cat">${this.task.category}</span>`
-                          : ""}
-                        ${this.task.isGold
-                          ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>`
-                          : ""}
-                      </div>
-                      <h1>${this.task.title}</h1>
-                    </div>
-                    <state-selector
-                      .states="${this.states}"
-                      activeStateId="${this.task.stateId}"
-                      @state-change="${this.handleStateChange}"
-                    ></state-selector>
-                  </div>
-                  <div class="meta-row" style="margin:0;">
-                    <span class="meta-avatar">${CURRENT_USER.initials}</span>
-                    <span class="meta-item">created ${this._relativeTime(
-                      this.task.createdAt,
-                    )}</span>
-                    <span class="meta-item">updated ${this._relativeTime(
-                      this.task.updatedAt,
-                    )}</span>
-                    ${this.task.dueDate
-                      ? html`<span class="meta-item">due ${
-                        this._formatDate(this.task.dueDate)
-                      }</span>`
+            <div class="title-block ${this.task.isGold ? "gold" : ""}">
+              ${currentState
+                ? html`<div class="state-bar" style="background:${
+                  getStateColor(currentState)
+                }"></div>`
+                : ""}
+              ${this._isDone
+                ? html`<done-stamp date="${
+                  this._stampDate(this.task.updatedAt)
+                }" author="Auto" bg-color="#166534"></done-stamp>`
+                : ""}
+              ${!this.editingTaskDesc && this._isNotNow
+                ? html`
+                  <not-now-stamp date="${this._stampDate(
+                    this.task.updatedAt,
+                  )}" author="Auto"
+                    bg-color="#8C8C8C"></not-now-stamp>
+                `
+                : ""}
+              <div class="title-row">
+                <div class="title-content">
+                  <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
+                    <span class="meta-item">#${String(this.task.seq)
+                      .padStart(3, "0")}</span>
+                    ${this.task.category
+                      ? html`<span class="meta-item cat">${this.task.category}</span>`
+                      : ""}
+                    ${this.task.isGold
+                      ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>`
                       : ""}
                   </div>
+                  ${this.editingTaskDesc
+                    ? html`
+                      <input id="edit-title-input" type="text" .value="${this.editTitle}"
+                        @input="${(e: InputEvent) => { this.editTitle = (e.target as HTMLInputElement).value; }}"
+                        @keydown="${(e: KeyboardEvent) => {
+                          if (e.key === "Enter") this.saveEditTask();
+                          if (e.key === "Escape") this.cancelEditTask();
+                        }}"
+                        style="width:100%;font-family:var(--font-display);font-weight:900;font-size:var(--text-2xl);border:3px solid var(--color-black);padding:var(--space-sm);margin-bottom:var(--space-sm);"
+                      />
+                    `
+                    : html`
+                      <h1>${this.task.title}</h1>
+                    `}
+                  ${this.editingTaskDesc
+                    ? html`
+                      <div class="desc-editor-wrap">
+                        <wysiwyg-editor id="desc-editor" .value="${this.editDescription}"
+                          placeholder="Write a description..."
+                          @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
+                      </div>
+                    `
+                    : this.task.description
+                    ? html`
+                      <div style="font-size:var(--text-base);line-height:var(--leading-loose);margin-top:var(--space-sm);"
+                        .innerHTML="${this.task.description}"></div>
+                    `
+                    : html`
+                      <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);margin-top:var(--space-sm);">No description</div>
+                    `}
+                  <div style="margin-top:var(--space-md);">
+                    <step-checklist
+                      .steps="${this.steps}"
+                      @step-add="${this.handleStepAdd}"
+                      @step-toggle="${this.handleStepToggle}"
+                      @step-update="${this.handleStepUpdate}"
+                      @step-delete="${this.handleStepDelete}"
+                    ></step-checklist>
+                  </div>
                 </div>
-              `}
+                ${this.editingTaskDesc ? "" : html`
+                  <state-selector
+                    .states="${this.states}"
+                    activeStateId="${this.task.stateId}"
+                    @state-change="${this.handleStateChange}"
+                  ></state-selector>
+                `}
+              </div>
+              <div class="meta-row" style="margin:0;">
+                <span class="meta-avatar">${CURRENT_USER.initials}</span>
+                <span class="meta-item">created ${this._relativeTime(
+                  this.task.createdAt,
+                )}</span>
+                <span class="meta-item">updated ${this._relativeTime(
+                  this.task.updatedAt,
+                )}</span>
+                ${this.editingTaskDesc
+                  ? html`
+                    <input type="date" .value="${this.editDueDate}"
+                      @input="${(e: InputEvent) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
+                      style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-mono);font-size:var(--text-xs);"
+                    />
+                    <button class="btn btn-primary" @click="${this.saveEditTask}" style="margin-left:auto;">Save</button>
+                    <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
+                  `
+                  : this.task.dueDate
+                  ? html`<span class="meta-item">due ${
+                    this._formatDate(this.task.dueDate)
+                  }</span>`
+                  : ""}
+              </div>
+            </div>
 
             <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
@@ -1053,66 +1091,6 @@ export class TaskDetailPage extends LitElement {
         </div>
 
         <div class="main-content">
-        <!-- Description section -->
-        <div class="section">
-          <div class="section-header">
-            <h3>Description</h3>
-          </div>
-          ${this.editingTaskDesc
-            ? html`
-              <div class="desc-editor-wrap">
-                <wysiwyg-editor id="desc-editor" .value="${this
-                  .editDescription}"
-                  placeholder="Write a description..."
-                  @editor-change="${this
-                    ._handleDescEditorChange}"></wysiwyg-editor>
-              </div>
-              <div class="edit-form">
-                <div
-                  style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
-                  <label
-                    style="font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;">Due date</label>
-                  <input type="date" .value="${this.editDueDate}"
-                    @input="${(e: InputEvent) => {
-                      this.editDueDate = (e.target as HTMLInputElement).value;
-                    }}"
-                    style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);"
-                  />
-                </div>
-                <div class="btn-row">
-                  <button class="btn btn-primary" @click="${this
-                    .saveEditTask}">Save</button>
-                  <button class="btn btn-cancel" @click="${this
-                    .cancelEditTask}">Cancel</button>
-                </div>
-              </div>
-            `
-            : this.task.description
-            ? html`
-              <div style="font-size:var(--text-base);line-height:var(--leading-loose);"
-                .innerHTML="${this.task.description}"></div>
-            `
-            : html`
-              <div
-                style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No description</div>
-            `}
-          </div>
-
-          <!-- Checklist / Steps -->
-          <div class="section">
-            <div class="section-header">
-              <h3>Checklist</h3>
-              <span class="count">${this.steps.filter((s) => s.checked)
-                .length}/${this.steps.length}</span>
-            </div>
-            <step-checklist
-              .steps="${this.steps}"
-              @step-add="${this.handleStepAdd}"
-              @step-toggle="${this.handleStepToggle}"
-              @step-delete="${this.handleStepDelete}"
-            ></step-checklist>
-          </div>
-
           <!-- Attachments -->
           <div class="section">
             <div class="section-header">

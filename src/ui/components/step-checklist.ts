@@ -13,6 +13,12 @@ export class StepChecklist extends LitElement {
   @state()
   private newStepText = "";
 
+  @state()
+  private editingStepId: string | null = null;
+
+  @state()
+  private editingStepText = "";
+
   static styles = css`
     :host {
       display: block;
@@ -23,7 +29,6 @@ export class StepChecklist extends LitElement {
       align-items: center;
       gap: var(--space-sm);
       padding: var(--space-xs) 0;
-      border-bottom: 2px solid var(--color-black);
     }
 
     .step-checkbox {
@@ -61,13 +66,16 @@ export class StepChecklist extends LitElement {
 
     .step-text {
       flex: 1;
+      min-width: 0;
       font-family: var(--font-body);
       font-size: var(--text-base);
       line-height: var(--leading-normal);
       border: none;
       outline: none;
       background: transparent;
-      padding: 0;
+      padding: var(--space-xs);
+      cursor: pointer;
+      word-break: break-word;
     }
 
     .step-text.done {
@@ -75,28 +83,43 @@ export class StepChecklist extends LitElement {
       color: var(--color-text-3);
     }
 
-    .step-delete {
-      width: 20px;
-      height: 20px;
+    .step-text:hover {
+      background: var(--color-bg);
+    }
+
+    .step-edit-input {
+      flex: 1;
+      padding: var(--space-xs);
+      border: 3px solid var(--color-black);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      outline: none;
+      background: var(--color-white);
+    }
+
+    .edit-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid var(--color-black);
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid var(--color-black);
-      background: var(--color-white);
-      cursor: pointer;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 700;
-      opacity: 0;
-      transition: opacity var(--ease-brutal), background var(--ease-brutal);
+      background: var(--color-white);
+      transition: background var(--ease-brutal), color var(--ease-brutal);
       flex-shrink: 0;
       padding: 0;
     }
 
-    .step:hover .step-delete {
-      opacity: 1;
+    .edit-btn.save:hover {
+      background: var(--color-success);
+      color: var(--color-white);
     }
 
-    .step-delete:hover {
+    .edit-btn.delete:hover {
       background: var(--color-error);
       color: var(--color-white);
     }
@@ -111,31 +134,12 @@ export class StepChecklist extends LitElement {
     .add-step-input {
       flex: 1;
       padding: var(--space-sm);
-      border: 3px dashed var(--color-black);
+      border: none;
+      border-bottom: 2px solid var(--color-black);
       font-family: var(--font-body);
       font-size: var(--text-sm);
       outline: none;
-      background: var(--color-white);
-    }
-
-    .add-step-input:focus {
-      border-style: solid;
-    }
-
-    .add-step-btn {
-      padding: var(--space-xs) var(--space-md);
-      border: 3px solid var(--color-black);
-      background: var(--color-black);
-      color: var(--color-white);
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      cursor: pointer;
-      transition: background var(--ease-brutal);
-    }
-
-    .add-step-btn:hover {
-      background: var(--color-accent);
+      background: transparent;
     }
   `;
 
@@ -151,6 +155,26 @@ export class StepChecklist extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  private _startEditStep(id: string): void {
+    const step = this.steps.find((s) => s.id === id);
+    if (!step) return;
+    this.editingStepId = id;
+    this.editingStepText = step.text;
+  }
+
+  private _saveEditStep(): void {
+    if (!this.editingStepId || !this.editingStepText.trim()) return;
+    this.dispatchEvent(
+      new CustomEvent("step-update", {
+        detail: { id: this.editingStepId, text: this.editingStepText.trim() },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    this.editingStepId = null;
+    this.editingStepText = "";
   }
 
   private _deleteStep(e: Event): void {
@@ -184,6 +208,17 @@ export class StepChecklist extends LitElement {
     }
   }
 
+  private _handleEditKeydown(e: KeyboardEvent): void {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      this._saveEditStep();
+    }
+    if (e.key === "Escape") {
+      this.editingStepId = null;
+      this.editingStepText = "";
+    }
+  }
+
   render() {
     return html`
       <div>
@@ -199,10 +234,19 @@ export class StepChecklist extends LitElement {
                   data-id="${step.id}"
                   @click="${this._toggleStep}"
                 ></div>
-                <span class="step-text ${step.checked ? "done" : ""}">${step
-                  .text}</span>
-                <button class="step-delete" data-id="${step.id}"
-                  @click="${this._deleteStep}">✕</button>
+                ${this.editingStepId === step.id
+                  ? html`
+                    <input class="step-edit-input" type="text" .value="${this.editingStepText}"
+                      @input="${(e: InputEvent) => { this.editingStepText = (e.target as HTMLInputElement).value; }}"
+                      @keydown="${this._handleEditKeydown}"
+                    />
+                    <button class="edit-btn save" @click="${this._saveEditStep}">✓</button>
+                    <button class="edit-btn delete" data-id="${step.id}" @click="${this._deleteStep}">✕</button>
+                  `
+                  : html`
+                    <span class="step-text ${step.checked ? "done" : ""}"
+                      @click="${() => this._startEditStep(step.id)}">${step.text}</span>
+                  `}
               </div>
             `
           )}
@@ -217,8 +261,6 @@ export class StepChecklist extends LitElement {
           }}"
           @keydown="${this._handleKeydown}"
         />
-        <button class="add-step-btn" @click="${this._handleAddStep}"
-          ?disabled="${!this.newStepText.trim()}">+</button>
       </div>
     `;
   }
