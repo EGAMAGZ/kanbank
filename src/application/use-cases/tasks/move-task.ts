@@ -15,7 +15,10 @@ export interface MoveTaskOptions {
 export class MoveTaskUseCase {
   constructor(private taskRepo: TaskRepository) {}
 
-  async execute(input: MoveTaskInput, options?: MoveTaskOptions): Promise<void> {
+  async execute(
+    input: MoveTaskInput,
+    options?: MoveTaskOptions,
+  ): Promise<void> {
     const parsed = MoveTaskSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(

@@ -1,56 +1,67 @@
 import { css, html, LitElement } from "lit";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
-import {
-  getAutoDiscardDays,
-  setAutoDiscardDays,
-} from "../../shared/constants/defaults.js";
+import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
+import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
+import { UpdateBoardSettingsUseCase } from "../../application/use-cases/boards/update-board-settings.js";
+import type { Board } from "../../domain/entities/board.entity.js";
+import "../../ui/components/auto-close-dial.js";
+
+const boardRepo = new DexieBoardRepository();
+const listBoards = new ListBoardsUseCase(boardRepo);
+const updateBoardSettings = new UpdateBoardSettingsUseCase(boardRepo);
 
 @customElement("settings-page")
 export class SettingsPage extends LitElement {
   pageController = new PageController(this);
 
   @state()
-  private discardDaysInput = "";
+  private boards: Board[] = [];
+  @state()
+  private selectedBoardId: string | null = null;
+  @state()
+  private selectedBoard: Board | null = null;
 
   @state()
-  private discardEnabled = false;
-
+  private autoCloseDays = 7;
   @state()
-  private saved = false;
-
+  private autoCloseEnabled = false;
   static styles = css`
     :host {
       display: block;
-      padding: var(--space-2xl) var(--space-lg);
+      padding: var(--space-2xl) var(--gutter-lg);
       max-width: 720px;
       margin: 0 auto;
       overflow-y: auto;
       height: 100%;
     }
 
-    h1 {
+    .page-title {
       font-family: var(--font-display);
-      font-weight: 800;
+      font-weight: 900;
       font-size: var(--text-3xl);
       letter-spacing: -0.04em;
       margin-bottom: var(--space-2xl);
+      border-bottom: var(--line-thicker) solid var(--color-black);
+      padding-bottom: var(--space-md);
     }
 
     .section {
-      border: 2px solid var(--color-black);
-      box-shadow: var(--shadow-brutal-md);
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: 6px 6px 0 var(--color-black);
       background: var(--color-white);
       padding: var(--space-xl);
       margin-bottom: var(--space-xl);
     }
 
-    .section h2 {
-      margin: 0 0 var(--space-lg);
+    .section-title {
       font-family: var(--font-display);
-      font-size: var(--text-xl);
       font-weight: 800;
+      font-size: var(--text-xl);
       letter-spacing: -0.02em;
+      margin: 0 0 var(--space-lg);
+      border-bottom: var(--line-thick) solid var(--color-black);
+      padding-bottom: var(--space-sm);
     }
 
     .section p {
@@ -58,147 +69,209 @@ export class SettingsPage extends LitElement {
       font-size: var(--text-sm);
       margin: 0 0 var(--space-lg);
       line-height: var(--leading-normal);
+      font-family: var(--font-mono);
     }
 
-    .field-row {
+    .board-select {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 3px solid var(--color-black);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      outline: none;
+      margin-bottom: var(--space-lg);
+    }
+
+    .toggle-row {
       display: flex;
       align-items: center;
-      gap: var(--space-md);
-      margin-bottom: var(--space-md);
+      justify-content: space-between;
+      padding: var(--space-md) 0;
+      border-bottom: 2px solid var(--color-black);
     }
 
-    .field-row label {
+    .toggle-label {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
       font-weight: 700;
-      font-size: var(--text-sm);
-      min-width: 180px;
     }
 
-    .field-row input[type="number"] {
-      width: 80px;
-      padding: var(--space-xs) var(--space-sm);
-      border: 2px solid var(--color-black);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      outline: none;
-      text-align: center;
-      transition: box-shadow var(--ease-brutal);
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      border: 3px solid var(--color-black);
+      background: var(--color-white);
+      cursor: pointer;
+      transition: background var(--ease-brutal);
     }
 
-    .field-row input[type="number"]:focus {
-      box-shadow: 2px 2px 0 var(--color-accent);
+    .toggle-switch.active {
+      background: var(--color-success);
     }
 
-    .field-row input[type="checkbox"] {
+    .toggle-switch.danger.active {
+      background: var(--color-error);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
       width: 18px;
       height: 18px;
-      cursor: pointer;
+      background: var(--color-white);
+      border: 2px solid var(--color-black);
+      transition: left 0.15s ease-out;
+    }
+
+    .toggle-switch.active .toggle-knob {
+      left: 28px;
+    }
+
+    .toggle-icon {
+      font-size: 16px;
+      margin-right: var(--space-xs);
+    }
+
+    .dial-wrap {
+      display: flex;
+      justify-content: center;
+      padding: var(--space-lg) 0;
     }
 
     .btn-save {
-      padding: var(--space-sm) var(--space-md);
-      border: 2px solid var(--color-black);
-      box-shadow: 3px 3px 0 var(--color-black);
+      display: block;
+      width: 100%;
+      padding: var(--space-md);
+      border: 3px solid var(--color-black);
+      box-shadow: 5px 5px 0 var(--color-black);
       background: var(--color-accent);
       color: var(--color-white);
+      font-family: var(--font-mono);
       font-size: var(--text-sm);
       font-weight: 700;
-      font-family: var(--font-body);
       cursor: pointer;
       transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-save:hover {
-      transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 var(--color-black);
+      transform: translate(2px, 2px);
+      box-shadow: 3px 3px 0 var(--color-black);
     }
 
     .btn-save:active {
-      transform: translate(3px, 3px);
+      transform: translate(5px, 5px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
-    .saved-msg {
-      color: var(--color-accent);
-      font-size: var(--text-sm);
-      font-weight: 700;
-      margin-left: var(--space-md);
+    .status-msg {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-success);
+      margin-top: var(--space-sm);
     }
   `;
 
-  connectedCallback(): void {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
-    const current = getAutoDiscardDays();
-    this.discardEnabled = current !== null;
-    this.discardDaysInput = current !== null ? String(current) : "";
-  }
-
-  private handleToggleDiscard(): void {
-    this.discardEnabled = !this.discardEnabled;
-    if (!this.discardEnabled) {
-      this.discardDaysInput = "";
-    } else if (!this.discardDaysInput) {
-      this.discardDaysInput = "7";
+    this.boards = await listBoards.execute();
+    if (this.boards.length > 0) {
+      this.selectedBoardId = this.boards[0].id;
+      this._loadBoardSettings(this.boards[0].id);
     }
   }
 
-  private handleSave(): void {
-    if (this.discardEnabled) {
-      const days = Number(this.discardDaysInput);
-      if (Number.isFinite(days) && days > 0) {
-        setAutoDiscardDays(days);
-      }
-    } else {
-      setAutoDiscardDays(null);
+  private _loadBoardSettings(boardId: string): void {
+    const board = this.boards.find((b) => b.id === boardId);
+    if (board) {
+      this.selectedBoard = board;
+      this.autoCloseDays = board.autoCloseDays ?? 7;
+      this.autoCloseEnabled = board.autoCloseEnabled ?? false;
     }
-    this.saved = true;
-    setTimeout(() => (this.saved = false), 2000);
+  }
+
+  private _handleBoardSelect(e: Event): void {
+    const id = (e.target as HTMLSelectElement).value;
+    this.selectedBoardId = id;
+    this._loadBoardSettings(id);
+  }
+
+  private _handleDialChange(e: CustomEvent): void {
+    this.autoCloseDays = e.detail.value;
+  }
+
+  private async _saveSettings(): Promise<void> {
+    if (!this.selectedBoardId) return;
+    try {
+      await updateBoardSettings.execute(this.selectedBoardId as any, {
+        autoCloseDays: this.autoCloseDays,
+        autoCloseEnabled: this.autoCloseEnabled,
+      });
+      this.boards = await listBoards.execute();
+      this.requestUpdate();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   render() {
     return html`
-      <h1>Settings</h1>
+      <h1 class="page-title">Board Settings</h1>
 
       <div class="section">
-        <h2>Auto-Discard</h2>
-        <p>
-          Automatically move inactive tasks to "Not now" after a configured
-          number of days. Only applies to tasks not in "Not now" or "Done"
-          states.
-        </p>
-        <div class="field-row">
-          <label for="discard-toggle">Enable auto-discard</label>
-          <input
-            id="discard-toggle"
-            type="checkbox"
-            .checked="${this.discardEnabled}"
-            @change="${this.handleToggleDiscard}"
-          />
-        </div>
-        ${this.discardEnabled
-          ? html`
-            <div class="field-row">
-              <label for="discard-days">Days before discard</label>
-              <input
-                id="discard-days"
-                type="number"
-                min="1"
-                .value="${this.discardDaysInput}"
-                @input="${(e: Event) => {
-                  this.discardDaysInput =
-                    (e.target as HTMLInputElement).value;
-                }}"
-              />
-              <span style="font-size:var(--text-sm);color:var(--color-text-2);">days</span>
-            </div>
-          `
-          : ""}
-        <div style="margin-top:var(--space-lg);display:flex;align-items:center;">
-          <button class="btn-save" @click="${this.handleSave}">Save</button>
-          ${this.saved
-            ? html`<span class="saved-msg">Saved!</span>`
-            : ""}
-        </div>
+        <h2 class="section-title">Select Board</h2>
+        <select class="board-select" @change="${this._handleBoardSelect}">
+          ${this.boards.map((b) =>
+            html`
+              <option value="${b
+                .id}" ?selected="${b.id === this.selectedBoardId}">${b
+                .title}</option>
+            `
+          )}
+        </select>
       </div>
+
+      ${this.selectedBoard
+        ? html`
+          <div class="section">
+            <h2 class="section-title">Auto-Close</h2>
+            <p>Automatically move inactive tasks to "Not now" after a configured number of days.</p>
+
+            <div class="toggle-row">
+              <span class="toggle-label">Enable auto-close</span>
+              <div class="toggle-switch ${this.autoCloseEnabled
+                ? "active"
+                : ""}"
+                @click="${() => {
+                  this.autoCloseEnabled = !this.autoCloseEnabled;
+                }}">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+
+            ${this.autoCloseEnabled
+              ? html`
+                <div class="dial-wrap">
+                  <auto-close-dial .value="${this
+                    .autoCloseDays}" .enabled="${this.autoCloseEnabled}"
+                    @dial-change="${this._handleDialChange}"></auto-close-dial>
+                </div>
+              `
+              : ""}
+
+            <div style="margin-top:var(--space-md);">
+              <button class="btn-save" @click="${this
+                ._saveSettings}">SAVE SETTINGS</button>
+            </div>
+          </div>
+        `
+        : html`
+          <div class="section">
+            <p style="text-align:center;">No boards available. Create a board first.</p>
+          </div>
+        `}
     `;
   }
 }

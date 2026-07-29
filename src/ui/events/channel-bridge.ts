@@ -19,10 +19,16 @@ export function initChannelBridge(
     "task.deleted",
     "task.moved",
     "task.activity.updated",
+    "task.pinned",
+    "task.subscribed",
     "comment.created",
     "comment.updated",
     "comment.deleted",
     "image.added",
+    "step.created",
+    "step.updated",
+    "step.deleted",
+    "timeline.added",
   ];
 
   for (const name of eventNames) {

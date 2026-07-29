@@ -4,6 +4,10 @@ import type { TaskRepository } from "../../domain/repositories/task.repository.j
 import { db } from "../database/dexie-db.js";
 
 export class DexieTaskRepository implements TaskRepository {
+  async findAll(): Promise<Task[]> {
+    return db.tasks.toArray();
+  }
+
   async findByBoard(boardId: Id<"Board">): Promise<Task[]> {
     return db.tasks.where("boardId").equals(boardId).toArray();
   }
@@ -20,6 +24,11 @@ export class DexieTaskRepository implements TaskRepository {
     return db.tasks.filter((t) => t.pinned === true).toArray();
   }
 
+  async getNextSeq(): Promise<number> {
+    const last = await db.tasks.orderBy("seq").last();
+    return (last?.seq ?? 0) + 1;
+  }
+
   async create(task: Task): Promise<Id<"Task">> {
     await db.tasks.add(task);
     return task.id;
@@ -32,6 +41,7 @@ export class DexieTaskRepository implements TaskRepository {
         Task,
         | "title"
         | "description"
+        | "boardId"
         | "stateId"
         | "images"
         | "lastActivityAt"
@@ -40,6 +50,8 @@ export class DexieTaskRepository implements TaskRepository {
         | "dueDate"
         | "notNowSince"
         | "isGold"
+        | "category"
+        | "subscriberIds"
       >
     >,
   ): Promise<void> {

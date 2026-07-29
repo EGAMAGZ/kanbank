@@ -2,10 +2,12 @@ import type { Id } from "../../shared/types/index.js";
 import type { Task } from "../entities/task.entity.js";
 
 export interface TaskRepository {
+  findAll(): Promise<Task[]>;
   findByBoard(boardId: Id<"Board">): Promise<Task[]>;
   findByState(stateId: Id<"State">): Promise<Task[]>;
   findById(id: Id<"Task">): Promise<Task | undefined>;
   findPinned(): Promise<Task[]>;
+  getNextSeq(): Promise<number>;
   create(task: Task): Promise<Id<"Task">>;
   update(
     id: Id<"Task">,
@@ -14,6 +16,7 @@ export interface TaskRepository {
         Task,
         | "title"
         | "description"
+        | "boardId"
         | "stateId"
         | "images"
         | "lastActivityAt"
@@ -22,6 +25,8 @@ export interface TaskRepository {
         | "dueDate"
         | "notNowSince"
         | "isGold"
+        | "category"
+        | "subscriberIds"
       >
     >,
   ): Promise<void>;

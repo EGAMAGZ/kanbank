@@ -11,7 +11,13 @@ export type DomainEventName =
   | "task.deleted"
   | "task.moved"
   | "task.activity.updated"
+  | "task.pinned"
+  | "task.subscribed"
   | "comment.created"
   | "comment.updated"
   | "comment.deleted"
-  | "image.added";
+  | "image.added"
+  | "step.created"
+  | "step.updated"
+  | "step.deleted"
+  | "timeline.added";

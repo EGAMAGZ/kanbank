@@ -3,6 +3,7 @@ import type { ImageRef } from "../value-objects/image-ref.js";
 
 export interface Task extends Timestamped {
   id: Id<"Task">;
+  seq: number;
   boardId: Id<"Board">;
   stateId: Id<"State">;
   title: string;
@@ -13,10 +14,13 @@ export interface Task extends Timestamped {
   dueDate: string | null;
   notNowSince: string | null;
   isGold: boolean;
+  category: string;
+  subscriberIds: string[];
 }
 
 export interface CreateTaskData {
   id: Id<"Task">;
+  seq: number;
   boardId: Id<"Board">;
   stateId: Id<"State">;
   title: string;
@@ -29,11 +33,14 @@ export interface CreateTaskData {
   dueDate?: string | null;
   notNowSince?: string | null;
   isGold?: boolean;
+  category?: string;
+  subscriberIds?: string[];
 }
 
 export function createTask(data: CreateTaskData): Task {
   return {
     id: data.id,
+    seq: data.seq,
     boardId: data.boardId,
     stateId: data.stateId,
     title: data.title,
@@ -44,6 +51,8 @@ export function createTask(data: CreateTaskData): Task {
     dueDate: data.dueDate ?? null,
     notNowSince: data.notNowSince ?? null,
     isGold: data.isGold ?? false,
+    category: data.category ?? "",
+    subscriberIds: data.subscriberIds ?? [],
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };

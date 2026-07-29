@@ -14,10 +14,13 @@ export const UpdateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(50000).optional(),
   stateId: z.string().optional(),
+  boardId: z.string().optional(),
   pinned: z.boolean().optional(),
   dueDate: z.string().nullable().optional(),
   notNowSince: z.string().nullable().optional(),
   isGold: z.boolean().optional(),
+  category: z.string().max(20).optional(),
+  subscriberIds: z.array(z.string()).optional(),
 });
 
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
