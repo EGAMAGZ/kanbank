@@ -4,6 +4,10 @@ import type { TaskRepository } from "../../domain/repositories/task.repository.j
 import { db } from "../database/dexie-db.js";
 
 export class DexieTaskRepository implements TaskRepository {
+  async findAll(): Promise<Task[]> {
+    return db.tasks.toArray();
+  }
+
   async findByBoard(boardId: Id<"Board">): Promise<Task[]> {
     return db.tasks.where("boardId").equals(boardId).toArray();
   }

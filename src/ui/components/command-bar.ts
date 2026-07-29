@@ -2,10 +2,13 @@ import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { ElementController } from "@open-cells/element-controller";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
+import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
 import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
 import type { Board } from "../../domain/entities/board.entity.js";
+import type { Task } from "../../domain/entities/task.entity.js";
 
 const boardRepo = new DexieBoardRepository();
+const taskRepo = new DexieTaskRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
 
 interface CmdResult {
@@ -30,6 +33,9 @@ export class CommandBar extends LitElement {
 
   @state()
   private boards: Board[] = [];
+
+  @state()
+  private tasks: Task[] = [];
 
   static styles = css`
     :host {
@@ -176,6 +182,7 @@ export class CommandBar extends LitElement {
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
     this.boards = await listBoards.execute();
+    this.tasks = await taskRepo.findAll();
     this._updateResults();
     // Focus input after render
     await this.updateComplete;
@@ -230,7 +237,25 @@ export class CommandBar extends LitElement {
         },
       }));
 
-    results.push(...boardResults);
+    const taskResults: CmdResult[] = this.tasks
+      .filter((task) => {
+        const searchable = `${task.title} ${task.description ?? ""}`.toLowerCase();
+        return searchable.includes(q);
+      })
+      .map((task) => {
+        const boardTitle = this.boards.find((b) => b.id === task.boardId)?.title;
+        return {
+          type: "action" as const,
+          label: task.title,
+          detail: boardTitle ? `Open task in ${boardTitle}` : "Open task",
+          action: () => {
+            this.elementController.navigate("task-detail", { id: task.id });
+            this._close();
+          },
+        };
+      });
+
+    results.push(...boardResults, ...taskResults);
 
     if (results.length === 0) {
       results.push({

@@ -6,6 +6,7 @@ export declare class CommandBar extends LitElement {
     private results;
     private selectedIndex;
     private boards;
+    private tasks;
     static styles: import("lit").CSSResult;
     connectedCallback(): Promise<void>;
     private _close;
