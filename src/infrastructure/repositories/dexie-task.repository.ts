@@ -37,6 +37,7 @@ export class DexieTaskRepository implements TaskRepository {
         Task,
         | "title"
         | "description"
+        | "boardId"
         | "stateId"
         | "images"
         | "lastActivityAt"

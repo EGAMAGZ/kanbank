@@ -5,6 +5,7 @@ import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-tas
 import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
 import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
+import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
 import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
 import { UpdateTaskUseCase } from "../../application/use-cases/tasks/update-task.js";
@@ -25,6 +26,7 @@ import type { Comment } from "../../domain/entities/comment.entity.js";
 import type { Step } from "../../domain/entities/step.entity.js";
 import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
+import type { Board } from "../../domain/entities/board.entity.js";
 import type { Id } from "../../shared/types/index.js";
 import { CURRENT_USER } from "../../ui/components/task-card.js";
 import "../../ui/components/wysiwyg-editor.js";
@@ -41,6 +43,7 @@ const taskRepo = new DexieTaskRepository();
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
 const stateRepo = new DexieStateRepository();
+const boardRepo = new DexieBoardRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
 const updateTask = new UpdateTaskUseCase(taskRepo);
@@ -96,6 +99,10 @@ export class TaskDetailPage extends LitElement {
   @state()
   private states: State[] = [];
   @state()
+  private boards: Board[] = [];
+  @state()
+  private _showBoardDropdown = false;
+  @state()
   private error: string | null = null;
 
   @state()
@@ -128,6 +135,20 @@ export class TaskDetailPage extends LitElement {
     const notNowState = this.states.find((s) => s.title === "Not now");
     return !!notNowState && this.task.stateId === notNowState.id;
   }
+
+  private _handleClickOutside = (e: MouseEvent) => {
+    const dropdown = this.renderRoot.querySelector(".board-dropdown");
+    const btn = this.renderRoot.querySelector(".board-btn");
+    if (
+      dropdown &&
+      !dropdown.contains(e.target as Node) &&
+      btn &&
+      !btn.contains(e.target as Node)
+    ) {
+      this._showBoardDropdown = false;
+      document.removeEventListener("click", this._handleClickOutside);
+    }
+  };
 
   static styles = css`
     :host {
@@ -570,6 +591,61 @@ export class TaskDetailPage extends LitElement {
     .task-card-wrapper {
       position: relative;
     }
+
+    .board-btn {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--color-white);
+    }
+
+    .board-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .board-btn-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .board-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      z-index: 100;
+      min-width: 160px;
+      border: 3px solid var(--color-black);
+      background: var(--color-white);
+      box-shadow: 4px 4px 0 var(--color-black);
+    }
+
+    .board-dd-option {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: var(--space-xs) var(--space-sm);
+      border: none;
+      border-bottom: 1px solid var(--color-bg);
+      background: var(--color-white);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      cursor: pointer;
+    }
+
+    .board-dd-option:last-child {
+      border-bottom: none;
+    }
+
+    .board-dd-option:hover {
+      background: var(--color-bg);
+    }
+
+    .board-dd-option:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
   `;
 
   connectedCallback(): void {
@@ -630,6 +706,7 @@ export class TaskDetailPage extends LitElement {
         this.steps = await stepRepo.findByTask(this.task.id);
         const boardStates = await stateRepo.findByBoard(this.task.boardId);
         this.states = boardStates.sort((a, b) => a.order - b.order);
+        this.boards = await boardRepo.findAll();
         this.timeline = await timelineRepo.findByTask(this.task.id);
       }
     } catch (e) {
@@ -714,6 +791,52 @@ export class TaskDetailPage extends LitElement {
       await this._loadTask();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to mark as done";
+    }
+  }
+
+  private toggleBoardDropdown(): void {
+    if (this._isDone) return;
+    this._showBoardDropdown = !this._showBoardDropdown;
+    if (this._showBoardDropdown) {
+      setTimeout(
+        () => document.addEventListener("click", this._handleClickOutside),
+        0,
+      );
+    } else {
+      document.removeEventListener("click", this._handleClickOutside);
+    }
+  }
+
+  private async selectBoard(boardId: Id<"Board">): Promise<void> {
+    this._showBoardDropdown = false;
+    document.removeEventListener("click", this._handleClickOutside);
+    if (!this.task || boardId === this.task.boardId) return;
+
+    const newBoardStates = await stateRepo.findByBoard(boardId);
+    const maybeState = newBoardStates.find((s) => s.title === "Maybe?");
+    if (!maybeState) return;
+
+    const oldBoardName =
+      this.boards.find((b) => b.id === this.task!.boardId)?.title ?? "?";
+    const newBoardName =
+      this.boards.find((b) => b.id === boardId)?.title ?? "?";
+
+    try {
+      await updateTask.execute(this.task.id, {
+        boardId,
+        stateId: maybeState.id,
+      });
+      await addTimeline.execute({
+        taskId: this.task.id,
+        type: "moved",
+        userId: CURRENT_USER.initials,
+        userName: CURRENT_USER.name,
+        message: `moved from board "${oldBoardName}" to "${newBoardName}"`,
+      });
+      await this._loadTask();
+    } catch (e) {
+      this.error =
+        e instanceof Error ? e.message : "Failed to move task to board";
     }
   }
 
@@ -995,6 +1118,20 @@ export class TaskDetailPage extends LitElement {
                   <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
                     <span class="meta-item">#${String(this.task.seq)
                       .padStart(3, "0")}</span>
+                    <div class="board-btn-wrap">
+                      <button class="meta-item board-btn" ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
+                        ${this.boards.find(b => b.id === this.task!.boardId)?.title ?? "?"} ▾
+                      </button>
+                      ${this._showBoardDropdown ? html`
+                        <div class="board-dropdown">
+                          ${this.boards.map(b => html`
+                            <button class="board-dd-option" @click="${() => this.selectBoard(b.id)}" ?disabled="${b.id === this.task!.boardId}">
+                              ${b.title}${b.id === this.task!.boardId ? " ✓" : ""}
+                            </button>
+                          `)}
+                        </div>
+                      ` : ""}
+                    </div>
                     ${this.task.category
                       ? html`<span class="meta-item cat">${this.task.category}</span>`
                       : ""}

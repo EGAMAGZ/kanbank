@@ -15,6 +15,7 @@ export interface TaskRepository {
         Task,
         | "title"
         | "description"
+        | "boardId"
         | "stateId"
         | "images"
         | "lastActivityAt"
