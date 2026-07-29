@@ -3,14 +3,36 @@ import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
 import { CreateBoardUseCase } from "../../application/use-cases/boards/create-board.js";
+import { DeleteBoardUseCase } from "../../application/use-cases/boards/delete-board.js";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
+import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
+import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-comment.repository.js";
+import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
+const taskRepo = new DexieTaskRepository();
+const commentRepo = new DexieCommentRepository();
+const imageRepo = new DexieImageRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
 const createBoard = new CreateBoardUseCase(boardRepo, stateRepo);
+const deleteBoard = new DeleteBoardUseCase(
+  boardRepo,
+  stateRepo,
+  taskRepo,
+  commentRepo,
+  imageRepo,
+);
+
+const BENTO_COLORS = [
+  "#2563EB",
+  "#D97706",
+  "#059669",
+  "#7C3AED",
+  "#DC2626",
+];
 
 @customElement("board-list-page")
 export class BoardListPage extends LitElement {
@@ -34,7 +56,6 @@ export class BoardListPage extends LitElement {
       overflow-y: auto;
     }
 
-    /* Title — breaks the grid, floats in whitespace */
     .page-title {
       font-family: var(--font-display);
       font-weight: 800;
@@ -45,33 +66,6 @@ export class BoardListPage extends LitElement {
       max-width: 14ch;
     }
 
-    /* New board button — brutal anchor, the single raw gesture */
-    .new-board-btn {
-      display: inline-block;
-      padding: var(--space-sm) var(--space-md);
-      border: 2px solid var(--color-black);
-      box-shadow: var(--shadow-brutal);
-      background: var(--color-accent);
-      color: var(--color-white);
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
-      margin-bottom: var(--space-2xl);
-    }
-
-    .new-board-btn:hover {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0 var(--color-black);
-    }
-
-    .new-board-btn:active {
-      transform: translate(4px, 4px);
-      box-shadow: 0 0 0 var(--color-black);
-    }
-
-    /* Bento grid — generous gutters, asymmetric */
     .board-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
@@ -79,75 +73,110 @@ export class BoardListPage extends LitElement {
       align-items: start;
     }
 
-    /* Anchor card — the ONE brutal container */
-    .board-item-anchor {
-      grid-column: span 5;
+    .bento-card {
       border: 2px solid var(--color-black);
+      border-top: 3px solid var(--card-color, var(--color-accent));
       box-shadow: var(--shadow-brutal-md);
       padding: var(--space-xl);
       cursor: pointer;
       background: var(--color-white);
       transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      position: relative;
     }
 
-    .board-item-anchor:hover {
+    .bento-card:hover {
       transform: translate(3px, 3px);
       box-shadow: 3px 3px 0 var(--color-black);
     }
 
-    .board-item-anchor:active {
+    .bento-card:active {
       transform: translate(6px, 6px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
-    .board-item-anchor h3 {
+    .bento-card h3 {
+      margin: 0 0 var(--space-sm);
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: var(--text-2xl);
+      font-size: var(--text-xl);
       letter-spacing: -0.03em;
-      margin-bottom: var(--space-md);
       line-height: var(--leading-snug);
     }
 
-    .board-item-anchor p {
+    .bento-card p {
       margin: 0;
       color: var(--color-text-2);
-      font-size: var(--text-base);
-      line-height: var(--leading-normal);
-    }
-
-    /* Minimal board — typography only, no container */
-    .board-item-minimal {
-      grid-column: span 3;
-      padding: var(--space-sm) 0;
-      cursor: pointer;
-    }
-
-    .board-item-minimal h3 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: var(--text-lg);
-      letter-spacing: -0.02em;
-      margin: 0 0 var(--space-xs);
-      transition: color var(--ease-brutal);
-    }
-
-    .board-item-minimal:hover h3 {
-      color: var(--color-accent);
-    }
-
-    .board-item-minimal p {
-      margin: 0;
-      color: var(--color-text-3);
       font-size: var(--text-sm);
       line-height: var(--leading-normal);
     }
 
-    /* Create form — dashed border, no shadow */
+    .bento-card--new {
+      border-style: dashed;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      color: var(--color-text-2);
+      cursor: pointer;
+      min-height: 120px;
+      transition: color var(--ease-brutal), border-color var(--ease-brutal);
+    }
+
+    .bento-card--new:hover {
+      color: var(--color-accent);
+      border-color: var(--color-accent);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .bento-card--new:active {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .bento-card--new .new-board-plus {
+      font-size: var(--text-2xl);
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .bento-card--new .new-board-label {
+      font-size: var(--text-base);
+      font-weight: 600;
+    }
+
+    .card-delete-btn {
+      position: absolute;
+      top: var(--space-sm);
+      right: var(--space-sm);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 15px;
+      color: var(--color-text-3);
+      transition: color var(--ease-brutal), background var(--ease-brutal);
+      border: 2px solid transparent;
+      opacity: 0;
+    }
+
+    .bento-card:hover .card-delete-btn {
+      opacity: 1;
+    }
+
+    .card-delete-btn:hover {
+      color: var(--color-error);
+      background: var(--color-surface);
+      border-color: var(--color-error);
+    }
+
     .create-form {
-      grid-column: span 4;
-      padding: var(--space-lg);
-      border: 2px dashed var(--color-border);
+      width: 100%;
     }
 
     .create-form input,
@@ -238,6 +267,20 @@ export class BoardListPage extends LitElement {
     this.boards = await listBoards.execute();
   }
 
+  private getCardSpan(board: Board): number {
+    const hasDesc = !!board.description;
+    const len = board.title.length;
+    if (hasDesc && len > 25) return 6;
+    if (hasDesc) return 5;
+    if (len > 28) return 5;
+    if (len > 14) return 4;
+    return 3;
+  }
+
+  private getCardColor(index: number): string {
+    return BENTO_COLORS[index % BENTO_COLORS.length];
+  }
+
   private async handleCreate(): Promise<void> {
     if (!this.newTitle.trim()) return;
     const id = await createBoard.execute({
@@ -250,6 +293,20 @@ export class BoardListPage extends LitElement {
     this.pageController.navigate("board-detail", { id });
   }
 
+  private async handleDelete(board: Board): Promise<void> {
+    if (
+      !confirm(
+        `Delete "${board.title}"? All states, tasks, and images will be permanently removed.`,
+      )
+    ) return;
+    try {
+      await deleteBoard.execute(board.id);
+      await this.loadBoards();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   private navigateToBoard(id: string): void {
     this.pageController.navigate("board-detail", { id });
   }
@@ -258,63 +315,72 @@ export class BoardListPage extends LitElement {
     return html`
       <h1 class="page-title">Boards</h1>
 
-      <button class="new-board-btn" @click="${() =>
-        this.showCreateForm = !this.showCreateForm}">
-        ${this.showCreateForm ? "Cancel" : "New board"}
-      </button>
-
       <div class="board-grid">
-        ${this.showCreateForm
-          ? html`
-            <div class="create-form">
-              <input
-                type="text"
-                placeholder="Board title"
-                .value="${this.newTitle}"
-                @input="${(e: Event) =>
-                  this.newTitle = (e.target as HTMLInputElement).value}"
-              />
-              <textarea
-                placeholder="Description (optional)"
-                .value="${this.newDescription}"
-                @input="${(e: Event) =>
-                  this.newDescription =
-                    (e.target as HTMLTextAreaElement).value}"
-              ></textarea>
-              <div class="form-actions">
-                <button class="btn-create" @click="${this
-                  .handleCreate}">Create</button>
-                <button class="btn-cancel" @click="${() =>
-                  this.showCreateForm = false}">Cancel</button>
-              </div>
-            </div>
-          `
-          : ""}
-
         ${this.boards.length === 0 && !this.showCreateForm
           ? html`
             <div class="empty">
               <p>No boards yet. Create one to get started.</p>
             </div>
           `
-          : this.boards.map((board, i) => {
-            if (i === 0) {
+          : html`
+            ${this.boards.map((board, i) => {
+              const span = this.getCardSpan(board);
+              const color = this.getCardColor(i);
               return html`
-                <div class="board-item-anchor" @click="${() =>
-                  this.navigateToBoard(board.id)}">
+                <div class="bento-card"
+                  style="--card-color: ${color}; grid-column: span ${span}"
+                  @click="${() => this.navigateToBoard(board.id)}">
+                  <button class="card-delete-btn"
+                    @click="${(e: Event) => {
+                      e.stopPropagation();
+                      this.handleDelete(board);
+                    }}"
+                    title="Delete board">&#128465;</button>
                   <h3>${board.title}</h3>
-                  ${board.description ? html`<p>${board.description}</p>` : ""}
+                  ${board.description
+                    ? html`<p>${board.description}</p>`
+                    : ""}
                 </div>
               `;
-            }
-            return html`
-              <div class="board-item-minimal" @click="${() =>
-                this.navigateToBoard(board.id)}">
-                <h3>${board.title}</h3>
-                ${board.description ? html`<p>${board.description}</p>` : ""}
-              </div>
-            `;
-          })}
+            })}
+
+            <div class="bento-card bento-card--new"
+              style="grid-column: span 4"
+              @click="${() => { if (!this.showCreateForm) this.showCreateForm = true; }}">
+              ${this.showCreateForm
+                ? html`
+                  <div class="create-form" @click="${(e: Event) => e.stopPropagation()}">
+                    <input
+                      type="text"
+                      placeholder="Board title"
+                      .value="${this.newTitle}"
+                      @input="${(e: Event) =>
+                        this.newTitle = (e.target as HTMLInputElement).value}"
+                      @keydown="${(e: KeyboardEvent) => {
+                        if (e.key === "Enter") this.handleCreate();
+                        if (e.key === "Escape") this.showCreateForm = false;
+                      }}"
+                    />
+                    <textarea
+                      placeholder="Description (optional)"
+                      .value="${this.newDescription}"
+                      @input="${(e: Event) =>
+                        this.newDescription =
+                          (e.target as HTMLTextAreaElement).value}"
+                    ></textarea>
+                    <div class="form-actions">
+                      <button class="btn-create" @click="${this.handleCreate}">Create</button>
+                      <button class="btn-cancel" @click="${() =>
+                        this.showCreateForm = false}">Cancel</button>
+                    </div>
+                  </div>
+                `
+                : html`
+                  <span class="new-board-plus">+</span>
+                  <span class="new-board-label">New board</span>
+                `}
+            </div>
+          `}
       </div>
     `;
   }

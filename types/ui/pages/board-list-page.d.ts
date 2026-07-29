@@ -9,7 +9,10 @@ export declare class BoardListPage extends LitElement {
     static styles: import("lit").CSSResult;
     connectedCallback(): Promise<void>;
     private loadBoards;
+    private getCardSpan;
+    private getCardColor;
     private handleCreate;
+    private handleDelete;
     private navigateToBoard;
     render(): import("lit").TemplateResult<1>;
 }

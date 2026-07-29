@@ -17,6 +17,8 @@ export declare class BoardDetailPage extends LitElement {
     private modalTitle;
     private modalDescription;
     private modalError;
+    private editingBoardTitle;
+    private editingBoardTitleValue;
     private pinnedTasks;
     private pinnedExpanded;
     private boundKeydown;
@@ -26,6 +28,10 @@ export declare class BoardDetailPage extends LitElement {
     disconnectedCallback(): void;
     onPageEnter(): Promise<void>;
     updated(): void;
+    private handleEditBoardTitle;
+    private handleSaveBoardTitle;
+    private handleCancelBoardTitle;
+    private handleDeleteBoard;
     private loadBoard;
     private removePinnedOverlay;
     private renderPinnedOverlay;
