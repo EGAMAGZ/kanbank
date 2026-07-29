@@ -611,8 +611,41 @@ export class BoardListPage extends LitElement {
       <div class="board-grid">
         ${this.boards.length === 0 && !this.showCreateForm
           ? html`
-            <div class="empty">
-              <p>No boards yet. Create one to get started.</p>
+            <div class="board-card--new"
+              @click="${() => {
+                if (!this.showCreateForm) this.showCreateForm = true;
+              }}">
+              ${this.showCreateForm
+                ? html`
+                  <div class="create-form" @click="${(e: Event) =>
+                    e.stopPropagation()}">
+                    <input type="text" placeholder="Board title"
+                      .value="${this.newTitle}"
+                      @input="${(e: Event) =>
+                        this.newTitle = (e.target as HTMLInputElement).value}"
+                      @keydown="${(e: KeyboardEvent) => {
+                        if (e.key === "Enter") this.handleCreate();
+                        if (e.key === "Escape") this.showCreateForm = false;
+                      }}"
+                    />
+                    <textarea placeholder="Description (optional)"
+                      .value="${this.newDescription}"
+                      @input="${(e: Event) =>
+                        this.newDescription =
+                          (e.target as HTMLTextAreaElement).value}"
+                    ></textarea>
+                    <div class="form-actions">
+                      <button class="btn-create" @click="${this
+                        .handleCreate}">Create</button>
+                      <button class="btn-cancel" @click="${() =>
+                        this.showCreateForm = false}">Cancel</button>
+                    </div>
+                  </div>
+                `
+                : html`
+                  <span class="new-icon">+</span>
+                  <span class="new-label">New board</span>
+                `}
             </div>
           `
           : html`
