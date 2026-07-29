@@ -1237,7 +1237,7 @@ export class BoardDetailPage extends LitElement {
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="col-expanded-header">
+        <div class="col-expanded-header" style="background:${colColor}">
           <div class="col-title-group">
             ${this.editingStateId === state.id
               ? html`
@@ -1270,7 +1270,7 @@ export class BoardDetailPage extends LitElement {
               : ""}
           </div>
         </div>
-        <div class="col-body" style="background:${state.id === mandatory.maybe ? "var(--color-white)" : colColor}">
+        <div class="col-body">
           ${stateTasks.length === 0
             ? html`<div class="empty-col">empty</div>`
             : stateTasks.map((task, taskIdx) => this.renderTaskCard(task, colColor, stateIdx, taskIdx))}

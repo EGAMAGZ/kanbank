@@ -90,6 +90,8 @@ export class TaskDetailPage extends LitElement {
   private editTitle = "";
   @state()
   private editDueDate = "";
+  @state()
+  private editDescription = "";
 
   @state()
   private newCommentHtml = "";
@@ -610,10 +612,11 @@ export class TaskDetailPage extends LitElement {
     this.editingTaskDesc = true;
     this.editTitle = this.task.title;
     this.editDueDate = this.task.dueDate ?? "";
+    this.editDescription = this.task.description ?? "";
     setTimeout(() => {
       const editor = this.renderRoot.querySelector("#desc-editor") as any;
       if (editor && editor.setValue) {
-        editor.setValue(this.task!.description);
+        editor.setValue(this.editDescription);
       }
       const titleInput = this.renderRoot.querySelector("#edit-title-input") as HTMLInputElement;
       if (titleInput) titleInput.focus();
@@ -628,14 +631,16 @@ export class TaskDetailPage extends LitElement {
     this.newCommentHtml = e.detail.html;
   }
 
+  private _handleDescEditorChange(e: CustomEvent): void {
+    this.editDescription = e.detail.html;
+  }
+
   private async saveEditTask(): Promise<void> {
     if (!this.task || !this.editTitle.trim()) return;
     try {
-      const descEditor = this.renderRoot.querySelector("#desc-editor") as any;
-      const description = descEditor?.value || "";
       await updateTask.execute(this.task.id, {
         title: this.editTitle.trim(),
-        description: description || undefined,
+        description: this.editDescription || undefined,
         dueDate: this.editDueDate || null,
       });
       await addTimeline.execute({
@@ -948,7 +953,7 @@ export class TaskDetailPage extends LitElement {
             </div>
             ${this.editingTaskDesc ? html`
               <div class="desc-editor-wrap">
-                <wysiwyg-editor id="desc-editor" .value="${this.task.description}" placeholder="Write a description..."></wysiwyg-editor>
+                <wysiwyg-editor id="desc-editor" .value="${this.editDescription}" placeholder="Write a description..." @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
               </div>
               <div class="edit-form">
                 <div style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
@@ -964,7 +969,7 @@ export class TaskDetailPage extends LitElement {
                 </div>
               </div>
             ` : this.task.description ? html`
-              <div style="font-size:var(--text-base);line-height:var(--leading-loose);">${this.task.description}</div>
+              <div style="font-size:var(--text-base);line-height:var(--leading-loose);" .innerHTML="${this.task.description}"></div>
             ` : html`
               <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);">No description</div>
             `}
@@ -1029,7 +1034,7 @@ export class TaskDetailPage extends LitElement {
                       <button @click="${() => this.handleDeleteComment(c)}">Delete</button>
                     </div>
                   </div>
-                  <div class="comment-body">${c.markdown}</div>
+                  <div class="comment-body" .innerHTML="${c.markdown}"></div>
                   <attachment-list .images="${c.images}" deletable
                     @attachment-remove="${(e: Event) => this.handleDetachCommentImage(e, c)}"
                     @attachment-add="${(e: Event) => this.handleAttachCommentImage(e, c)}"
