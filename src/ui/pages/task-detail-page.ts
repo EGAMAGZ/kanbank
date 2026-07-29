@@ -169,6 +169,19 @@ export class TaskDetailPage extends LitElement {
       padding: var(--space-lg);
       background: var(--color-white);
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .title-block .title-row {
+      display: flex;
+      gap: var(--space-lg);
+    }
+
+    .title-block .title-content {
+      flex: 1;
+      min-width: 0;
     }
 
     .title-block .state-bar {
@@ -191,13 +204,6 @@ export class TaskDetailPage extends LitElement {
       letter-spacing: -0.03em;
       line-height: var(--leading-tight);
       word-break: break-word;
-    }
-
-    .status-col {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-sm);
-      flex-shrink: 0;
     }
 
     .meta-row {
@@ -835,23 +841,31 @@ export class TaskDetailPage extends LitElement {
                 ${currentState ? html`<div class="state-bar" style="background:${getStateColor(currentState)}"></div>` : ""}
                 ${this._isDone ? html`<done-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#166534"></done-stamp>` : ""}
                 ${this._isNotNow ? html`<not-now-stamp date="${this._stampDate(this.task.updatedAt)}" author="Auto" bg-color="#8C8C8C"></not-now-stamp>` : ""}
-                <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
-                  <span class="meta-item">#${String(this.task.seq).padStart(3, "0")}</span>
-                  ${this.task.category ? html`<span class="meta-item cat">${this.task.category}</span>` : ""}
-                  ${this.task.isGold ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>` : ""}
+                <div class="title-row">
+                  <div class="title-content">
+                    <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-xs);flex-wrap:wrap;">
+                      <span class="meta-item">#${String(this.task.seq).padStart(3, "0")}</span>
+                      ${this.task.category ? html`<span class="meta-item cat">${this.task.category}</span>` : ""}
+                      ${this.task.isGold ? html`<span class="meta-item gold-bg">★ GOLDEN TICKET</span>` : ""}
+                    </div>
+                    <h1>${this.task.title}</h1>
+                  </div>
+                  <state-selector
+                    .states="${this.states}"
+                    activeStateId="${this.task.stateId}"
+                    @state-change="${this.handleStateChange}"
+                  ></state-selector>
                 </div>
-                <h1>${this.task.title}</h1>
+                <div class="meta-row" style="margin:0;">
+                  <span class="meta-avatar">${CURRENT_USER.initials}</span>
+                  <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
+                  <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
+                  ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
+                </div>
               </div>
             `}
 
-            <div class="meta-row">
-              <span class="meta-avatar">${CURRENT_USER.initials}</span>
-              <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
-              <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
-              ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
-            </div>
-
-            <div style="margin-bottom:var(--space-lg);">
+            <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
                 ?isGold="${this.task.isGold}"
                 ?isPinned="${this.task.pinned}"
@@ -864,13 +878,6 @@ export class TaskDetailPage extends LitElement {
             </div>
           </div>
 
-          <div class="status-col">
-            <state-selector
-              .states="${this.states}"
-              activeStateId="${this.task.stateId}"
-              @state-change="${this.handleStateChange}"
-            ></state-selector>
-          </div>
         </div>
 
         <!-- Description section -->

@@ -14,22 +14,22 @@ export class DoneStamp extends LitElement {
     :host {
       display: inline-block;
       position: absolute;
-      top: var(--space-sm);
+      bottom: var(--space-sm);
       right: var(--space-sm);
       z-index: 10;
       transform: rotate(8deg);
     }
 
     .stamp {
-      border: 3px solid var(--color-black);
+      border: 4px solid var(--color-black);
       color: var(--color-white);
-      padding: var(--space-xs) var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-base);
       font-weight: 700;
       text-align: center;
       line-height: var(--leading-tight);
-      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+      box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
       position: relative;
     }
 
@@ -37,31 +37,31 @@ export class DoneStamp extends LitElement {
     .stamp::after {
       content: "";
       position: absolute;
-      width: 6px;
-      height: 6px;
+      width: 12px;
+      height: 12px;
       border: 2px solid var(--color-black);
       background: var(--color-white);
     }
 
     .stamp::before {
-      top: -4px;
-      left: -4px;
+      top: -6px;
+      left: -6px;
     }
 
     .stamp::after {
-      bottom: -4px;
-      right: -4px;
+      bottom: -6px;
+      right: -6px;
     }
 
     .label {
-      font-size: 9px;
-      letter-spacing: 1px;
+      font-size: 18px;
+      letter-spacing: 2px;
     }
 
     .date-line {
-      border-top: 2px solid var(--color-white);
-      padding-top: 2px;
-      margin-top: 2px;
+      border-top: 3px solid var(--color-white);
+      padding-top: 4px;
+      margin-top: 4px;
     }
   `;
 
