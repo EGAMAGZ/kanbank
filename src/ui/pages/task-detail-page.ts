@@ -621,6 +621,10 @@ export class TaskDetailPage extends LitElement {
       box-shadow: 4px 4px 0 var(--color-black);
     }
 
+    .board-dropdown.gold {
+      background: var(--color-gold);
+    }
+
     .board-dd-option {
       display: block;
       width: 100%;
@@ -640,6 +644,15 @@ export class TaskDetailPage extends LitElement {
 
     .board-dd-option:hover {
       background: var(--color-bg);
+    }
+
+    .board-dropdown.gold .board-dd-option {
+      background: var(--color-gold);
+    }
+
+    .board-dropdown.gold .board-dd-option:hover {
+      background: var(--color-accent);
+      color: var(--color-white);
     }
 
     .board-dd-option:disabled {
@@ -1119,11 +1132,11 @@ export class TaskDetailPage extends LitElement {
                     <span class="meta-item">#${String(this.task.seq)
                       .padStart(3, "0")}</span>
                     <div class="board-btn-wrap">
-                      <button class="meta-item board-btn" ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
+                      <button class="meta-item board-btn ${this.task.isGold ? "gold-bg" : ""}" ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
                         ${this.boards.find(b => b.id === this.task!.boardId)?.title ?? "?"} ▾
                       </button>
                       ${this._showBoardDropdown ? html`
-                        <div class="board-dropdown">
+                        <div class="board-dropdown ${this.task.isGold ? "gold" : ""}">
                           ${this.boards.map(b => html`
                             <button class="board-dd-option" @click="${() => this.selectBoard(b.id)}" ?disabled="${b.id === this.task!.boardId}">
                               ${b.title}${b.id === this.task!.boardId ? " ✓" : ""}
