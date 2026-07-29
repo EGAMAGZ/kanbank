@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import "../../ui/components/keycap.js";
 
 @customElement("quick-actions")
 export class QuickActions extends LitElement {
@@ -9,62 +10,82 @@ export class QuickActions extends LitElement {
   @property({ type: Boolean })
   isPinned = false;
 
-  @property({ type: Boolean })
-  isSubscribed = false;
-
-  @property({ type: Boolean })
-  hasCover = false;
-
   static styles = css`
     :host {
       display: flex;
-      gap: var(--space-xs);
+      gap: var(--space-sm);
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .action-btn {
-      width: 36px;
-      height: 36px;
-      border: 3px solid var(--color-black);
-      background: var(--color-white);
-      cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 14px;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-md);
+      border: 3px solid var(--color-black);
+      cursor: pointer;
+      font-size: var(--text-xs);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: var(--color-white);
+      color: var(--color-black);
       transition: background var(--ease-brutal), color var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
-      box-shadow: 3px 3px 0 var(--color-black);
-      padding: 0;
+      box-shadow: 4px 4px 0 var(--color-black);
+      min-height: 38px;
     }
 
     .action-btn:hover {
       transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 var(--color-black);
+      box-shadow: 3px 3px 0 var(--color-black);
     }
 
     .action-btn:active {
-      transform: translate(3px, 3px);
+      transform: translate(4px, 4px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
-    .action-btn.active-gold {
-      background: var(--color-gold);
-      color: var(--color-black);
-    }
-
-    .action-btn.active-pin {
-      background: var(--color-black);
-      color: var(--color-white);
-    }
-
-    .action-btn.active-bell {
+    .action-btn.primary {
       background: var(--color-accent);
       color: var(--color-white);
     }
 
-    .action-btn.active-cover {
-      background: var(--color-success);
+    .action-btn.primary:hover {
+      background: var(--color-black);
+    }
+
+    .action-btn.danger {
+      background: var(--color-white);
+      color: var(--color-error);
+    }
+
+    .action-btn.danger:hover {
+      background: var(--color-error);
       color: var(--color-white);
+    }
+
+    .action-btn.gold.active {
+      background: var(--color-gold);
+      color: var(--color-black);
+    }
+
+    .action-btn.gold.active:hover {
+      background: var(--color-white);
+      color: var(--color-black);
+    }
+
+    .action-btn.pin:hover {
+      background: var(--color-bg);
+    }
+
+    .action-btn.pin.active {
+      background: var(--color-black);
+      color: var(--color-white);
+    }
+
+    .action-btn.pin.active:hover {
+      background: var(--color-bg);
+      color: var(--color-black);
     }
   `;
 
@@ -74,18 +95,19 @@ export class QuickActions extends LitElement {
 
   render() {
     return html`
-      <button class="action-btn ${this.isGold ? "active-gold" : ""}" @click="${() => this._emit("toggle-gold")}" title="Golden ticket">
-        ${this.isGold ? "★" : "☆"}
+      <button class="action-btn primary" @click="${() => this._emit("mark-done")}">
+        DONE <keycap-el key="⌘D"></keycap-el>
       </button>
-      <button class="action-btn ${this.hasCover ? "active-cover" : ""}" @click="${() => this._emit("toggle-cover")}" title="Cover image">
-        🖼
+      <button class="action-btn gold ${this.isGold ? "active" : ""}" @click="${() => this._emit("toggle-gold")}">
+        ${this.isGold ? "★" : "☆"} GOLD
       </button>
-      <button class="action-btn ${this.isSubscribed ? "active-bell" : ""}" @click="${() => this._emit("toggle-subscribe")}" title="Notifications">
-        ${this.isSubscribed ? "🔔" : "🔕"}
+      <button class="action-btn primary" @click="${() => this._emit("edit-task")}">
+        EDIT <keycap-el key="⌘E"></keycap-el>
       </button>
-      <button class="action-btn ${this.isPinned ? "active-pin" : ""}" @click="${() => this._emit("toggle-pin")}" title="Pin card">
-        ${this.isPinned ? "📌" : "📍"}
+      <button class="action-btn pin ${this.isPinned ? "active" : ""}" @click="${() => this._emit("toggle-pin")}">
+        ${this.isPinned ? "📌 UNPIN" : "📍 PIN"}
       </button>
+      <button class="action-btn danger" @click="${() => this._emit("delete-task")}">DELETE</button>
     `;
   }
 }

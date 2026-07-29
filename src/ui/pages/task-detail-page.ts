@@ -122,39 +122,12 @@ export class TaskDetailPage extends LitElement {
       overflow: hidden;
     }
 
-    .task-layout {
-      display: flex;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .state-rail {
-      width: 140px;
-      min-width: 140px;
-      border-right: 4px solid var(--color-black);
-      padding: var(--space-md);
-      background: var(--color-bg);
-      overflow-y: auto;
-      flex-shrink: 0;
-    }
-
-    .state-rail-label {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: var(--space-sm);
-      color: var(--color-text-3);
-    }
-
     .main-content {
-      flex: 1;
       overflow-y: auto;
+      height: 100%;
       padding: var(--space-xl) var(--space-2xl);
       max-width: 860px;
       margin: 0 auto;
-      min-width: 0;
     }
 
     .back {
@@ -181,6 +154,11 @@ export class TaskDetailPage extends LitElement {
       align-items: flex-start;
       gap: var(--space-lg);
       margin-bottom: var(--space-lg);
+    }
+
+    .header-left {
+      flex: 1;
+      min-width: 0;
     }
 
     .title-block {
@@ -215,56 +193,18 @@ export class TaskDetailPage extends LitElement {
       word-break: break-word;
     }
 
-    .actions-col {
+    .status-col {
       display: flex;
       flex-direction: column;
       gap: var(--space-sm);
       flex-shrink: 0;
     }
 
-    .action-btn {
-      display: flex;
-      align-items: center;
-      gap: var(--space-xs);
-      padding: var(--space-xs) var(--space-md);
-      border: 3px solid var(--color-black);
-      cursor: pointer;
-      font-size: var(--text-xs);
-      font-weight: 700;
-      font-family: var(--font-mono);
-      background: var(--color-white);
-      transition: background var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
-      box-shadow: 4px 4px 0 var(--color-black);
-    }
-
-    .action-btn:hover {
-      transform: translate(1px, 1px);
-      box-shadow: 3px 3px 0 var(--color-black);
-    }
-
-    .action-btn:active {
-      transform: translate(4px, 4px);
-      box-shadow: 0 0 0 var(--color-black);
-    }
-
-    .action-btn.primary {
-      background: var(--color-accent);
-      color: var(--color-white);
-    }
-
-    .action-btn.primary:hover {
-      background: var(--color-black);
-    }
-
-    .action-btn.danger:hover {
-      background: var(--color-error);
-      color: var(--color-white);
-    }
-
     .meta-row {
       display: flex;
       align-items: center;
       gap: var(--space-sm);
+      margin-top: var(--space-md);
       margin-bottom: var(--space-lg);
       flex-wrap: wrap;
     }
@@ -863,37 +803,28 @@ export class TaskDetailPage extends LitElement {
     const autoCloseMsg = inactive > 0 ? `Moves to 'Not Now' in ${Math.max(0, 7 - inactive)} days if there's no activity` : "";
     const currentState = this.states.find((s) => s.id === this.task!.stateId);
     return html`
-      <div class="task-layout">
-        <div class="state-rail">
-          <div class="state-rail-label">Status</div>
-          <state-selector
-            .states="${this.states}"
-            activeStateId="${this.task.stateId}"
-            @state-change="${this.handleStateChange}"
-          ></state-selector>
+      <div class="main-content">
+        <!-- Back button -->
+        <div class="back" @click="${this.goBack}">
+          ← Back to board <keycap-el key="Esc"></keycap-el>
         </div>
 
-        <div class="main-content">
-          <!-- Back button -->
-          <div class="back" @click="${this.goBack}">
-            ← Back to board <keycap-el key="Esc"></keycap-el>
+        <!-- Auto-close message -->
+        ${autoCloseMsg ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>` : ""}
+
+        <!-- Not now notice -->
+        ${this.task.notNowSince ? html`
+          <div class="not-now-notice">
+            <span style="font-size:14px;">📬</span>
+            Auto-moved to "Not now" on ${this._formatDate(this.task.notNowSince)}
           </div>
+        ` : ""}
 
-          <!-- Auto-close message -->
-          ${autoCloseMsg ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>` : ""}
-
-          <!-- Not now notice -->
-          ${this.task.notNowSince ? html`
-            <div class="not-now-notice">
-              <span style="font-size:14px;">📬</span>
-              Auto-moved to "Not now" on ${this._formatDate(this.task.notNowSince)}
-            </div>
-          ` : ""}
-
-          <!-- Header -->
-          <div class="header">
+        <!-- Header -->
+        <div class="header">
+          <div class="header-left">
             ${this.editingTaskDesc ? html`
-              <div class="edit-form" style="flex:1;">
+              <div class="edit-form">
                 <input id="edit-title-input" type="text" .value="${this.editTitle}"
                   @input="${(e: InputEvent) => { this.editTitle = (e.target as HTMLInputElement).value; }}"
                   @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.saveEditTask(); if (e.key === "Escape") this.cancelEditTask(); }}"
@@ -913,48 +844,44 @@ export class TaskDetailPage extends LitElement {
               </div>
             `}
 
-            <div class="actions-col">
-              <button class="action-btn primary" @click="${this.startEditTask}">
-                EDIT <keycap-el key="⌘E"></keycap-el>
-              </button>
-              <button class="action-btn primary" @click="${this.markAsDone}">
-                DONE <keycap-el key="⌘D"></keycap-el>
-              </button>
-              <button class="action-btn" @click="${this.toggleGold}">
-                ${this.task.isGold ? "★" : "☆"} GOLD
-              </button>
-              <button class="action-btn danger" @click="${this.handleDeleteTask}">DELETE</button>
+            <div class="meta-row">
+              <span class="meta-avatar">${CURRENT_USER.initials}</span>
+              <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
+              <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
+              ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
+            </div>
+
+            <div style="margin-bottom:var(--space-lg);">
+              <quick-actions
+                ?isGold="${this.task.isGold}"
+                ?isPinned="${this.task.pinned}"
+                @mark-done="${this.markAsDone}"
+                @delete-task="${this.handleDeleteTask}"
+                @toggle-gold="${this.toggleGold}"
+                @edit-task="${this.startEditTask}"
+                @toggle-pin="${this.togglePin}"
+              ></quick-actions>
             </div>
           </div>
 
-          <!-- Meta row -->
-          <div class="meta-row">
-            <span class="meta-avatar">${CURRENT_USER.initials}</span>
-            <span class="meta-item">created ${this._relativeTime(this.task.createdAt)}</span>
-            <span class="meta-item">updated ${this._relativeTime(this.task.updatedAt)}</span>
-            ${this.task.dueDate ? html`<span class="meta-item">due ${this._formatDate(this.task.dueDate)}</span>` : ""}
+          <div class="status-col">
+            <state-selector
+              .states="${this.states}"
+              activeStateId="${this.task.stateId}"
+              @state-change="${this.handleStateChange}"
+            ></state-selector>
           </div>
+        </div>
 
-          <!-- Quick actions -->
-          <div style="margin-bottom:var(--space-lg);">
-            <quick-actions
-              ?isGold="${this.task.isGold}"
-              ?isPinned="${this.task.pinned}"
-              ?hasCover="${false}"
-              @toggle-gold="${this.toggleGold}"
-              @toggle-pin="${this.togglePin}"
-            ></quick-actions>
+        <!-- Description section -->
+        <div class="section">
+          <div class="section-header">
+            <h3>Description</h3>
           </div>
-
-          <!-- Description section -->
-          <div class="section">
-            <div class="section-header">
-              <h3>Description</h3>
+          ${this.editingTaskDesc ? html`
+            <div class="desc-editor-wrap">
+              <wysiwyg-editor id="desc-editor" .value="${this.editDescription}" placeholder="Write a description..." @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
             </div>
-            ${this.editingTaskDesc ? html`
-              <div class="desc-editor-wrap">
-                <wysiwyg-editor id="desc-editor" .value="${this.editDescription}" placeholder="Write a description..." @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
-              </div>
               <div class="edit-form">
                 <div style="display:flex;gap:var(--space-sm);align-items:center;margin-bottom:var(--space-sm);">
                   <label style="font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;">Due date</label>
