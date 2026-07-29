@@ -1,4 +1,4 @@
-import { css, html, LitElement, render } from "lit";
+import { css, html, LitElement } from "lit";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import {
@@ -23,6 +23,9 @@ import { inactiveDays } from "../../shared/utils/dates.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
 import type { Id } from "../../shared/types/index.js";
+import "../../ui/components/done-stamp.js";
+import { CURRENT_USER } from "../../ui/components/task-card.js";
+import "../../ui/components/activity-feed.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
@@ -38,13 +41,23 @@ const reorderStates = new ReorderStatesUseCase(stateRepo);
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
 const updateBoard = new UpdateBoardUseCase(boardRepo);
-const deleteBoard = new DeleteBoardUseCase(
-  boardRepo,
-  stateRepo,
-  taskRepo,
-  commentRepo,
-  imageRepo,
-);
+const deleteBoard = new DeleteBoardUseCase(boardRepo, stateRepo, taskRepo, commentRepo, imageRepo);
+
+const COLUMN_COLORS: Record<string, string> = {
+  "Not now": "#D4D4D4",
+  "Maybe?": "#E5B800",
+  "In Progress": "#1E40AF",
+  "Done": "#166534",
+};
+
+function getColColor(state: State): string {
+  return COLUMN_COLORS[state.title] ?? state.color;
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 @customElement("board-detail-page")
 export class BoardDetailPage extends LitElement {
@@ -65,7 +78,7 @@ export class BoardDetailPage extends LitElement {
   @state()
   private newColumnTitle = "";
   @state()
-  private newColumnColor = "#2563EB";
+  private newColumnColor = "#1E40AF";
   @state()
   private showColumnForm = false;
 
@@ -74,7 +87,7 @@ export class BoardDetailPage extends LitElement {
   @state()
   private editingStateTitle = "";
   @state()
-  private editingStateColor = "#2563EB";
+  private editingStateColor = "#1E40AF";
 
   @state()
   private showTaskModal = false;
@@ -91,67 +104,75 @@ export class BoardDetailPage extends LitElement {
   private editingBoardTitleValue = "";
 
   @state()
-  private pinnedTasks: Task[] = [];
-
-  @state()
-  private pinnedExpanded = false;
+  private showActivity = false;
 
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
-  private pinnedOverlayEl: HTMLDivElement | null = null;
 
   static styles = css`
     :host {
       display: block;
+      height: 100%;
+      overflow: hidden;
     }
 
     .board-header {
-      padding: var(--space-2xl) var(--gutter-lg) var(--space-xl);
+      padding: var(--space-md) var(--gutter-lg);
       display: flex;
-      align-items: baseline;
-      gap: var(--space-lg);
-      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-md);
+      border-bottom: var(--line-thicker) solid var(--color-black);
+      background: var(--color-white);
+      flex-shrink: 0;
+    }
+
+    .board-header .back {
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--line-thick) solid var(--color-black);
+      background: var(--color-white);
+      transition: background var(--ease-brutal);
+    }
+
+    .board-header .back:hover {
+      background: var(--color-bg);
     }
 
     .board-header h1 {
       margin: 0;
       flex: 1;
       font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-4xl);
-      letter-spacing: -0.04em;
-      line-height: var(--leading-tight);
-    }
-
-    .board-header .back {
-      cursor: pointer;
-      color: var(--color-text-2);
-      font-size: 20px;
-      transition: color var(--ease-brutal);
-      align-self: center;
-    }
-
-    .board-header .back:hover {
-      color: var(--color-text);
+      font-weight: 900;
+      font-size: var(--text-2xl);
+      letter-spacing: -0.03em;
     }
 
     .header-action {
-      background: none;
-      border: none;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--line-thick) solid var(--color-black);
+      background: var(--color-white);
       cursor: pointer;
-      font-size: var(--text-base);
-      padding: var(--space-xs);
-      color: var(--color-text-2);
-      transition: color var(--ease-brutal);
-      align-self: center;
-      line-height: 1;
+      font-size: 14px;
+      transition: background var(--ease-brutal);
+      padding: 0;
     }
 
     .header-action:hover {
-      color: var(--color-text);
+      background: var(--color-bg);
     }
 
     .header-action--delete:hover {
-      color: var(--color-error);
+      background: var(--color-error);
+      color: var(--color-white);
     }
 
     .title-edit-group {
@@ -164,11 +185,10 @@ export class BoardDetailPage extends LitElement {
     .header-title-input {
       flex: 1;
       font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-4xl);
-      letter-spacing: -0.04em;
-      line-height: var(--leading-tight);
-      border: 2px solid var(--color-black);
+      font-weight: 900;
+      font-size: var(--text-2xl);
+      letter-spacing: -0.03em;
+      border: var(--line-thick) solid var(--color-black);
       padding: var(--space-xs) var(--space-sm);
       outline: none;
       background: var(--color-white);
@@ -177,98 +197,42 @@ export class BoardDetailPage extends LitElement {
     }
 
     .header-title-input:focus {
-      box-shadow: 2px 2px 0 var(--color-accent);
+      box-shadow: 3px 3px 0 var(--color-accent);
     }
 
     .add-column-btn {
-      font-size: var(--text-sm);
-      color: var(--color-accent);
-      cursor: pointer;
-      border: 2px dashed var(--color-accent);
-      padding: var(--space-xs) var(--space-md);
-      background: none;
+      font-size: var(--text-xs);
       font-weight: 700;
-      font-family: var(--font-body);
+      font-family: var(--font-mono);
+      cursor: pointer;
+      border: var(--line-thick) dashed var(--color-black);
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-white);
       transition: background var(--ease-brutal);
     }
 
     .add-column-btn:hover {
-      background: rgba(37, 99, 235, 0.06);
+      background: var(--color-bg);
     }
 
-    .column-form {
-      display: flex;
-      gap: var(--space-sm);
-      align-items: center;
-    }
-
-    .column-form input[type="text"] {
-      padding: var(--space-xs) var(--space-sm);
-      border: 2px solid var(--color-black);
-      font-size: var(--text-sm);
-      font-family: var(--font-body);
-      outline: none;
-      transition: box-shadow var(--ease-brutal);
-    }
-
-    .column-form input[type="text"]:focus {
-      box-shadow: 2px 2px 0 var(--color-accent);
-    }
-
-    .column-form input[type="color"] {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--color-black);
-      cursor: pointer;
-      padding: 2px;
-    }
-
-    .column-form .btn-sm {
-      padding: var(--space-xs) var(--space-sm);
-      border: 2px solid var(--color-black);
-      box-shadow: 3px 3px 0 var(--color-black);
-      cursor: pointer;
-      background: var(--color-text);
-      color: var(--color-white);
-      font-size: var(--text-sm);
-      font-weight: 700;
-      font-family: var(--font-body);
-      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
-    }
-
-    .column-form .btn-sm:hover {
-      transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0 var(--color-black);
-    }
-
-    .column-form .cancel {
-      background: none;
-      color: var(--color-text-2);
-      border: none;
-      cursor: pointer;
-      font-size: var(--text-sm);
-      font-family: var(--font-body);
-    }
-
-    /* Columns area — generous horizontal padding */
+    /* Columns area */
     .columns {
       display: flex;
-      gap: var(--space-lg);
-      padding: 0 var(--gutter-lg) var(--space-2xl);
-      align-items: stretch;
-      min-height: calc(100vh - 160px);
+      gap: var(--space-md);
+      padding: var(--space-md) var(--gutter-lg);
+      height: calc(100% - 60px);
       overflow-x: auto;
-      overflow-y: auto;
+      overflow-y: hidden;
+      align-items: stretch;
     }
 
-    /* Column bar — brutal border + shadow (interactive, justified) */
-    .column-bar {
+    /* --- Collapsed column bar --- */
+    .col-bar {
       width: 56px;
       min-width: 56px;
       max-width: 56px;
-      height: calc(100vh - 200px);
+      border: var(--line-thicker) solid var(--color-black);
       background: var(--color-white);
-      border: 2px solid var(--color-black);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -276,246 +240,482 @@ export class BoardDetailPage extends LitElement {
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: box-shadow var(--ease-brutal), transform var(--ease-brutal);
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
-    .column-bar:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-brutal);
+    .col-bar:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--color-black);
     }
 
-    .column-bar:active {
-      transform: translateY(2px);
+    .col-bar:active {
+      transform: translate(4px, 4px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
-    .column-bar.active {
-      background: var(--color-text);
+    .col-bar.active {
+      background: var(--color-black);
       color: var(--color-white);
     }
 
-    .column-bar .fill {
+    .col-bar .bar-fill {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      transition: height 0.3s ease;
       z-index: 0;
+      transition: height 0.3s ease-out;
     }
 
-    .column-bar.active .fill {
+    .col-bar.active .bar-fill {
       background: var(--color-accent) !important;
     }
 
-    .column-bar .badge {
+    .col-bar .bar-badge {
       width: 32px;
       height: 32px;
-      background: var(--color-white);
-      border: 2px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: var(--font-mono);
       font-size: var(--text-sm);
       font-weight: 700;
       z-index: 1;
       flex-shrink: 0;
+      background: var(--color-white);
     }
 
-    .column-bar.active .badge {
+    .col-bar.active .bar-badge {
       background: var(--color-accent);
       color: var(--color-white);
+      border-color: var(--color-white);
     }
 
-    .column-bar .bar-label {
+    .col-bar .bar-label {
       writing-mode: vertical-rl;
       text-orientation: mixed;
+      font-family: var(--font-display);
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       z-index: 1;
       margin-top: var(--space-sm);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
     }
 
-    .column-bar .bar-pct {
-      font-size: 10px;
+    .col-bar .bar-pct {
+      font-family: var(--font-mono);
+      font-size: 9px;
       font-weight: 700;
       z-index: 1;
       margin-top: auto;
+      margin-bottom: var(--space-xs);
     }
 
-    /* Expanded column — the anchor panel */
-    .column-expanded {
+    /* --- Expanded column --- */
+    .col-expanded {
       width: 320px;
       min-width: 320px;
       max-width: 360px;
       flex-shrink: 0;
-      background: var(--color-white);
-      border: 2px solid var(--color-black);
+      border: var(--line-thicker) solid var(--color-black);
       box-shadow: var(--shadow-brutal-md);
-      padding: var(--space-lg);
+      background: var(--color-white);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    .column-expanded.drag-over {
-      background: rgba(37, 99, 235, 0.04);
-      box-shadow: var(--shadow-brutal-md), inset 0 0 0 2px var(--color-accent);
+    .col-expanded.drag-over {
+      outline: 4px dashed var(--color-black);
+      outline-offset: -4px;
     }
 
-    .column-header {
-      font-weight: 700;
-      margin-bottom: var(--space-lg);
+    .col-expanded-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: var(--space-md);
+      border-bottom: var(--line-thick) solid var(--color-black);
+      flex-shrink: 0;
     }
 
-    .column-header .col-title {
+    .col-expanded-header .col-title-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .col-expanded-header .col-title {
       font-family: var(--font-display);
-      font-size: var(--text-lg);
       font-weight: 800;
+      font-size: var(--text-base);
       letter-spacing: -0.02em;
     }
 
-    .column-header .col-actions {
-      display: flex;
-      gap: var(--space-xs);
-      align-items: center;
-    }
-
-    .column-header .col-actions button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: var(--text-base);
-      padding: 2px var(--space-xs);
-      color: var(--color-text-2);
-      transition: color var(--ease-brutal);
-    }
-
-    .column-header .col-actions button:hover {
-      color: var(--color-text);
-    }
-
-    .column-count {
-      color: var(--color-text-2);
-      font-weight: 500;
+    .col-expanded-header .col-count {
+      font-family: var(--font-mono);
       font-size: var(--text-sm);
-    }
-
-    .collapse-btn {
-      cursor: pointer;
-      font-size: var(--text-lg);
-      background: none;
-      border: none;
-      padding: 0 var(--space-xs);
-      color: var(--color-text-2);
-      transition: color var(--ease-brutal);
-    }
-
-    .collapse-btn:hover {
-      color: var(--color-text);
-    }
-
-    .state-edit-input {
-      font-size: var(--text-base);
       font-weight: 700;
-      border: 2px solid var(--color-black);
-      padding: var(--space-xs) var(--space-sm);
-      width: 140px;
-      font-family: var(--font-body);
-      outline: none;
-      transition: box-shadow var(--ease-brutal);
+      border: var(--line-thick) solid var(--color-black);
+      padding: 1px var(--space-sm);
+      background: var(--color-white);
     }
 
-    .state-edit-input:focus {
-      box-shadow: 2px 2px 0 var(--color-accent);
+    .col-expanded-header .col-actions {
+      display: flex;
+      gap: 2px;
     }
 
-    .state-edit-color {
-      width: 28px;
-      height: 28px;
+    .col-expanded-header .col-actions button {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border: 2px solid var(--color-black);
+      background: var(--color-white);
       cursor: pointer;
-      padding: 2px;
-      margin-left: var(--space-xs);
-    }
-
-    /* Task items — pure typography, spacing does the work */
-    .task-item {
-      padding: var(--space-md) 0;
-      cursor: grab;
+      font-size: 10px;
+      padding: 0;
       transition: background var(--ease-brutal);
     }
 
-    .task-item + .task-item {
-      border-top: 1px solid var(--color-border);
+    .col-expanded-header .col-actions button:hover {
+      background: var(--color-bg);
     }
 
-    .task-item:hover {
-      background: var(--color-surface);
-      margin: 0 calc(var(--space-md) * -1);
-      padding-left: var(--space-md);
-      padding-right: var(--space-md);
+    .col-expanded-header .col-actions button:disabled {
+      opacity: 0.3;
+      cursor: default;
     }
 
-    .task-item:active {
+    .col-body {
+      padding: var(--space-sm);
+      flex: 1;
+      overflow-y: auto;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .empty-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80px;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+      border: 2px dashed var(--color-black);
+      flex-shrink: 0;
+    }
+
+    .col-expanded .add-task-btn {
+      display: block;
+      width: 100%;
+      padding: var(--space-sm);
+      flex-shrink: 0;
+      border: none;
+      border-top: var(--line-thick) solid var(--color-black);
+      background: var(--color-white);
+      color: var(--color-text-2);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: background var(--ease-brutal), color var(--ease-brutal);
+    }
+
+    .col-expanded .add-task-btn:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    /* --- Task card --- */
+    .task-card {
+      border: var(--line-thick) solid var(--color-black);
+      box-shadow: var(--shadow-brutal);
+      background: var(--color-white);
+      padding: var(--space-md);
+      cursor: grab;
+      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .task-card:active {
       cursor: grabbing;
     }
 
-    .task-item .title {
-      font-size: var(--text-base);
-      margin-bottom: 2px;
-      font-weight: 500;
-      line-height: var(--leading-snug);
+    .task-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 var(--color-black);
     }
 
-    .task-item .inactive {
+    .task-card.gold {
+      background: var(--color-gold);
+      transform: rotate(-1deg);
+      border-width: var(--line-thicker);
+      box-shadow: var(--shadow-brutal-lg);
+    }
+
+    .task-card.gold:hover {
+      transform: rotate(-1deg) translate(-2px, -2px);
+      box-shadow: 10px 10px 0 var(--color-black);
+    }
+
+    .task-card.gold::before {
+      content: "★ GOLDEN TICKET";
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-bottom: var(--line-thick) solid var(--color-black);
+      padding-bottom: var(--space-xs);
+      margin-bottom: var(--space-sm);
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .seq-num {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      color: var(--color-text-2);
+    }
+
+    .tag-dot {
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--color-black);
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-base);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-sm);
+      word-break: break-word;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 2px solid var(--color-black);
+      padding-top: var(--space-xs);
+      margin-top: var(--space-xs);
+    }
+
+    .card-footer .footer-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .avatar {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--color-black);
+      background: var(--color-accent-2);
+      color: var(--color-white);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-date {
+      font-family: var(--font-mono);
       font-size: var(--text-xs);
       color: var(--color-text-3);
     }
 
-    .task-item .inactive.stale {
-      color: var(--color-warning);
+    .card-inactive {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
     }
 
-    .image-indicator {
-      font-size: 11px;
-      color: var(--color-text-2);
+    .card-inactive.stale {
+      color: var(--color-error);
+      font-weight: 700;
+    }
+
+    /* --- Column form (inline) --- */
+    .column-form {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+      padding: var(--space-sm);
+      border-top: var(--line-thick) solid var(--color-black);
+      flex-shrink: 0;
+      background: var(--color-white);
+    }
+
+    .column-form input[type="text"] {
+      flex: 1;
+      padding: var(--space-xs) var(--space-sm);
+      border: var(--line-thick) solid var(--color-black);
+      font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    .column-form input[type="color"] {
+      width: 28px;
+      height: 28px;
+      border: var(--line-thick) solid var(--color-black);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .column-form button {
+      padding: var(--space-xs) var(--space-sm);
+      border: var(--line-thick) solid var(--color-black);
+      cursor: pointer;
+      background: var(--color-black);
+      color: var(--color-white);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      transition: background var(--ease-brutal);
+    }
+
+    .column-form button:hover {
+      background: var(--color-accent);
+    }
+
+    .state-edit-input {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      border: var(--line-thick) solid var(--color-black);
+      padding: 2px var(--space-xs);
+      width: 120px;
+      font-family: var(--font-display);
+      outline: none;
+    }
+
+    .state-edit-color {
+      width: 24px;
+      height: 24px;
+      border: var(--line-thick) solid var(--color-black);
+      cursor: pointer;
+      padding: 1px;
+    }
+
+    /* --- Modal --- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-card {
+      background: var(--color-white);
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: var(--shadow-brutal-xl);
+      padding: var(--space-xl);
+      width: 480px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-card h2 {
+      margin: 0 0 var(--space-md);
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .modal-card label {
+      display: block;
+      font-size: var(--text-xs);
+      font-weight: 700;
+      margin-bottom: var(--space-xs);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .modal-card input,
+    .modal-card textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: var(--line-thick) solid var(--color-black);
+      box-sizing: border-box;
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
+      outline: none;
+      background: var(--color-white);
+    }
+
+    .modal-card input:focus,
+    .modal-card textarea:focus {
+      box-shadow: 3px 3px 0 var(--color-accent);
+    }
+
+    .modal-card textarea {
+      min-height: 100px;
+      resize: vertical;
       margin-top: var(--space-xs);
     }
 
-    .column-tasks {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
+    .modal-card .modal-btn-row {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: var(--space-lg);
+      flex-wrap: wrap;
+    }
+
+    .modal-card .modal-error {
+      color: var(--color-error);
+      font-size: var(--text-sm);
+      margin-top: var(--space-md);
+      font-family: var(--font-mono);
     }
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: 2px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
-      font-family: var(--font-body);
+      font-family: var(--font-mono);
       transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
     }
 
     .btn-primary {
-      box-shadow: 3px 3px 0 var(--color-black);
+      box-shadow: var(--shadow-brutal);
       background: var(--color-accent);
       color: var(--color-white);
     }
 
     .btn-primary:hover {
-      transform: translate(1px, 1px);
+      transform: translate(2px, 2px);
       box-shadow: 2px 2px 0 var(--color-black);
     }
 
     .btn-primary:active {
-      transform: translate(3px, 3px);
+      transform: translate(5px, 5px);
       box-shadow: 0 0 0 var(--color-black);
     }
 
@@ -526,177 +726,57 @@ export class BoardDetailPage extends LitElement {
     }
 
     .btn-cancel:hover {
-      background: var(--color-surface);
+      background: var(--color-bg);
     }
 
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+    .board-body {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
+      height: calc(100% - 60px);
+      overflow: hidden;
     }
 
-    .modal-card {
-      background: var(--color-white);
-      border: 2px solid var(--color-black);
-      box-shadow: var(--shadow-brutal-lg);
-      padding: var(--space-xl);
-      width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .modal-card h2 {
-      margin: 0 0 var(--space-lg);
-      font-family: var(--font-display);
-      font-size: var(--text-xl);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .modal-card label {
-      display: block;
-      font-size: var(--text-sm);
-      font-weight: 700;
-      margin-bottom: var(--space-xs);
-      color: var(--color-text);
-    }
-
-    .modal-card input,
-    .modal-card textarea {
-      width: 100%;
-      padding: var(--space-sm) var(--space-md);
-      border: 2px solid var(--color-black);
-      box-sizing: border-box;
-      font-size: var(--text-sm);
-      font-family: var(--font-body);
-      outline: none;
-      background: var(--color-white);
-      transition: box-shadow var(--ease-brutal);
-    }
-
-    .modal-card input:focus,
-    .modal-card textarea:focus {
-      box-shadow: 2px 2px 0 var(--color-accent);
-    }
-
-    .modal-card textarea {
-      min-height: 120px;
-      resize: vertical;
-      margin-top: var(--space-xs);
-    }
-
-    .modal-card .preview-toggle {
-      font-size: var(--text-xs);
-      color: var(--color-accent);
-      cursor: pointer;
-      margin-top: var(--space-sm);
-      display: inline-block;
-    }
-
-    .modal-card .preview-toggle:hover {
-      text-decoration: underline;
-    }
-
-    .modal-card .preview-box {
-      margin-top: var(--space-sm);
-      padding: var(--space-md);
-      border: 1px solid var(--color-border);
-    }
-
-    .modal-card .modal-btn-row {
+    .columns-wrap {
       display: flex;
-      gap: var(--space-sm);
-      margin-top: var(--space-lg);
-      justify-content: flex-end;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--gutter-lg);
+      overflow-x: auto;
+      overflow-y: hidden;
+      align-items: stretch;
+      flex: 1;
+      min-width: 0;
     }
 
-    .modal-card .modal-error {
-      color: var(--color-error);
-      font-size: var(--text-sm);
-      margin-top: var(--space-md);
-    }
-
-    .add-task-btn {
-      display: block;
-      width: 100%;
-      padding: var(--space-md);
-      margin-bottom: var(--space-sm);
+    .activity-panel {
+      width: 320px;
+      min-width: 320px;
+      border-left: var(--line-thicker) solid var(--color-black);
       flex-shrink: 0;
-      border: 2px dashed var(--color-accent);
-      background: none;
-      color: var(--color-accent);
-      font-size: var(--text-sm);
+      overflow: hidden;
+    }
+
+    .activity-toggle {
+      font-size: var(--text-xs);
       font-weight: 700;
-      font-family: var(--font-body);
+      font-family: var(--font-mono);
       cursor: pointer;
+      border: var(--line-thick) solid var(--color-black);
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-white);
       transition: background var(--ease-brutal);
+      margin-left: var(--space-sm);
     }
 
-    .add-task-btn:hover {
-      background: rgba(37, 99, 235, 0.06);
+    .activity-toggle:hover {
+      background: var(--color-bg);
     }
 
-    /* Due date on task cards */
-    .task-item .due-date {
-      font-size: 11px;
-      margin-top: var(--space-xs);
-      color: var(--color-text-2);
-    }
-
-    .task-item .due-date.overdue {
-      color: var(--color-error);
-      font-weight: 700;
-    }
-
-    .task-item .due-date.due-soon {
-      color: var(--color-warning);
-      font-weight: 600;
-    }
-
-    /* Gold task effect */
-    .task-item.gold {
-      background: linear-gradient(
-        135deg,
-        #f9e547 0%,
-        #f5c518 25%,
-        #e8b100 50%,
-        #f5c518 75%,
-        #f9e547 100%
-      );
-      background-size: 200% 200%;
-      animation: gold-shimmer 3s ease-in-out infinite;
-      border: 2px solid #b8860b;
-      margin: 0 calc(var(--space-md) * -1);
-      padding-left: var(--space-md);
-      padding-right: var(--space-md);
-    }
-
-    .task-item.gold:hover {
-      background: linear-gradient(
-        135deg,
-        #f9e547 0%,
-        #f5c518 25%,
-        #e8b100 50%,
-        #f5c518 75%,
-        #f9e547 100%
-      );
-      background-size: 200% 200%;
-      animation: gold-shimmer 1.5s ease-in-out infinite;
-    }
-
-    @keyframes gold-shimmer {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .activity-toggle.active {
+      background: var(--color-accent);
+      color: var(--color-white);
     }
   `;
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
     this.boundKeydown = this.handleKeydown.bind(this);
     document.addEventListener("keydown", this.boundKeydown);
@@ -708,311 +788,15 @@ export class BoardDetailPage extends LitElement {
       document.removeEventListener("keydown", this.boundKeydown);
       this.boundKeydown = null;
     }
-    this.removePinnedOverlay();
   }
 
   async onPageEnter(): Promise<void> {
     await this.loadBoard();
   }
 
-  updated(): void {
-    this.renderPinnedOverlay();
-  }
-
-  private handleEditBoardTitle(): void {
-    if (!this.detail) return;
-    this.editingBoardTitleValue = this.detail.board.title;
-    this.editingBoardTitle = true;
-  }
-
-  private async handleSaveBoardTitle(): Promise<void> {
-    if (!this.detail || !this.editingBoardTitleValue.trim()) return;
-    try {
-      await updateBoard.execute(this.detail.board.id, {
-        title: this.editingBoardTitleValue.trim(),
-      });
-      this.editingBoardTitle = false;
-      await this.loadBoard();
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to update title";
-    }
-  }
-
-  private handleCancelBoardTitle(): void {
-    this.editingBoardTitle = false;
-    this.editingBoardTitleValue = "";
-  }
-
-  private async handleDeleteBoard(): Promise<void> {
-    if (!this.detail) return;
-    if (
-      !confirm(
-        `Delete "${this.detail.board.title}"? All states, tasks, and images will be permanently removed.`,
-      )
-    ) return;
-    try {
-      await deleteBoard.execute(this.detail.board.id);
-      this.pageController.navigate("home");
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to delete board";
-    }
-  }
-
-  private async loadBoard(): Promise<void> {
-    const id = this.params?.id;
-    if (!id) return;
-    try {
-      this.error = null;
-      this.detail = await getBoard.execute(id as any);
-      this.pinnedTasks = await taskRepo.findPinned();
-
-      if (this.detail) {
-        const discarded = await autoDiscardCheck.execute(
-          this.detail.tasks,
-          this.detail.states,
-        );
-        if (discarded > 0) {
-          this.detail = await getBoard.execute(id as any);
-        }
-      }
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to load board";
-    }
-  }
-
-  private removePinnedOverlay(): void {
-    if (this.pinnedOverlayEl) {
-      this.pinnedOverlayEl.remove();
-      this.pinnedOverlayEl = null;
-    }
-  }
-
-  private renderPinnedOverlay(): void {
-    if (this.pinnedTasks.length === 0) {
-      this.removePinnedOverlay();
-      return;
-    }
-
-    if (!this.pinnedOverlayEl) {
-      this.pinnedOverlayEl = document.createElement("div");
-      this.pinnedOverlayEl.id = "kanbank-pinned-overlay";
-      document.body.appendChild(this.pinnedOverlayEl);
-    }
-
-    const pinnedExpanded = this.pinnedExpanded;
-
-    const template = html`
-      <style>
-        #kanbank-pinned-overlay {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          z-index: 10000;
-          pointer-events: auto;
-        }
-        #kanbank-pinned-overlay .pk-stack {
-          cursor: pointer;
-          overflow: visible;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) {
-          position: relative;
-          width: 120px;
-          height: 160px;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100px;
-          height: 140px;
-          border: 2px solid #000;
-          background: #fff;
-          box-shadow: 3px 3px 0 #000;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 8px;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          transform-origin: bottom center;
-          cursor: pointer;
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(1) {
-          transform: rotate(-6deg) translateX(0px);
-          z-index: 1;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(2) {
-          transform: rotate(-1deg) translateX(8px);
-          z-index: 2;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(3) {
-          transform: rotate(4deg) translateX(16px);
-          z-index: 3;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(4) {
-          transform: rotate(9deg) translateX(24px);
-          z-index: 4;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:nth-child(n+5) {
-          transform: rotate(14deg) translateX(32px);
-          z-index: 5;
-        }
-        #kanbank-pinned-overlay .pk-stack:not(.pk-expanded) .pk-card:hover {
-          transform: rotate(0deg) translateX(8px) translateY(-16px) !important;
-          box-shadow: 4px 6px 0 #000;
-          z-index: 10 !important;
-        }
-        #kanbank-pinned-overlay .pk-card .pk-icon {
-          font-size: 14px;
-          margin-bottom: 4px;
-        }
-        #kanbank-pinned-overlay .pk-card .pk-title {
-          font-size: 9px;
-          font-weight: 700;
-          text-align: center;
-          word-break: break-word;
-          line-height: 1.2;
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 5;
-          -webkit-box-orient: vertical;
-        }
-        #kanbank-pinned-overlay .pk-card.pk-gold {
-          background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100, #f5c518, #f9e547);
-          background-size: 200% 200%;
-          animation: pk-gold-shimmer 3s ease-in-out infinite;
-        }
-        #kanbank-pinned-overlay .pk-stack.pk-expanded {
-          width: 240px;
-          max-height: 70vh;
-          overflow-y: auto;
-          background: transparent;
-          cursor: default;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          padding-bottom: 4px;
-        }
-        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar {
-          width: 6px;
-        }
-        #kanbank-pinned-overlay .pk-stack.pk-expanded::-webkit-scrollbar-thumb {
-          background: #ccc;
-          border-radius: 3px;
-        }
-        #kanbank-pinned-overlay .pk-header {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 8px 12px;
-          font-size: 12px;
-          font-weight: 700;
-          white-space: nowrap;
-          font-family: 'Space Grotesk', sans-serif;
-          color: #6b7280;
-        }
-        #kanbank-pinned-overlay .pk-header .pk-count {
-          background: #2563EB;
-          color: #fff;
-          font-size: 10px;
-          width: 18px;
-          height: 18px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 2px;
-        }
-        #kanbank-pinned-overlay .pk-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        #kanbank-pinned-overlay .pk-item {
-          background: #fff;
-          border: 2px solid #000;
-          box-shadow: 3px 3px 0 #000;
-          padding: 10px 12px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          font-family: 'Space Grotesk', sans-serif;
-          transition: transform 0.12s, box-shadow 0.12s;
-        }
-        #kanbank-pinned-overlay .pk-item:hover {
-          transform: translate(-1px, -1px);
-          box-shadow: 4px 4px 0 #000;
-        }
-        #kanbank-pinned-overlay .pk-item.pk-gold-item {
-          background: linear-gradient(135deg, #f9e547, #f5c518, #e8b100, #f5c518, #f9e547);
-          background-size: 200% 200%;
-          animation: pk-gold-shimmer 3s ease-in-out infinite;
-        }
-        @keyframes pk-gold-shimmer {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-      </style>
-      <div
-        class="pk-stack ${pinnedExpanded ? "pk-expanded" : ""}"
-        @mouseenter=${() => { this.pinnedExpanded = true; }}
-        @mouseleave=${() => { this.pinnedExpanded = false; }}
-      >
-        ${pinnedExpanded
-          ? html`
-            <div class="pk-header">
-              <span>&#128204;</span>
-              <span class="pk-count">${this.pinnedTasks.length}</span>
-              <span>Pinned</span>
-            </div>
-            <div class="pk-list">
-              ${this.pinnedTasks.map(
-                (t) => html`
-                  <div class="pk-item ${t.isGold ? "pk-gold-item" : ""}"
-                    title="${t.title}"
-                    @click=${() => this.selectTask(t)}>
-                    ${t.isGold ? "&#11088; " : ""}${t.title}
-                  </div>
-                `,
-              )}
-            </div>
-          `
-          : html`
-            ${this.pinnedTasks.map(
-              (t) => html`
-                <div class="pk-card ${t.isGold ? "pk-gold" : ""}"
-                  title="${t.title}"
-                  @click=${() => this.selectTask(t)}>
-                  <span class="pk-icon">&#128204;</span>
-                  <span class="pk-title">${t.title}</span>
-                </div>
-              `,
-            )}
-          `}
-      </div>
-    `;
-
-    render(template, this.pinnedOverlayEl);
-  }
-
-  private getMandatoryOrder(): {
-    first: Id<"State">;
-    maybe: Id<"State">;
-    last: Id<"State">;
-  } {
+  private getMandatoryOrder(): { first: Id<"State">; maybe: Id<"State">; last: Id<"State"> } {
     if (!this.detail) {
-      return {
-        first: "" as Id<"State">,
-        maybe: "" as Id<"State">,
-        last: "" as Id<"State">,
-      };
+      return { first: "" as Id<"State">, maybe: "" as Id<"State">, last: "" as Id<"State"> };
     }
     const sorted = [...this.detail.states].sort((a, b) => a.order - b.order);
     return {
@@ -1033,17 +817,63 @@ export class BoardDetailPage extends LitElement {
     return Math.max(...counts, 1);
   }
 
+  private async loadBoard(): Promise<void> {
+    const id = this.params?.id;
+    if (!id) return;
+    try {
+      this.error = null;
+      this.detail = await getBoard.execute(id as any);
+      if (this.detail) {
+        const discarded = await autoDiscardCheck.execute(this.detail.tasks, this.detail.states);
+        if (discarded > 0) {
+          this.detail = await getBoard.execute(id as any);
+        }
+      }
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to load board";
+    }
+  }
+
+  private handleEditBoardTitle(): void {
+    if (!this.detail) return;
+    this.editingBoardTitleValue = this.detail.board.title;
+    this.editingBoardTitle = true;
+  }
+
+  private async handleSaveBoardTitle(): Promise<void> {
+    if (!this.detail || !this.editingBoardTitleValue.trim()) return;
+    try {
+      await updateBoard.execute(this.detail.board.id, { title: this.editingBoardTitleValue.trim() });
+      this.editingBoardTitle = false;
+      await this.loadBoard();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to update title";
+    }
+  }
+
+  private handleCancelBoardTitle(): void {
+    this.editingBoardTitle = false;
+    this.editingBoardTitleValue = "";
+  }
+
+  private async handleDeleteBoard(): Promise<void> {
+    if (!this.detail) return;
+    if (!confirm(`Delete "${this.detail.board.title}"? All states, tasks, and images will be permanently removed.`)) return;
+    try {
+      await deleteBoard.execute(this.detail.board.id);
+      this.pageController.navigate("home");
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to delete board";
+    }
+  }
+
   private handleKeydown(e: KeyboardEvent): void {
     if (!this.detail) return;
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     const sorted = this.getSortedStates();
-    const maybeIdx = sorted.findIndex((s) =>
-      s.id === this.getMandatoryOrder().maybe
-    );
+    const mandatory = this.getMandatoryOrder();
+    const maybeIdx = sorted.findIndex((s) => s.id === mandatory.maybe);
 
     if (e.key === "Escape") {
       if (this.showTaskModal) {
@@ -1059,21 +889,18 @@ export class BoardDetailPage extends LitElement {
       const currentIdx = this.expandedColumnId
         ? sorted.findIndex((s) => s.id === this.expandedColumnId)
         : maybeIdx;
-
-      let nextIdx: number;
-      if (e.key === "ArrowLeft") {
-        nextIdx = currentIdx - 1;
-        if (nextIdx < 0) nextIdx = 0;
-      } else {
-        nextIdx = currentIdx + 1;
-        if (nextIdx >= sorted.length) nextIdx = sorted.length - 1;
-      }
-
+      let nextIdx = e.key === "ArrowLeft" ? Math.max(0, currentIdx - 1) : Math.min(sorted.length - 1, currentIdx + 1);
       const nextState = sorted[nextIdx];
-      if (nextState && nextState.id !== this.getMandatoryOrder().maybe) {
-        this.expandedColumnId = nextState.id;
+      if (nextState) {
+        this.toggleColumn(nextState.id);
       }
     }
+  }
+
+  private toggleColumn(stateId: string): void {
+    const mandatory = this.getMandatoryOrder();
+    if (stateId === mandatory.maybe) return;
+    this.expandedColumnId = this.expandedColumnId === stateId ? null : stateId;
   }
 
   private handleDragStart(e: DragEvent, task: Task): void {
@@ -1095,21 +922,10 @@ export class BoardDetailPage extends LitElement {
     this.dragOverStateId = "";
     const taskId = e.dataTransfer?.getData("text/plain");
     if (!taskId || !this.detail) return;
-
     const targetState = this.detail.states.find((s) => s.id === stateId);
     const targetIsNotNow = targetState?.title === "Not now";
-
-    const tasksInColumn = this.detail.tasks.filter((t) =>
-      t.stateId === stateId
-    );
-    await moveTask.execute(
-      {
-        taskId,
-        newStateId: stateId,
-        order: tasksInColumn.length,
-      },
-      { targetIsNotNow },
-    );
+    const tasksInColumn = this.detail.tasks.filter((t) => t.stateId === stateId);
+    await moveTask.execute({ taskId, newStateId: stateId, order: tasksInColumn.length }, { targetIsNotNow });
     await this.loadBoard();
   }
 
@@ -1123,30 +939,14 @@ export class BoardDetailPage extends LitElement {
       const sorted = this.getSortedStates();
       const mandatory = this.getMandatoryOrder();
       const doneState = sorted.find((s) => s.id === mandatory.last);
-      
-      // Place new state before "Done"
       const order = doneState ? doneState.order : sorted.length;
-      
-      const newStateId = await createState.execute({
-        boardId: this.detail.board.id,
-        title: this.newColumnTitle.trim(),
-        color: this.newColumnColor,
-        order,
-      });
-
-      // Reorder: insert new state and push Done (+ states after it) forward
+      const newStateId = await createState.execute({ boardId: this.detail.board.id, title: this.newColumnTitle.trim(), color: this.newColumnColor, order });
       const newStateIds = sorted.map((s) => s.id);
       const doneIndex = newStateIds.indexOf(mandatory.last);
-      // Insert new state before Done
       newStateIds.splice(doneIndex, 0, newStateId as Id<"State">);
-      // Rebuild with correct order indices
-      await reorderStates.execute({
-        boardId: this.detail.board.id,
-        stateIds: newStateIds,
-      });
-
+      await reorderStates.execute({ boardId: this.detail.board.id, stateIds: newStateIds });
       this.newColumnTitle = "";
-      this.newColumnColor = "#2563EB";
+      this.newColumnColor = "#1E40AF";
       this.showColumnForm = false;
       await this.loadBoard();
     } catch (e) {
@@ -1163,13 +963,8 @@ export class BoardDetailPage extends LitElement {
   private async saveEditState(state: State): Promise<void> {
     if (!this.editingStateTitle.trim()) return;
     try {
-      await updateState.execute(state.id, {
-        title: this.editingStateTitle.trim(),
-        color: this.editingStateColor,
-      });
+      await updateState.execute(state.id, { title: this.editingStateTitle.trim(), color: this.editingStateColor });
       this.editingStateId = null;
-      this.editingStateTitle = "";
-      this.editingStateColor = "#2563EB";
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to update state";
@@ -1178,14 +973,10 @@ export class BoardDetailPage extends LitElement {
 
   private cancelEditState(): void {
     this.editingStateId = null;
-    this.editingStateTitle = "";
-    this.editingStateColor = "#2563EB";
   }
 
   private async handleDeleteState(state: State): Promise<void> {
-    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) {
-      return;
-    }
+    if (!confirm(`Delete "${state.title}"? Tasks will be moved to Maybe?`)) return;
     try {
       await deleteState.execute(state.id);
       await this.loadBoard();
@@ -1197,20 +988,13 @@ export class BoardDetailPage extends LitElement {
   private canMoveState(state: State): { left: boolean; right: boolean } {
     if (!this.detail) return { left: false, right: false };
     const mandatory = this.getMandatoryOrder();
-    const isMandatory = state.id === mandatory.first ||
-      state.id === mandatory.maybe || state.id === mandatory.last;
+    const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
     if (isMandatory) return { left: false, right: false };
-
     const sorted = this.getSortedStates();
     const idx = sorted.findIndex((s) => s.id === state.id);
     const maybeIdx = sorted.findIndex((s) => s.id === mandatory.maybe);
     const doneIdx = sorted.findIndex((s) => s.id === mandatory.last);
-
-    // Can move left if not immediately after Maybe
-    const left = idx > maybeIdx + 1;
-    // Can move right if not immediately before Done
-    const right = idx < doneIdx - 1;
-    return { left, right };
+    return { left: idx > maybeIdx + 1, right: idx < doneIdx - 1 };
   }
 
   private async moveStateLeft(state: State): Promise<void> {
@@ -1218,16 +1002,10 @@ export class BoardDetailPage extends LitElement {
     const sorted = this.getSortedStates();
     const idx = sorted.findIndex((s) => s.id === state.id);
     if (idx <= 0) return;
-
-    // Swap with previous state
     const stateIds = sorted.map((s) => s.id);
     [stateIds[idx - 1], stateIds[idx]] = [stateIds[idx], stateIds[idx - 1]];
-
     try {
-      await reorderStates.execute({
-        boardId: this.detail.board.id,
-        stateIds,
-      });
+      await reorderStates.execute({ boardId: this.detail.board.id, stateIds });
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to reorder states";
@@ -1239,24 +1017,14 @@ export class BoardDetailPage extends LitElement {
     const sorted = this.getSortedStates();
     const idx = sorted.findIndex((s) => s.id === state.id);
     if (idx < 0 || idx >= sorted.length - 1) return;
-
-    // Swap with next state
     const stateIds = sorted.map((s) => s.id);
     [stateIds[idx], stateIds[idx + 1]] = [stateIds[idx + 1], stateIds[idx]];
-
     try {
-      await reorderStates.execute({
-        boardId: this.detail.board.id,
-        stateIds,
-      });
+      await reorderStates.execute({ boardId: this.detail.board.id, stateIds });
       await this.loadBoard();
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to reorder states";
     }
-  }
-
-  private toggleColumn(stateId: string): void {
-    this.expandedColumnId = this.expandedColumnId === stateId ? null : stateId;
   }
 
   private openTaskModal(): void {
@@ -1273,20 +1041,12 @@ export class BoardDetailPage extends LitElement {
     this.modalError = null;
   }
 
-  private async handleModalCreate(
-    stateId: string,
-    mode: "close" | "another" | "duplicate",
-  ): Promise<void> {
+  private async handleModalCreate(stateId: string, mode: "close" | "another" | "duplicate"): Promise<void> {
     if (!this.modalTitle.trim() || !this.detail) return;
     try {
       this.modalError = null;
       const description = this.modalDescription.trim() || undefined;
-      await createTask.execute({
-        boardId: this.detail.board.id,
-        stateId,
-        title: this.modalTitle.trim(),
-        description,
-      });
+      await createTask.execute({ boardId: this.detail.board.id, stateId, title: this.modalTitle.trim(), description });
       if (mode === "close") {
         this.closeTaskModal();
       } else if (mode === "another") {
@@ -1298,10 +1058,38 @@ export class BoardDetailPage extends LitElement {
       }
       await this.loadBoard();
     } catch (e) {
-      this.modalError = e instanceof Error
-        ? e.message
-        : "Failed to create task";
+      this.modalError = e instanceof Error ? e.message : "Failed to create task";
     }
+  }
+
+  private renderTaskCard(task: Task, index: number, colColor: string): unknown {
+    const days = inactiveDays(task.lastActivityAt);
+    const mandatory = this.getMandatoryOrder();
+    const isDone = task.stateId === mandatory.last;
+    return html`
+      <div
+        class="task-card ${task.isGold ? "gold" : ""}"
+        draggable="true"
+        @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
+        @click="${() => this.selectTask(task)}"
+      >
+        ${isDone ? html`<done-stamp date="${formatDate(task.updatedAt)}" author="${CURRENT_USER.initials}"></done-stamp>` : ""}
+        <div class="card-meta">
+          <span class="seq-num">#${String(index + 1).padStart(3, "0")}</span>
+          <span class="tag-dot" style="background:${colColor}"></span>
+        </div>
+        <div class="card-title">${task.title}</div>
+        <div class="card-footer">
+          <div class="footer-left">
+            <span class="avatar">${CURRENT_USER.initials}</span>
+            <span class="card-date">${formatDate(task.createdAt)}</span>
+          </div>
+          ${days > 0
+            ? html`<span class="card-inactive ${days > 7 ? "stale" : ""}">${days}d idle</span>`
+            : ""}
+        </div>
+      </div>
+    `;
   }
 
   private renderBar(state: State): unknown {
@@ -1312,21 +1100,18 @@ export class BoardDetailPage extends LitElement {
     const isActive = this.expandedColumnId === state.id;
     const mandatory = this.getMandatoryOrder();
     const isNotNow = state.id === mandatory.first;
+    const colColor = getColColor(state);
 
     return html`
       <div
-        class="column-bar ${isActive
-          ? "active"
-          : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
+        class="col-bar ${isActive ? "active" : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
         @click="${() => this.toggleColumn(state.id)}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="fill" style="height: ${isNotNow ? "100" : pct}%; ${isNotNow
-          ? "background:var(--color-warning)"
-          : `background:${state.color}`}"></div>
-        <div class="badge">${count}</div>
+        <div class="bar-fill" style="height: ${isNotNow ? 100 : pct}%; background: ${isNotNow ? "var(--color-warning)" : colColor}"></div>
+        <div class="bar-badge">${count}</div>
         <div class="bar-label">${state.title}</div>
         ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ""}
       </div>
@@ -1335,144 +1120,84 @@ export class BoardDetailPage extends LitElement {
 
   private renderExpanded(state: State): unknown {
     if (!this.detail) return html``;
-    const { tasks } = this.detail;
-    const stateTasks = tasks
+    const stateTasks = this.detail.tasks
       .filter((t) => t.stateId === state.id)
-      .sort((a, b) =>
-        new Date(a.lastActivityAt).getTime() -
-        new Date(b.lastActivityAt).getTime()
-      );
+      .sort((a, b) => new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime());
     const mandatory = this.getMandatoryOrder();
-    const isMandatory = state.id === mandatory.first ||
-      state.id === mandatory.maybe || state.id === mandatory.last;
+    const isMandatory = state.id === mandatory.first || state.id === mandatory.maybe || state.id === mandatory.last;
+    const colColor = getColColor(state);
 
     return html`
       <div
-        class="column-expanded ${this.dragOverStateId === state.id
-          ? "drag-over"
-          : ""}"
-        style="border-top: 3px solid ${state.color};"
+        class="col-expanded ${this.dragOverStateId === state.id ? "drag-over" : ""}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="column-header">
-          ${this.editingStateId === state.id
-            ? html`
-              <div style="display:flex;align-items:center;gap:var(--space-xs);">
-                <input
-                  class="state-edit-input"
-                  type="text"
-                  .value="${this.editingStateTitle}"
-                  @input="${(e: Event) => {
-                    this.editingStateTitle =
-                      (e.target as HTMLInputElement).value;
-                  }}"
-                  @keydown="${(e: KeyboardEvent) => {
-                    if (e.key === "Enter") this.saveEditState(state);
-                    if (e.key === "Escape") this.cancelEditState();
-                  }}"
-                />
-                <input
-                  class="state-edit-color"
-                  type="color"
-                  .value="${this.editingStateColor}"
-                  @input="${(e: Event) => {
-                    this.editingStateColor =
-                      (e.target as HTMLInputElement).value;
-                  }}"
-                />
-              </div>
-            `
-            : html`
-              <span class="col-title">${state.title}</span>
-            `}
-          <div class="col-actions">
-            <span class="column-count">${this.detail.taskCounts[state.id] ??
-              0}</span>
-            ${!isMandatory
+        <div class="col-expanded-header">
+          <div class="col-title-group">
+            ${this.editingStateId === state.id
               ? html`
-                ${(() => {
-                  const { left, right } = this.canMoveState(state);
-                  return html`
-                    <button ?disabled="${!left}" @click="${() =>
-                      this.moveStateLeft(state)}" title="Move left">&#9664;</button>
-                    <button ?disabled="${!right}" @click="${() =>
-                      this.moveStateRight(state)}" title="Move right">&#9654;</button>
-                  `;
-                })()}
-                <button @click="${() =>
-                  this.startEditState(state)}" title="Edit">&#9998;</button>
-                <button @click="${() =>
-                  this.handleDeleteState(
-                    state,
-                  )}" title="Delete">&#10005;</button>
-                <button class="collapse-btn" @click="${() =>
-                  this.expandedColumnId = null}"
-                  title="Collapse">&#9664;</button>
+                <input class="state-edit-input" type="text" .value="${this.editingStateTitle}"
+                  @input="${(e: Event) => { this.editingStateTitle = (e.target as HTMLInputElement).value; }}"
+                  @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.saveEditState(state); if (e.key === "Escape") this.cancelEditState(); }}"
+                />
+                <input class="state-edit-color" type="color" .value="${this.editingStateColor}"
+                  @input="${(e: Event) => { this.editingStateColor = (e.target as HTMLInputElement).value; }}"
+                />
               `
-              : html`
-                <button class="collapse-btn" @click="${() =>
-                  this.expandedColumnId = null}"
-                  title="Collapse">&#9664;</button>
-              `}
+              : html`<span class="col-title">${state.title}</span>`}
+            <span class="col-count">${this.detail.taskCounts[state.id] ?? 0}</span>
+          </div>
+          <div class="col-actions">
+            ${!isMandatory ? html`
+              <button @click="${() => this.startEditState(state)}" title="Edit">✎</button>
+              <button @click="${() => this.handleDeleteState(state)}" title="Delete">✕</button>
+              ${(() => {
+                const { left, right } = this.canMoveState(state);
+                return html`
+                  <button ?disabled="${!left}" @click="${() => this.moveStateLeft(state)}" title="Move left">◀</button>
+                  <button ?disabled="${!right}" @click="${() => this.moveStateRight(state)}" title="Move right">▶</button>
+                `;
+              })()}
+            ` : ""}
+            ${state.id !== mandatory.maybe
+              ? html`<button @click="${() => { this.expandedColumnId = null; }}" title="Collapse">▶</button>`
+              : ""}
           </div>
         </div>
-
+        <div class="col-body" style="background:${colColor}">
+          ${stateTasks.length === 0
+            ? html`<div class="empty-col">empty</div>`
+            : stateTasks.map((task, i) => this.renderTaskCard(task, i, colColor))}
+        </div>
         ${state.id === mandatory.maybe
+          ? html`<button class="add-task-btn" @click="${() => this.openTaskModal()}">+ ADD TASK</button>`
+          : ""}
+        ${this.showColumnForm
           ? html`
-            <button class="add-task-btn" @click="${() =>
-              this.openTaskModal()}">+ Add task</button>
+            <div class="column-form">
+              <input type="text" placeholder="Column name..." .value="${this.newColumnTitle}"
+                @input="${(e: Event) => { this.newColumnTitle = (e.target as HTMLInputElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.handleCreateState(); if (e.key === "Escape") { this.showColumnForm = false; this.newColumnTitle = ""; }}}"
+              />
+              <input type="color" .value="${this.newColumnColor}"
+                @input="${(e: Event) => { this.newColumnColor = (e.target as HTMLInputElement).value; }}"
+              />
+              <button @click="${this.handleCreateState}">ADD</button>
+            </div>
           `
           : ""}
-
-        <div class="column-tasks">
-          ${stateTasks.map((task) => {
-            const days = inactiveDays(task.lastActivityAt);
-            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
-            const isDueSoon = task.dueDate && !isOverdue &&
-              (new Date(task.dueDate).getTime() - Date.now()) <
-                3 * 24 * 60 * 60 * 1000;
-            return html`
-              <div
-                class="task-item ${task.isGold ? "gold" : ""}"
-                draggable="true"
-                @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
-                @click="${() => this.selectTask(task)}"
-              >
-                <div class="title">${task.title}</div>
-                ${task.images.length
-                  ? html`<div class="image-indicator">&#128444; ${task.images.length}</div>`
-                  : ""}
-                ${task.dueDate
-                  ? html`<div class="due-date ${isOverdue ? "overdue" : ""} ${isDueSoon ? "due-soon" : ""}">
-                      Due: ${new Date(task.dueDate).toLocaleDateString()}
-                      ${isOverdue ? " (overdue)" : ""}
-                    </div>`
-                  : ""}
-                ${days > 0
-                  ? html`<div class="inactive ${
-                    days > 7 ? "stale" : ""
-                  }">${days}d inactive</div>`
-                  : ""}
-              </div>
-            `;
-          })}
-        </div>
       </div>
     `;
   }
 
   render() {
     if (this.error) {
-      return html`
-        <div
-          style="padding:var(--space-xl);color:var(--color-error);">Error: ${this
-            .error}</div>
-      `;
+      return html`<div style="padding:var(--space-xl);color:var(--color-error);font-family:var(--font-mono);">Error: ${this.error}</div>`;
     }
     if (!this.detail) {
-      return html`<div style="padding:var(--space-xl);color:var(--color-text-3);">Loading...</div>`;
+      return html`<div style="padding:var(--space-xl);color:var(--color-text-3);font-family:var(--font-mono);">Loading...</div>`;
     }
 
     const { board } = this.detail;
@@ -1480,170 +1205,77 @@ export class BoardDetailPage extends LitElement {
     const mandatory = this.getMandatoryOrder();
     const maybeState = sorted.find((s) => s.id === mandatory.maybe);
     const leftStates = sorted.filter((s) => s.order < (maybeState?.order ?? 1));
-    const rightStates = sorted.filter((s) =>
-      s.order > (maybeState?.order ?? 1)
-    );
+    const rightStates = sorted.filter((s) => s.order > (maybeState?.order ?? 1));
 
     return html`
       <div class="board-header">
-        <span class="back" @click="${() =>
-          this.pageController.navigate("home")}">&#8592;</span>
+        <span class="back" @click="${() => this.pageController.navigate("home")}">←</span>
         ${this.editingBoardTitle
           ? html`
             <div class="title-edit-group">
-              <input class="header-title-input" type="text"
-                .value="${this.editingBoardTitleValue}"
-                @input="${(e: Event) => {
-                  this.editingBoardTitleValue =
-                    (e.target as HTMLInputElement).value;
-                }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter") this.handleSaveBoardTitle();
-                  if (e.key === "Escape") this.handleCancelBoardTitle();
-                }}"
+              <input class="header-title-input" type="text" .value="${this.editingBoardTitleValue}"
+                @input="${(e: Event) => { this.editingBoardTitleValue = (e.target as HTMLInputElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") this.handleSaveBoardTitle(); if (e.key === "Escape") this.handleCancelBoardTitle(); }}"
               />
-              <button class="header-action" @click="${this
-                .handleSaveBoardTitle}" title="Save">&#10003;</button>
-              <button class="header-action" @click="${this
-                .handleCancelBoardTitle}" title="Cancel">&#10005;</button>
+              <button class="header-action" @click="${this.handleSaveBoardTitle}" title="Save">✓</button>
+              <button class="header-action" @click="${this.handleCancelBoardTitle}" title="Cancel">✕</button>
             </div>
           `
           : html`
             <h1>${board.title}</h1>
-            <button class="header-action" @click="${() =>
-              this.handleEditBoardTitle()}" title="Edit title">&#9998;</button>
-            <button class="header-action header-action--delete" @click="${() =>
-              this.handleDeleteBoard()}" title="Delete board">&#128465;</button>
+            <button class="header-action" @click="${() => this.handleEditBoardTitle()}" title="Edit title">✎</button>
+            <button class="header-action header-action--delete" @click="${() => this.handleDeleteBoard()}" title="Delete board">🗑</button>
           `}
-        ${this.showColumnForm
-          ? html`
-            <div class="column-form">
-              <input
-                type="text"
-                placeholder="Column name..."
-                .value="${this.newColumnTitle}"
-                @input="${(e: Event) => {
-                  this.newColumnTitle = (e.target as HTMLInputElement).value;
-                }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter") this.handleCreateState();
-                  if (e.key === "Escape") {
-                    this.showColumnForm = false;
-                    this.newColumnTitle = "";
-                  }
-                }}"
-              />
-              <input
-                type="color"
-                .value="${this.newColumnColor}"
-                @input="${(e: Event) => {
-                  this.newColumnColor = (e.target as HTMLInputElement).value;
-                }}"
-              />
-              <button class="btn-sm" @click="${this
-                .handleCreateState}">Add</button>
-              <button class="cancel" @click="${() => {
-                this.showColumnForm = false;
-                this.newColumnTitle = "";
-              }}">Cancel</button>
-            </div>
-          `
-          : html`
-            <button class="add-column-btn" @click="${() => {
-              this.showColumnForm = true;
-            }}">+ Add column</button>
-          `}
+        ${!this.showColumnForm
+          ? html`<button class="add-column-btn" @click="${() => { this.showColumnForm = true; }}">+ COLUMN</button>`
+          : ""}
+        <button class="activity-toggle ${this.showActivity ? "active" : ""}" @click="${() => this.showActivity = !this.showActivity}">
+          ${this.showActivity ? "HIDE FEED" : "FEED"}
+        </button>
       </div>
 
-      <div class="columns">
-        ${leftStates.map((s) =>
-          this.expandedColumnId === s.id
-            ? this.renderExpanded(s)
-            : this.renderBar(s)
-        )}
-        ${maybeState ? this.renderExpanded(maybeState) : ""}
-        ${rightStates.map((s) =>
-          this.expandedColumnId === s.id
-            ? this.renderExpanded(s)
-            : this.renderBar(s)
-        )}
+      <div class="board-body">
+        <div class="columns-wrap">
+          ${leftStates.map((s) =>
+            this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s)
+          )}
+          ${maybeState ? this.renderExpanded(maybeState) : ""}
+          ${rightStates.map((s) =>
+            this.expandedColumnId === s.id ? this.renderExpanded(s) : this.renderBar(s)
+          )}
+        </div>
+        ${this.showActivity ? html`
+          <div class="activity-panel">
+            <activity-feed
+              .stateTitles="${Object.fromEntries(this.detail.states.map(s => [s.id, s.title]))}"
+              .taskTitles="${Object.fromEntries(this.detail.tasks.map(t => [t.id, t.title]))}"
+            ></activity-feed>
+          </div>
+        ` : ""}
       </div>
 
       ${this.showTaskModal && maybeState
         ? html`
           <div class="modal-overlay" @click="${() => this.closeTaskModal()}">
-            <div class="modal-card" @click="${(e: Event) =>
-              e.stopPropagation()}">
+            <div class="modal-card" @click="${(e: Event) => e.stopPropagation()}">
               <h2>New task in Maybe?</h2>
               <label for="modal-title">Title</label>
-              <input
-                id="modal-title"
-                type="text"
-                placeholder="Task title..."
+              <input id="modal-title" type="text" placeholder="Task title..."
                 .value="${this.modalTitle}"
-                @input="${(e: Event) => {
-                  this.modalTitle = (e.target as HTMLInputElement).value;
-                }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    this.handleModalCreate(maybeState.id, "close");
-                  }
-                }}"
+                @input="${(e: Event) => { this.modalTitle = (e.target as HTMLInputElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter") { e.preventDefault(); this.handleModalCreate(maybeState.id, "close"); } }}"
               />
-              <label for="modal-desc" style="margin-top:var(--space-md);">Description (markdown)</label>
-              <textarea
-                id="modal-desc"
-                placeholder="Description (optional)..."
+              <label for="modal-desc" style="margin-top:var(--space-md);">Description</label>
+              <textarea id="modal-desc" placeholder="Description (optional)..."
                 .value="${this.modalDescription}"
-                @input="${(e: Event) => {
-                  this.modalDescription =
-                    (e.target as HTMLTextAreaElement).value;
-                }}"
-                @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    this.handleModalCreate(maybeState.id, "close");
-                  }
-                }}"
+                @input="${(e: Event) => { this.modalDescription = (e.target as HTMLTextAreaElement).value; }}"
+                @keydown="${(e: KeyboardEvent) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.handleModalCreate(maybeState.id, "close"); } }}"
               ></textarea>
-              ${this.modalDescription.trim()
-                ? html`
-                  <span class="preview-toggle" @click="${() => {
-                    const el = this.renderRoot.querySelector(
-                      "[data-modal-preview]",
-                    ) as HTMLElement;
-                    if (el) {el.style.display = el.style.display === "none"
-                        ? "block"
-                        : "none";}
-                  }}">Preview</span>
-                  <div class="preview-box" data-modal-preview style="display:none;">
-                    <markdown-viewer .content="${this
-                      .modalDescription}"></markdown-viewer>
-                  </div>
-                `
-                : ""}
-              ${this.modalError
-                ? html`<div class="modal-error">${this.modalError}</div>`
-                : ""}
+              ${this.modalError ? html`<div class="modal-error">${this.modalError}</div>` : ""}
               <div class="modal-btn-row">
-                <button class="btn btn-cancel" @click="${() =>
-                  this.closeTaskModal()}">Cancel</button>
-                <button class="btn btn-primary" @click="${() =>
-                  this.handleModalCreate(
-                    maybeState.id,
-                    "close",
-                  )}">Create</button>
-                <button class="btn btn-primary" @click="${() =>
-                  this.handleModalCreate(
-                    maybeState.id,
-                    "another",
-                  )}">Create another one</button>
-                <button class="btn btn-primary" @click="${() =>
-                  this.handleModalCreate(
-                    maybeState.id,
-                    "duplicate",
-                  )}">Create and duplicate</button>
+                <button class="btn btn-cancel" @click="${() => this.closeTaskModal()}">Cancel</button>
+                <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, "close")}">Create</button>
+                <button class="btn btn-primary" @click="${() => this.handleModalCreate(maybeState.id, "another")}">+ another</button>
               </div>
             </div>
           </div>

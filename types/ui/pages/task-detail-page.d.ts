@@ -27,7 +27,6 @@ export declare class TaskDetailPage extends LitElement {
     private handleDeleteTask;
     private handleAttachTaskImage;
     private handleDetachTaskImage;
-    private togglePin;
     private toggleGold;
     private handleAddComment;
     private startEditComment;

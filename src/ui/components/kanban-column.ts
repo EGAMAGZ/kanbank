@@ -3,6 +3,17 @@ import { customElement, property } from "lit/decorators.js";
 import type { State } from "../../domain/entities/state.entity.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 
+const COLUMN_COLORS: Record<string, string> = {
+  "Not now": "#D4D4D4",
+  "Maybe?": "#E5B800",
+  "In Progress": "#1E40AF",
+  "Done": "#166534",
+};
+
+function getColumnColor(state: State): string {
+  return COLUMN_COLORS[state.title] ?? state.color;
+}
+
 @customElement("kanban-column")
 export class KanbanColumn extends LitElement {
   @property({ type: Object })
@@ -16,39 +27,79 @@ export class KanbanColumn extends LitElement {
 
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
       min-width: 280px;
-      max-width: 320px;
+      max-width: 340px;
       flex-shrink: 0;
-      padding: var(--space-md);
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
     }
 
     :host(.drag-over) {
-      background: var(--color-surface);
+      outline: 3px dashed var(--color-black);
+      outline-offset: -3px;
     }
 
-    .header {
-      font-family: var(--font-display);
-      font-weight: 800;
-      margin-bottom: var(--space-md);
+    .col-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      padding: var(--space-md);
+      border-bottom: var(--line-thick) solid var(--color-black);
+      background: var(--color-white);
+    }
+
+    .col-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: var(--text-base);
       letter-spacing: -0.02em;
     }
 
-    .count {
-      color: var(--color-text-2);
-      font-weight: 500;
+    .col-count {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      border: var(--line-thick) solid var(--color-black);
+      padding: 1px var(--space-sm);
+      background: var(--color-white);
+    }
+
+    .col-body {
+      padding: var(--space-sm);
+      flex: 1;
+      overflow-y: auto;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80px;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-3);
+      border: 2px dashed var(--color-black);
     }
   `;
 
   render() {
+    const colColor = getColumnColor(this.state);
     return html`
-      <div class="header">
-        <span>${this.state.title}</span>
-        <span class="count">${this.taskCount}</span>
+      <div class="col-header">
+        <span class="col-title">${this.state.title}</span>
+        <span class="col-count">${this.taskCount}</span>
       </div>
-      <slot></slot>
+      <div class="col-body" style="background:${colColor}">
+        ${this.tasks.length === 0
+          ? html`<div class="empty-state">empty</div>`
+          : html`<slot></slot>`}
+      </div>
     `;
   }
 }
