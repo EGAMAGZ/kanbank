@@ -243,6 +243,36 @@ export class TaskDetailPage extends LitElement {
       word-break: break-word;
     }
 
+    .delete-task-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: var(--space-lg);
+      padding-bottom: var(--space-2xl);
+    }
+
+    .delete-task-btn {
+      padding: var(--space-sm) var(--space-xl);
+      border: 3px solid var(--color-black);
+      background: var(--color-white);
+      color: var(--color-error);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      transition: background var(--ease-brutal), color var(--ease-brutal), transform var(--ease-brutal), box-shadow var(--ease-brutal);
+      box-shadow: 4px 4px 0 var(--color-black);
+    }
+
+    .delete-task-btn:hover {
+      background: var(--color-error);
+      color: var(--color-white);
+    }
+
+    .delete-task-btn:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 var(--color-black);
+    }
+
     .meta-row {
       display: flex;
       align-items: center;
@@ -908,7 +938,6 @@ export class TaskDetailPage extends LitElement {
             <div style="margin-top:var(--space-md);margin-bottom:var(--space-lg);">
               <quick-actions
                 @mark-done="${this.markAsDone}"
-                @delete-task="${this.handleDeleteTask}"
                 @edit-task="${this.startEditTask}"
               ></quick-actions>
             </div>
@@ -1050,6 +1079,10 @@ export class TaskDetailPage extends LitElement {
                 >+ ${this.timeline.length - 5} more</div>
               ` : ""}
             </div>
+          </div>
+
+          <div class="delete-task-wrapper">
+            <button class="delete-task-btn" @click="${this.handleDeleteTask}">Delete this task</button>
           </div>
         </div>
       </div>

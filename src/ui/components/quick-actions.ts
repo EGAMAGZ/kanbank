@@ -71,7 +71,6 @@ export class QuickActions extends LitElement {
       <button class="action-btn primary" @click="${() => this._emit("edit-task")}">
         EDIT <keycap-el key="⌘E"></keycap-el>
       </button>
-      <button class="action-btn danger" @click="${() => this._emit("delete-task")}">DELETE</button>
     `;
   }
 }
