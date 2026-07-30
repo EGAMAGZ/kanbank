@@ -6,6 +6,7 @@ export declare class PinnedStack extends LitElement {
     private tasks;
     private boards;
     private states;
+    private selectedIndex;
     private subscriptions;
     static styles: import("lit").CSSResult;
     connectedCallback(): Promise<void>;
@@ -14,6 +15,8 @@ export declare class PinnedStack extends LitElement {
     private _loadData;
     toggle(): void;
     private _toggle;
+    private _syncSelection;
+    private _moveSelection;
     private _handleKeydown;
     private _navigate;
     private _formatTime;
