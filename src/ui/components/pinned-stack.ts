@@ -43,6 +43,9 @@ export class PinnedStack extends LitElement {
   @state()
   private states: Map<string, State> = new Map();
 
+  @state()
+  private selectedIndex = -1;
+
   private subscriptions: Subscription[] = [];
 
   static styles = css`
@@ -169,7 +172,7 @@ export class PinnedStack extends LitElement {
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: transparent;
       z-index: 499;
     }
 
@@ -178,54 +181,23 @@ export class PinnedStack extends LitElement {
       bottom: var(--space-lg);
       left: var(--space-lg);
       width: 360px;
-      max-height: 60vh;
-      border: 4px solid var(--color-black);
-      box-shadow: 8px 8px 0 var(--color-black);
-      background: var(--color-white);
+      max-height: 75vh;
+      border: none;
+      box-shadow: none;
+      background: transparent;
       z-index: 500;
       display: flex;
       flex-direction: column;
-    }
-
-    .stack-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--space-md);
-      border-bottom: 4px solid var(--color-black);
-      background: var(--color-black);
-      color: var(--color-white);
-    }
-
-    .stack-header .title {
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-base);
-    }
-
-    .stack-header .close-btn {
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--color-white);
-      background: transparent;
-      color: var(--color-white);
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-    }
-
-    .stack-header .close-btn:hover {
-      background: var(--color-white);
-      color: var(--color-black);
+      gap: var(--space-sm);
     }
 
     .stack-body {
       flex: 1;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--space-sm) + 2px);
+      padding: 8px 4px 12px;
     }
 
     .stack-body:empty::after {
@@ -242,15 +214,26 @@ export class PinnedStack extends LitElement {
       display: flex;
       align-items: center;
       gap: var(--space-sm);
-      padding: var(--space-md);
-      border-bottom: 3px solid var(--color-black);
+      padding: calc(var(--space-md) + 2px);
+      margin: 1px 0;
+      border: 3px solid var(--color-black);
       cursor: pointer;
-      transition: background var(--ease-brutal);
+      transition: transform var(--ease-brutal), background var(--ease-brutal), box-shadow var(--ease-brutal);
       position: relative;
+      background: var(--color-white);
+      box-shadow: 3px 3px 0 var(--color-black);
     }
 
-    .pinned-item:hover {
+    .pinned-item:hover,
+    .pinned-item.is-selected {
       background: var(--color-bg);
+      transform: rotate(-2deg) translateY(-2px);
+      box-shadow: 4px 4px 0 var(--color-black);
+    }
+
+    .pinned-item.is-selected {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
     }
 
     .pinned-item .pinned-state-bar {
@@ -354,6 +337,7 @@ export class PinnedStack extends LitElement {
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
     this.tasks = all;
+    this._syncSelection();
     const boardIds = new Set(this.tasks.map((t) => t.boardId));
     const stateIds = new Set(this.tasks.map((t) => t.stateId));
     const boards = new Map<string, Board>();
@@ -372,16 +356,64 @@ export class PinnedStack extends LitElement {
 
   toggle(): void {
     this.expanded = !this.expanded;
+    if (!this.expanded) {
+      this.selectedIndex = -1;
+    } else {
+      this._syncSelection();
+    }
   }
 
   private _toggle(): void {
     this.toggle();
   }
 
+  private _syncSelection(): void {
+    if (this.tasks.length === 0) {
+      this.selectedIndex = -1;
+      return;
+    }
+
+    if (this.selectedIndex < 0 || this.selectedIndex >= this.tasks.length) {
+      this.selectedIndex = this.tasks.length - 1;
+    }
+  }
+
+  private _moveSelection(delta: number): void {
+    if (this.tasks.length === 0) return;
+
+    const nextIndex = Math.max(0, Math.min(this.tasks.length - 1, this.selectedIndex + delta));
+    this.selectedIndex = nextIndex;
+  }
+
   private _handleKeydown = (e: KeyboardEvent): void => {
     if (e.altKey && (e.key === "p" || e.key === "P")) {
       e.preventDefault();
       this._toggle();
+      return;
+    }
+
+    if (!this.expanded) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        this._moveSelection(1);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        this._moveSelection(-1);
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (this.selectedIndex >= 0) {
+          this._navigate(this.tasks[this.selectedIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        this.expanded = false;
+        this.selectedIndex = -1;
+        break;
     }
   };
 
@@ -439,18 +471,18 @@ export class PinnedStack extends LitElement {
         ? html`
           <div class="overlay" @click="${this._toggle}"></div>
           <div class="stack-expanded">
-            <div class="stack-header">
-              <span class="title">📌 Pinned (${count})</span>
-              <button class="close-btn" @click="${this._toggle}">✕</button>
-            </div>
             <div class="stack-body">
-              ${this.tasks.map((task) => {
+              ${this.tasks.map((task, index) => {
                 const board = this.boards.get(task.boardId);
                 const state = this.states.get(task.stateId);
+                const isSelected = index === this.selectedIndex;
                 return html`
                   <div class="pinned-item ${task.isGold
                     ? "gold"
-                    : ""}" @click="${() => this._navigate(task)}">
+                    : ""} ${isSelected ? "is-selected" : ""}" 
+                    @click="${() => this._navigate(task)}"
+                    role="option"
+                    aria-selected="${isSelected}">
                     ${state
                       ? html`<div class="pinned-state-bar" style="background:${
                         getStateColor(state)
