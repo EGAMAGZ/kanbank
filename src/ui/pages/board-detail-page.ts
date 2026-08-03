@@ -142,11 +142,11 @@ export class BoardDetailPage extends LitElement {
       cursor: pointer;
       font-size: 18px;
       font-weight: 700;
-      width: 32px;
       height: 32px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: var(--space-xs);
+      padding: 0 var(--space-sm);
       border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
       transition: background var(--ease-brutal);
@@ -977,10 +977,12 @@ export class BoardDetailPage extends LitElement {
     if (e.key === "Escape") {
       if (this.showTaskModal) {
         this.closeTaskModal();
-      } else {
+      } else if (this.expandedColumnId !== null || this.focusedColIdx >= 0) {
         this.expandedColumnId = null;
         this.focusedColIdx = -1;
         this.focusedTaskIdx = -1;
+      } else {
+        this.pageController.navigate("home");
       }
       return;
     }
@@ -1450,7 +1452,7 @@ export class BoardDetailPage extends LitElement {
     return html`
       <div class="board-header">
         <span class="back" @click="${() =>
-          this.pageController.navigate("home")}">←</span>
+          this.pageController.navigate("home")}">← <keycap-el key="Esc"></keycap-el></span>
         ${this.editingBoardTitle
           ? html`
             <div class="title-edit-group">
