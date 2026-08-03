@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { keycapLabel } from "../helpers/shortcuts.js";
 
 @customElement("keycap-el")
 export class Keycap extends LitElement {
@@ -38,20 +39,6 @@ export class Keycap extends LitElement {
   `;
 
   render() {
-    const isMac = navigator.platform.toUpperCase().includes("MAC");
-    const label = this.key.startsWith("⌘")
-      ? isMac
-        ? `⌘${this.key.slice(1).toUpperCase()}`
-        : `Ctrl+${this.key.slice(1).toUpperCase()}`
-      : this.key.startsWith("^")
-      ? `Ctrl+${this.key.slice(1).toUpperCase()}`
-      : this.key.startsWith("⎇")
-      ? isMac
-        ? `⌥${this.key.slice(1).toUpperCase()}`
-        : `Alt+${this.key.slice(1).toUpperCase()}`
-      : this.key === "\u2325"
-      ? "Option"
-      : this.key;
-    return html`<kbd>${label}</kbd>`;
+    return html`<kbd>${keycapLabel(this.key)}</kbd>`;
   }
 }

@@ -6,6 +6,7 @@ import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-tas
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { DexieStateRepository } from "../../infrastructure/repositories/dexie-state.repository.js";
 import { eventBus } from "../../shared/events/event-bus.js";
+import { isEditableTarget, keycapLabel, mod } from "../helpers/shortcuts.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
@@ -386,7 +387,7 @@ export class PinnedStack extends LitElement {
   }
 
   private _handleKeydown = (e: KeyboardEvent): void => {
-    if (e.altKey && (e.key === "p" || e.key === "P")) {
+    if (e.altKey && e.code === "KeyP" && !mod(e) && !isEditableTarget(e)) {
       e.preventDefault();
       this._toggle();
       return;
@@ -438,7 +439,7 @@ export class PinnedStack extends LitElement {
 
     return html`
       <div class="stack-collapsed" @click="${this
-        ._toggle}" title="Pinned cards (Alt+P)">
+        ._toggle}" title="${`Pinned cards (${keycapLabel("⎇P")})`}">
         ${preview.map((t, i) => {
           const state = this.states.get(t.stateId);
           return html`
