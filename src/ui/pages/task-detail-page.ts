@@ -37,6 +37,7 @@ import "../../ui/components/attachment-list.js";
 import "../../ui/components/state-selector.js";
 import "../../ui/components/quick-actions.js";
 import "../../ui/components/keycap.js";
+import { isEditableTarget, keycapLabel, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/not-now-stamp.js";
 
 const taskRepo = new DexieTaskRepository();
@@ -680,13 +681,7 @@ export class TaskDetailPage extends LitElement {
   }
 
   private _handleGlobalKeydown(e: KeyboardEvent): void {
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) return;
-    if (
-      (e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true"
-    ) return;
+    if (isEditableTarget(e)) return;
 
     if (e.key === "Escape") {
       if (this.editingTaskDesc) {
@@ -696,14 +691,24 @@ export class TaskDetailPage extends LitElement {
       this.goBack();
       return;
     }
-    if (e.key === "e" && (e.metaKey || e.ctrlKey)) {
+    if (e.code === "KeyE" && mod(e)) {
       e.preventDefault();
       this.startEditTask();
       return;
     }
-    if (e.key === "d" && (e.metaKey || e.ctrlKey)) {
+    if (e.code === "KeyD" && mod(e)) {
       e.preventDefault();
       this.markAsDone();
+      return;
+    }
+    if (e.code === "KeyP" && mod(e) && e.altKey) {
+      e.preventDefault();
+      this.togglePin();
+      return;
+    }
+    if (e.code === "KeyG" && mod(e) && e.altKey) {
+      e.preventDefault();
+      this.toggleGold();
       return;
     }
   }
@@ -1103,7 +1108,9 @@ export class TaskDetailPage extends LitElement {
         <div class="header">
           <button class="corner-btn gold-btn ${this.task.isGold
             ? "active"
-            : ""}" @click="${this.toggleGold}" title="Toggle gold">
+            : ""}" @click="${this.toggleGold}" title="${`${
+              this.task.isGold ? "★ Golden ticket" : "Mark as gold"
+            } (${keycapLabel("⌘⌥G")})`}">
             ${this.task.isGold ? "★" : "☆"}
           </button>
           <div class="header-left">
@@ -1235,7 +1242,9 @@ export class TaskDetailPage extends LitElement {
           </div>
           <button class="corner-btn pin-btn ${this.task.pinned
             ? "active"
-            : ""}" @click="${this.togglePin}" title="Toggle pin">
+            : ""}" @click="${this.togglePin}" title="${`${
+              this.task.pinned ? "📌 Pinned" : "Pin task"
+            } (${keycapLabel("⌘⌥P")})`}">
             ${this.task.pinned ? "📌" : "📍"}
           </button>
         </div>

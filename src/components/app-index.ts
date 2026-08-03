@@ -16,6 +16,7 @@ import { initChannelBridge } from "../ui/events/channel-bridge.js";
 import "../ui/components/keycap.js";
 import "../ui/components/pinned-stack.js";
 import "../ui/components/jump-menu.js";
+import { isEditableTarget, mod } from "../ui/helpers/shortcuts.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
@@ -39,8 +40,6 @@ startApp({
   routes,
   mainNode: "app-content",
 });
-
-const mod = (e: KeyboardEvent) => e.metaKey || e.ctrlKey;
 
 @customElement("app-index")
 export class AppIndex extends LitElement {
@@ -71,45 +70,39 @@ export class AppIndex extends LitElement {
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) return;
-    if (
-      (e.target as HTMLElement)?.getAttribute?.("contenteditable") === "true"
-    ) return;
+    if (isEditableTarget(e)) return;
 
-    if (e.key === "k" && mod(e)) {
+    if (e.code === "KeyK" && mod(e)) {
       e.preventDefault();
       this._openCommandBar();
       return;
     }
 
-    if (e.key === "j" && mod(e)) {
+    if (e.code === "KeyJ" && mod(e)) {
       e.preventDefault();
       this._openJumpMenu();
       return;
     }
 
-    if (e.key === "p" && e.altKey) {
+    if (e.code === "KeyP" && e.altKey && !mod(e)) {
       e.preventDefault();
       this._openPinned();
       return;
     }
 
-    if (e.key === "b" && mod(e)) {
+    if (e.code === "KeyB" && mod(e)) {
       e.preventDefault();
       this.elementController.navigate("home");
       return;
     }
 
-    if (e.key === "," && mod(e)) {
+    if (e.code === "Comma" && mod(e)) {
       e.preventDefault();
       this.elementController.navigate("settings");
       return;
     }
 
-    if (e.key === "t" && e.altKey) {
+    if (e.code === "KeyT" && e.altKey && !mod(e)) {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent("create-task"));
       return;
