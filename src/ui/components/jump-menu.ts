@@ -318,6 +318,10 @@ export class JumpMenu extends LitElement {
         action: () => {
           this.elementController.navigate("home");
           this._close();
+          setTimeout(
+            () => window.dispatchEvent(new CustomEvent("create-board")),
+            150,
+          );
         },
       });
       results.push({

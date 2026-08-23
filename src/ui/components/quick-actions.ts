@@ -75,11 +75,11 @@ export class QuickActions extends LitElement {
     return html`
       <button class="action-btn primary" @click="${() =>
         this._emit("mark-done")}">
-        DONE <keycap-el key="⌘D"></keycap-el>
+        DONE <keycap-el key="D"></keycap-el>
       </button>
       <button class="action-btn primary" @click="${() =>
         this._emit("edit-task")}">
-        EDIT <keycap-el key="⌘E"></keycap-el>
+        EDIT <keycap-el key="E"></keycap-el>
       </button>
     `;
   }

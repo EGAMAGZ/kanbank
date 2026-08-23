@@ -16,6 +16,7 @@ import {
   activityStore,
 } from "../services/activity-store.js";
 import type { Board } from "../../domain/entities/board.entity.js";
+import "../../ui/components/keycap.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
@@ -55,6 +56,10 @@ export class BoardListPage extends LitElement {
   private activityEvents: ActivityEvent[] = [];
 
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _openCreateForm = (): void => {
+    this.showCreateForm = true;
+  };
 
   static styles = css`
     :host {
@@ -436,6 +441,7 @@ export class BoardListPage extends LitElement {
     this._pollTimer = setInterval(() => {
       this.activityEvents = activityStore.getAll();
     }, 2000);
+    window.addEventListener("create-board", this._openCreateForm);
   }
 
   disconnectedCallback(): void {
@@ -444,6 +450,7 @@ export class BoardListPage extends LitElement {
       clearInterval(this._pollTimer);
       this._pollTimer = null;
     }
+    window.removeEventListener("create-board", this._openCreateForm);
   }
 
   private async loadBoards(): Promise<void> {
@@ -645,6 +652,7 @@ export class BoardListPage extends LitElement {
                 : html`
                   <span class="new-icon">+</span>
                   <span class="new-label">New board</span>
+                  <keycap-el key="B"></keycap-el>
                 `}
             </div>
           `
@@ -706,6 +714,7 @@ export class BoardListPage extends LitElement {
                 : html`
                   <span class="new-icon">+</span>
                   <span class="new-label">New board</span>
+                  <keycap-el key="B"></keycap-el>
                 `}
             </div>
           `}
