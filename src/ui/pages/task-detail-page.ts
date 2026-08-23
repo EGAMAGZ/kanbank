@@ -681,34 +681,49 @@ export class TaskDetailPage extends LitElement {
   }
 
   private _handleGlobalKeydown(e: KeyboardEvent): void {
+    if (this.editingTaskDesc) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        this.cancelEditTask();
+        return;
+      }
+      if (mod(e) && e.key === "Enter") {
+        e.preventDefault();
+        void this.saveEditTask();
+      }
+      return;
+    }
+
     if (isEditableTarget(e)) return;
 
     if (e.key === "Escape") {
-      if (this.editingTaskDesc) {
-        this.editingTaskDesc = false;
-        return;
-      }
       this.goBack();
       return;
     }
-    if (e.code === "KeyE" && mod(e)) {
+
+    if (e.code === "KeyE" && !mod(e)) {
       e.preventDefault();
       this.startEditTask();
       return;
     }
-    if (e.code === "KeyD" && mod(e)) {
+    if (e.code === "KeyD" && !mod(e)) {
       e.preventDefault();
       this.markAsDone();
       return;
     }
-    if (e.code === "KeyP" && mod(e) && e.altKey) {
+    if (e.code === "KeyP" && e.shiftKey && !mod(e)) {
       e.preventDefault();
       this.togglePin();
       return;
     }
-    if (e.code === "KeyG" && mod(e) && e.altKey) {
+    if (e.code === "KeyG" && e.shiftKey && !mod(e)) {
       e.preventDefault();
       this.toggleGold();
+      return;
+    }
+    if (e.key === "ArrowLeft" && !mod(e)) {
+      e.preventDefault();
+      this.goBack();
       return;
     }
   }
@@ -1110,7 +1125,7 @@ export class TaskDetailPage extends LitElement {
             ? "active"
             : ""}" @click="${this.toggleGold}" title="${`${
               this.task.isGold ? "★ Golden ticket" : "Mark as gold"
-            } (${keycapLabel("⌘⌥G")})`}">
+            } (${keycapLabel("⇧G")})`}">
             ${this.task.isGold ? "★" : "☆"}
           </button>
           <div class="header-left">
@@ -1175,7 +1190,13 @@ export class TaskDetailPage extends LitElement {
                     `}
                   ${this.editingTaskDesc
                     ? html`
-                      <div class="desc-editor-wrap">
+                      <div class="desc-editor-wrap"
+                        @keydown="${(e: KeyboardEvent) => {
+                          if (mod(e) && e.key === "Enter") {
+                            e.preventDefault();
+                            void this.saveEditTask();
+                          }
+                        }}">
                         <wysiwyg-editor id="desc-editor" .value="${this.editDescription}"
                           placeholder="Write a description..."
                           @editor-change="${this._handleDescEditorChange}"></wysiwyg-editor>
@@ -1244,7 +1265,7 @@ export class TaskDetailPage extends LitElement {
             ? "active"
             : ""}" @click="${this.togglePin}" title="${`${
               this.task.pinned ? "📌 Pinned" : "Pin task"
-            } (${keycapLabel("⌘⌥P")})`}">
+            } (${keycapLabel("⇧P")})`}">
             ${this.task.pinned ? "📌" : "📍"}
           </button>
         </div>

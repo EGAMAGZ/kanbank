@@ -387,13 +387,16 @@ export class PinnedStack extends LitElement {
   }
 
   private _handleKeydown = (e: KeyboardEvent): void => {
-    if (e.altKey && e.code === "KeyP" && !mod(e) && !isEditableTarget(e)) {
+    if (
+      e.code === "KeyP" && !mod(e) && !e.shiftKey && !e.altKey &&
+      !isEditableTarget(e)
+    ) {
       e.preventDefault();
       this._toggle();
       return;
     }
 
-    if (!this.expanded) return;
+    if (!this.expanded || isEditableTarget(e)) return;
 
     switch (e.key) {
       case "ArrowDown":
@@ -439,7 +442,7 @@ export class PinnedStack extends LitElement {
 
     return html`
       <div class="stack-collapsed" @click="${this
-        ._toggle}" title="${`Pinned cards (${keycapLabel("⎇P")})`}">
+        ._toggle}" title="${`Pinned cards (${keycapLabel("P")})`}">
         ${preview.map((t, i) => {
           const state = this.states.get(t.stateId);
           return html`

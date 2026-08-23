@@ -29,6 +29,7 @@ import "../../ui/components/done-stamp.js";
 import "../../ui/components/not-now-stamp.js";
 import "../../ui/components/keycap.js";
 import { CURRENT_USER } from "../../ui/components/task-card.js";
+import { isEditableTarget, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/activity-feed.js";
 
 const boardRepo = new DexieBoardRepository();
@@ -965,10 +966,7 @@ export class BoardDetailPage extends LitElement {
 
   private handleKeydown(e: KeyboardEvent): void {
     if (!this.detail) return;
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) return;
+    if (isEditableTarget(e)) return;
 
     const sorted = this.getSortedStates();
     const mandatory = this.getMandatoryOrder();
@@ -984,6 +982,18 @@ export class BoardDetailPage extends LitElement {
       } else {
         this.pageController.navigate("home");
       }
+      return;
+    }
+
+    if (e.code === "KeyC" && !mod(e) && !e.shiftKey) {
+      e.preventDefault();
+      this.openTaskModal();
+      return;
+    }
+
+    if (e.key === "[" || e.key === "]") {
+      e.preventDefault();
+      void this._moveFocused(e.key === "[" ? mandatory.first : mandatory.last);
       return;
     }
 
@@ -1038,6 +1048,28 @@ export class BoardDetailPage extends LitElement {
       }
       return;
     }
+  }
+
+  private _focusedTask(): Task | null {
+    if (this.focusedColIdx < 0 || this.focusedTaskIdx < 0) return null;
+    const state = this.getSortedStates()[this.focusedColIdx];
+    if (!state) return null;
+    const tasks = this._getStateTasks(state.id);
+    return tasks[this.focusedTaskIdx] ?? null;
+  }
+
+  private async _moveFocused(targetStateId: string): Promise<void> {
+    const task = this._focusedTask();
+    if (!task || !this.detail || task.stateId === targetStateId) return;
+    const targetState = this.detail.states.find((s) => s.id === targetStateId);
+    const targetIsNotNow = targetState?.title === "Not now";
+    await moveTask.execute({
+      taskId: task.id,
+      newStateId: targetStateId,
+      order: this._getStateTasks(targetStateId).length,
+    }, { targetIsNotNow });
+    await this.loadBoard();
+    this.focusedTaskIdx = Math.max(0, this.focusedTaskIdx);
   }
 
   private _getStateTasks(stateId: string): Task[] {
@@ -1417,7 +1449,7 @@ export class BoardDetailPage extends LitElement {
             <button class="add-task-btn"
               @click="${() =>
                 this
-                  .openTaskModal()}">+ ADD TASK <keycap-el key="⎇T"></keycap-el></button>
+                  .openTaskModal()}">+ ADD TASK <keycap-el key="C"></keycap-el></button>
           `
           : ""}
 
@@ -1537,6 +1569,7 @@ export class BoardDetailPage extends LitElement {
                     e.preventDefault();
                     this.handleModalCreate(maybeState.id, "close");
                   }
+                  if (e.key === "Escape") this.closeTaskModal();
                 }}"
               />
               <label for="modal-desc" style="margin-top:var(--space-md);">Description</label>
@@ -1547,10 +1580,14 @@ export class BoardDetailPage extends LitElement {
                     (e.target as HTMLTextAreaElement).value;
                 }}"
                 @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  if (mod(e) && e.key === "Enter") {
                     e.preventDefault();
-                    this.handleModalCreate(maybeState.id, "close");
+                    this.handleModalCreate(
+                      maybeState.id,
+                      e.shiftKey ? "another" : "close",
+                    );
                   }
+                  if (e.key === "Escape") this.closeTaskModal();
                 }}"
               ></textarea>
               ${this.modalError
@@ -1563,12 +1600,12 @@ export class BoardDetailPage extends LitElement {
                   this.handleModalCreate(
                     maybeState.id,
                     "close",
-                  )}">Create</button>
+                  )}">Create <keycap-el key="⌘↵"></keycap-el></button>
                 <button class="btn btn-primary" @click="${() =>
                   this.handleModalCreate(
                     maybeState.id,
                     "another",
-                  )}">+ another</button>
+                  )}">+ another <keycap-el key="⇧⌘↵"></keycap-el></button>
               </div>
             </div>
           </div>

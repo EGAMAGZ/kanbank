@@ -39,6 +39,8 @@ export declare class BoardDetailPage extends LitElement {
     private handleCancelBoardTitle;
     private handleDeleteBoard;
     private handleKeydown;
+    private _focusedTask;
+    private _moveFocused;
     private _getStateTasks;
     private _focusCurrentTask;
     private toggleColumn;

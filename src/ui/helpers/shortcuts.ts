@@ -11,12 +11,17 @@ export function mod(e: KeyboardEvent): boolean {
 }
 
 export function isEditableTarget(e: Event): boolean {
-  const target = e.target as HTMLElement | null;
+  const path = typeof e.composedPath === "function" ? e.composedPath() : [];
+  const target = (path[0] ?? e.target) as HTMLElement | null;
   if (!target) return false;
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  ) {
     return true;
   }
-  return target.getAttribute?.("contenteditable") === "true";
+  return target.isContentEditable === true;
 }
 
 function parseKeycap(key: string): {

@@ -72,39 +72,39 @@ export class AppIndex extends LitElement {
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
     if (isEditableTarget(e)) return;
 
-    if (e.code === "KeyK" && mod(e)) {
-      e.preventDefault();
-      this._openCommandBar();
-      return;
-    }
-
-    if (e.code === "KeyJ" && mod(e)) {
-      e.preventDefault();
-      this._openJumpMenu();
-      return;
-    }
-
-    if (e.code === "KeyP" && e.altKey && !mod(e)) {
-      e.preventDefault();
-      this._openPinned();
-      return;
-    }
-
-    if (e.code === "KeyB" && mod(e)) {
+    if (
+      e.code === "Digit1" && !mod(e) && !e.altKey && !e.shiftKey
+    ) {
       e.preventDefault();
       this.elementController.navigate("home");
       return;
     }
 
-    if (e.code === "Comma" && mod(e)) {
+    if (e.code === "KeyK" && !e.shiftKey) {
+      e.preventDefault();
+      this._openCommandBar();
+      return;
+    }
+
+    if (e.code === "KeyN" && !mod(e) && !e.shiftKey) {
       e.preventDefault();
       this.elementController.navigate("settings");
       return;
     }
 
-    if (e.code === "KeyT" && e.altKey && !mod(e)) {
+    if (e.code === "KeyJ") {
       e.preventDefault();
-      window.dispatchEvent(new CustomEvent("create-task"));
+      this._openJumpMenu();
+      return;
+    }
+
+    if (e.code === "KeyB" && !mod(e) && !e.shiftKey) {
+      e.preventDefault();
+      this.elementController.navigate("home");
+      setTimeout(
+        () => window.dispatchEvent(new CustomEvent("create-board")),
+        150,
+      );
       return;
     }
   };
@@ -134,7 +134,7 @@ export class AppIndex extends LitElement {
   private _openPinned(): void {
     const pinned = document.querySelector("pinned-stack");
     if (pinned) {
-      (pinned as any).toggle?.();
+      (pinned as any)._toggle?.();
     }
   }
 
@@ -147,22 +147,22 @@ export class AppIndex extends LitElement {
           @click="${() =>
             this.elementController.navigate(
               "home",
-            )}">Home <keycap-el key="^B"></keycap-el></span>
+            )}">Home <keycap-el key="1"></keycap-el></span>
         <span class="nav-link"
           @click="${() =>
             this.elementController.navigate(
               "settings",
-            )}">Settings <keycap-el key="^,"></keycap-el></span>
+            )}">Settings <keycap-el key="N"></keycap-el></span>
         <div class="nav-right">
           <span class="cmd-hint"
             @click="${this
-              ._openJumpMenu}">Jump <keycap-el key="^J"></keycap-el></span>
+              ._openJumpMenu}">Jump <keycap-el key="J"></keycap-el></span>
           <span class="cmd-hint"
             @click="${this
-              ._openPinned}">Pinned <keycap-el key="⎇P"></keycap-el></span>
+              ._openPinned}">Pinned <keycap-el key="P"></keycap-el></span>
           <span class="cmd-hint"
             @click="${this
-              ._openCommandBar}"><keycap-el key="⌘K"></keycap-el></span>
+              ._openCommandBar}"><keycap-el key="K"></keycap-el></span>
         </div>
       </nav>
       <main role="main" tabindex="-1">
