@@ -11,10 +11,6 @@ import { DexieCommentRepository } from "../../infrastructure/repositories/dexie-
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
 import { DexieStepRepository } from "../../infrastructure/repositories/dexie-step.repository.js";
 import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
-import {
-  type ActivityEvent,
-  activityStore,
-} from "../services/activity-store.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 import "../../ui/components/keycap.js";
 
@@ -50,15 +46,12 @@ export class BoardListPage extends LitElement {
   @state()
   private newTitle = "";
   @state()
-  private newDescription = "";
-
-  @state()
-  private activityEvents: ActivityEvent[] = [];
-
-  private _pollTimer: ReturnType<typeof setInterval> | null = null;
+  private selectedIndex = -1;
+  private _boundKeydown?: (e: KeyboardEvent) => void;
 
   private _openCreateForm = (): void => {
     this.showCreateForm = true;
+    this.selectedIndex = this.boards.length;
   };
 
   static styles = css`
@@ -95,131 +88,6 @@ export class BoardListPage extends LitElement {
       padding: 2px var(--space-sm);
     }
 
-    /* Activity feed 3-column layout */
-    .activity-section {
-      margin-bottom: var(--space-3xl);
-    }
-
-    .activity-section-title {
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-2xl);
-      letter-spacing: -0.03em;
-      margin-bottom: var(--space-lg);
-      border-bottom: 4px solid var(--color-black);
-      padding-bottom: var(--space-sm);
-    }
-
-    .activity-columns {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: var(--space-lg);
-    }
-
-    .activity-col {
-      border: 4px solid var(--color-black);
-      box-shadow: 6px 6px 0 var(--color-black);
-      background: var(--color-white);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .activity-col-header {
-      padding: var(--space-sm) var(--space-md);
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: var(--text-base);
-      color: var(--color-white);
-      border-bottom: 4px solid var(--color-black);
-    }
-
-    .activity-col-header.added {
-      background: var(--color-accent);
-    }
-    .activity-col-header.updated {
-      background: var(--color-warning);
-    }
-    .activity-col-header.done {
-      background: var(--color-success);
-    }
-
-    .activity-col-body {
-      flex: 1;
-      min-height: 120px;
-    }
-
-    .activity-col-body:empty::after {
-      content: "No activity";
-      display: block;
-      padding: var(--space-md);
-      text-align: center;
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      color: var(--color-text-3);
-    }
-
-    .activity-item {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-sm);
-      padding: var(--space-sm) var(--space-md);
-      border-bottom: 2px solid var(--color-black);
-    }
-
-    .activity-icon {
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--color-black);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .activity-icon.created {
-      background: var(--color-accent);
-      color: var(--color-white);
-    }
-    .activity-icon.moved {
-      background: var(--color-accent);
-      color: var(--color-white);
-    }
-    .activity-icon.updated {
-      background: var(--color-warning);
-      color: var(--color-white);
-    }
-    .activity-icon.commented {
-      background: var(--color-accent-2);
-      color: var(--color-white);
-    }
-    .activity-icon.completed {
-      background: var(--color-success);
-      color: var(--color-white);
-    }
-
-    .activity-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .activity-label {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .activity-time {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      color: var(--color-text-3);
-    }
-
     .board-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -254,6 +122,11 @@ export class BoardListPage extends LitElement {
     .board-card:active {
       transform: translate(6px, 6px);
       box-shadow: 0 0 0 var(--color-black);
+    }
+
+    .board-card.selected {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
     }
 
     .board-card h3 {
@@ -308,6 +181,11 @@ export class BoardListPage extends LitElement {
       box-shadow: none;
     }
 
+    .board-card--new.selected {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
     .board-card--new .new-icon {
       font-family: var(--font-mono);
       font-size: var(--text-3xl);
@@ -350,31 +228,29 @@ export class BoardListPage extends LitElement {
     }
 
     .create-form {
-      width: 100%;
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
+      padding: var(--space-xl);
+      background: var(--color-white);
+      display: flex;
+      flex-direction: column;
     }
 
-    .create-form input,
-    .create-form textarea {
+    .create-form input {
       display: block;
       width: 100%;
       padding: var(--space-sm) var(--space-md);
       border: var(--line-thick) solid var(--color-black);
       font-family: var(--font-body);
       font-size: var(--text-sm);
-      margin-bottom: var(--space-sm);
       outline: none;
       background: var(--color-white);
       transition: box-shadow var(--ease-brutal);
+      box-sizing: border-box;
     }
 
-    .create-form input:focus,
-    .create-form textarea:focus {
+    .create-form input:focus {
       box-shadow: 3px 3px 0 var(--color-accent);
-    }
-
-    .create-form textarea {
-      min-height: 80px;
-      resize: vertical;
     }
 
     .form-actions {
@@ -438,20 +314,48 @@ export class BoardListPage extends LitElement {
   async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.loadBoards();
-    this._pollTimer = setInterval(() => {
-      this.activityEvents = activityStore.getAll();
-    }, 2000);
     window.addEventListener("create-board", this._openCreateForm);
+    this._boundKeydown = this._onKeyDown.bind(this);
+    document.addEventListener("keydown", this._boundKeydown);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    if (this._pollTimer) {
-      clearInterval(this._pollTimer);
-      this._pollTimer = null;
-    }
     window.removeEventListener("create-board", this._openCreateForm);
+    if (this._boundKeydown) {
+      document.removeEventListener("keydown", this._boundKeydown);
+      this._boundKeydown = undefined;
+    }
   }
+
+  async onPageEnter(): Promise<void> {
+    this.selectedIndex = -1;
+    await this.loadBoards();
+  }
+
+  private _onKeyDown = (e: KeyboardEvent): void => {
+    if (this.getAttribute("state") !== "active") return;
+    const total = this.boards.length + 1;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      this.selectedIndex = Math.min(this.selectedIndex + 1, total - 1);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (this.selectedIndex >= 0 && this.selectedIndex < this.boards.length) {
+        this.navigateToBoard(this.boards[this.selectedIndex].id);
+      } else if (this.selectedIndex === this.boards.length) {
+        this.showCreateForm = true;
+      }
+    } else if (e.key === "Escape") {
+      this.selectedIndex = -1;
+      if (this.showCreateForm) {
+        this.showCreateForm = false;
+      }
+    }
+  };
 
   private async loadBoards(): Promise<void> {
     this.boards = await listBoards.execute();
@@ -465,11 +369,10 @@ export class BoardListPage extends LitElement {
     if (!this.newTitle.trim()) return;
     const id = await createBoard.execute({
       title: this.newTitle.trim(),
-      description: this.newDescription.trim() || undefined,
     });
     this.newTitle = "";
-    this.newDescription = "";
     this.showCreateForm = false;
+    this.selectedIndex = -1;
     this.pageController.navigate("board-detail", { id });
   }
 
@@ -491,231 +394,61 @@ export class BoardListPage extends LitElement {
     this.pageController.navigate("board-detail", { id });
   }
 
-  private _groupEventsByType(): {
-    added: ActivityEvent[];
-    updated: ActivityEvent[];
-    done: ActivityEvent[];
-  } {
-    const added = this.activityEvents.filter((e) => e.type === "created").slice(
-      0,
-      5,
-    );
-    const updated = this.activityEvents.filter((e) =>
-      e.type === "updated" || e.type === "moved" || e.type === "commented"
-    ).slice(0, 5);
-    const done = this.activityEvents.filter((e) => e.type === "completed")
-      .slice(0, 5);
-    return { added, updated, done };
-  }
-
   render() {
-    const { added, updated, done } = this._groupEventsByType();
-
     return html`
       <h1 class="page-title">
-        Home
-        <span class="count">${this.activityEvents.length}</span>
+        Boards
+        <span class="count">${this.boards.length}</span>
       </h1>
 
-      <div class="activity-section">
-        <h2 class="activity-section-title">Activity</h2>
-        <div class="activity-columns">
-          <div class="activity-col">
-            <div class="activity-col-header added">Added</div>
-            <div class="activity-col-body">
-              ${added.length === 0
-                ? html`
-                  <div
-                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No new items</div>
-                `
-                : ""}
-              ${added.map((ev) =>
-                html`
-                  <div class="activity-item">
-                    <span class="activity-icon created">+</span>
-                    <div class="activity-info">
-                      <div class="activity-label">${ev.label}</div>
-                      <div class="activity-time">${new Date(ev.timestamp)
-                        .toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}</div>
-                    </div>
-                  </div>
-                `
-              )}
-            </div>
-          </div>
-
-          <div class="activity-col">
-            <div class="activity-col-header updated">Updated</div>
-            <div class="activity-col-body">
-              ${updated.length === 0
-                ? html`
-                  <div
-                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">No updates</div>
-                `
-                : ""}
-              ${updated.map((ev) =>
-                html`
-                  <div class="activity-item">
-                    <span class="activity-icon ${ev.type === "commented"
-                      ? "commented"
-                      : "updated"}">${ev.type === "commented"
-                      ? "💬"
-                      : ev.type === "moved"
-                      ? "→"
-                      : "✎"}</span>
-                    <div class="activity-info">
-                      <div class="activity-label">${ev.label}</div>
-                      <div class="activity-time">${new Date(ev.timestamp)
-                        .toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}</div>
-                    </div>
-                  </div>
-                `
-              )}
-            </div>
-          </div>
-
-          <div class="activity-col">
-            <div class="activity-col-header done">Done</div>
-            <div class="activity-col-body">
-              ${done.length === 0
-                ? html`
-                  <div
-                    style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-3);padding:var(--space-md);">Nothing done yet</div>
-                `
-                : ""}
-              ${done.map((ev) =>
-                html`
-                  <div class="activity-item">
-                    <span class="activity-icon completed">✓</span>
-                    <div class="activity-info">
-                      <div class="activity-label">${ev.label}</div>
-                      <div class="activity-time">${new Date(ev.timestamp)
-                        .toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}</div>
-                    </div>
-                  </div>
-                `
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <h2 class="activity-section-title" style="margin-top:var(--space-2xl);">
-        Boards
-        <span style="font-family:var(--font-mono);font-size:var(--text-base);border:3px solid var(--color-black);padding:2px var(--space-sm);margin-left:var(--space-sm);">${this
-          .boards.length}</span>
-      </h2>
-
       <div class="board-grid">
-        ${this.boards.length === 0 && !this.showCreateForm
+        ${this.boards.map((board, i) => {
+          const color = this.getCardColor(i);
+          return html`
+            <div class="board-card${this.selectedIndex === i ? " selected" : ""}"
+              @click="${() => this.navigateToBoard(board.id)}">
+              <div class="color-strip" style="background:${color}"></div>
+              <button class="card-delete-btn"
+                @click="${(e: Event) => {
+                  e.stopPropagation();
+                  this.handleDelete(board);
+                }}"
+                title="Delete board">✕</button>
+              <h3>${board.title}</h3>
+              ${board.description ? html`<p>${board.description}</p>` : ""}
+              <div class="card-meta">
+                <span>#${(i + 1).toString().padStart(2, "0")}</span>
+                <span>${new Date(board.createdAt)
+                  .toLocaleDateString()}</span>
+              </div>
+            </div>
+          `;
+        })}
+
+        ${this.showCreateForm
           ? html`
-            <div class="board-card--new"
-              @click="${() => {
-                if (!this.showCreateForm) this.showCreateForm = true;
-              }}">
-              ${this.showCreateForm
-                ? html`
-                  <div class="create-form" @click="${(e: Event) =>
-                    e.stopPropagation()}">
-                    <input type="text" placeholder="Board title"
-                      .value="${this.newTitle}"
-                      @input="${(e: Event) =>
-                        this.newTitle = (e.target as HTMLInputElement).value}"
-                      @keydown="${(e: KeyboardEvent) => {
-                        if (e.key === "Enter") this.handleCreate();
-                        if (e.key === "Escape") this.showCreateForm = false;
-                      }}"
-                    />
-                    <textarea placeholder="Description (optional)"
-                      .value="${this.newDescription}"
-                      @input="${(e: Event) =>
-                        this.newDescription =
-                          (e.target as HTMLTextAreaElement).value}"
-                    ></textarea>
-                    <div class="form-actions">
-                      <button class="btn-create" @click="${this
-                        .handleCreate}">Create</button>
-                      <button class="btn-cancel" @click="${() =>
-                        this.showCreateForm = false}">Cancel</button>
-                    </div>
-                  </div>
-                `
-                : html`
-                  <span class="new-icon">+</span>
-                  <span class="new-label">New board</span>
-                  <keycap-el key="B"></keycap-el>
-                `}
+            <div class="create-form" @click="${(e: Event) => e.stopPropagation()}">
+              <input type="text" placeholder="Board title"
+                .value="${this.newTitle}"
+                @input="${(e: Event) =>
+                  this.newTitle = (e.target as HTMLInputElement).value}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === "Enter") this.handleCreate();
+                  if (e.key === "Escape") { this.showCreateForm = false; this.selectedIndex = -1; }
+                }}"
+              />
+              <div class="form-actions" style="margin-top:var(--space-sm)">
+                <button class="btn-create" @click="${this.handleCreate}">Create</button>
+                <button class="btn-cancel" @click="${() => { this.showCreateForm = false; this.selectedIndex = -1; }}">Cancel</button>
+              </div>
             </div>
           `
           : html`
-            ${this.boards.map((board, i) => {
-              const color = this.getCardColor(i);
-              return html`
-                <div class="board-card"
-                  @click="${() => this.navigateToBoard(board.id)}">
-                  <div class="color-strip" style="background:${color}"></div>
-                  <button class="card-delete-btn"
-                    @click="${(e: Event) => {
-                      e.stopPropagation();
-                      this.handleDelete(board);
-                    }}"
-                    title="Delete board">✕</button>
-                  <h3>${board.title}</h3>
-                  ${board.description ? html`<p>${board.description}</p>` : ""}
-                  <div class="card-meta">
-                    <span>#${(i + 1).toString().padStart(2, "0")}</span>
-                    <span>${new Date(board.createdAt)
-                      .toLocaleDateString()}</span>
-                  </div>
-                </div>
-              `;
-            })}
-
-            <div class="board-card--new"
-              @click="${() => {
-                if (!this.showCreateForm) this.showCreateForm = true;
-              }}">
-              ${this.showCreateForm
-                ? html`
-                  <div class="create-form" @click="${(e: Event) =>
-                    e.stopPropagation()}">
-                    <input type="text" placeholder="Board title"
-                      .value="${this.newTitle}"
-                      @input="${(e: Event) =>
-                        this.newTitle = (e.target as HTMLInputElement).value}"
-                      @keydown="${(e: KeyboardEvent) => {
-                        if (e.key === "Enter") this.handleCreate();
-                        if (e.key === "Escape") this.showCreateForm = false;
-                      }}"
-                    />
-                    <textarea placeholder="Description (optional)"
-                      .value="${this.newDescription}"
-                      @input="${(e: Event) =>
-                        this.newDescription =
-                          (e.target as HTMLTextAreaElement).value}"
-                    ></textarea>
-                    <div class="form-actions">
-                      <button class="btn-create" @click="${this
-                        .handleCreate}">Create</button>
-                      <button class="btn-cancel" @click="${() =>
-                        this.showCreateForm = false}">Cancel</button>
-                    </div>
-                  </div>
-                `
-                : html`
-                  <span class="new-icon">+</span>
-                  <span class="new-label">New board</span>
-                  <keycap-el key="B"></keycap-el>
-                `}
+            <div class="board-card--new${this.selectedIndex === this.boards.length ? " selected" : ""}"
+              @click="${() => { this.showCreateForm = true; this.selectedIndex = this.boards.length; }}">
+              <span class="new-icon">+</span>
+              <span class="new-label">New board</span>
+              <keycap-el key="B"></keycap-el>
             </div>
           `}
       </div>
