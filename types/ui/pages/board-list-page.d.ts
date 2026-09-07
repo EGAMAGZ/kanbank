@@ -6,18 +6,20 @@ export declare class BoardListPage extends LitElement {
     private boards;
     private showCreateForm;
     private newTitle;
-    private newDescription;
-    private activityEvents;
-    private _pollTimer;
+    private selectedIndex;
+    private _boundKeydown?;
+    private _boardsSub;
     private _openCreateForm;
     static styles: import("lit").CSSResult;
-    connectedCallback(): Promise<void>;
+    connectedCallback(): void;
     disconnectedCallback(): void;
-    private loadBoards;
+    onPageEnter(): Promise<void>;
+    protected updated(changedProperties: Map<PropertyKey, unknown>): void;
+    private _onKeyDown;
     private getCardColor;
     private handleCreate;
+    private _closeCreateForm;
     private handleDelete;
     private navigateToBoard;
-    private _groupEventsByType;
     render(): import("lit").TemplateResult<1>;
 }

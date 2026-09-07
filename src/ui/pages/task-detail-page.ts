@@ -681,6 +681,7 @@ export class TaskDetailPage extends LitElement {
   }
 
   private _handleGlobalKeydown(e: KeyboardEvent): void {
+    if (this.getAttribute("state") !== "active") return;
     if (this.editingTaskDesc) {
       if (e.key === "Escape") {
         e.preventDefault();

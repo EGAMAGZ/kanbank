@@ -1,6 +1,7 @@
 import { css, html, LitElement } from "lit";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
+import { liveQuery } from "dexie";
 import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
 import { CreateBoardUseCase } from "../../application/use-cases/boards/create-board.js";
 import { DeleteBoardUseCase } from "../../application/use-cases/boards/delete-board.js";
@@ -13,6 +14,7 @@ import { DexieStepRepository } from "../../infrastructure/repositories/dexie-ste
 import { DexieTimelineRepository } from "../../infrastructure/repositories/dexie-timeline.repository.js";
 import type { Board } from "../../domain/entities/board.entity.js";
 import "../../ui/components/keycap.js";
+import { isEditableTarget } from "../helpers/shortcuts.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
@@ -48,6 +50,7 @@ export class BoardListPage extends LitElement {
   @state()
   private selectedIndex = -1;
   private _boundKeydown?: (e: KeyboardEvent) => void;
+  private _boardsSub: { unsubscribe(): void } | null = null;
 
   private _openCreateForm = (): void => {
     this.showCreateForm = true;
@@ -311,9 +314,14 @@ export class BoardListPage extends LitElement {
     }
   `;
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
-    await this.loadBoards();
+    this._boardsSub = liveQuery(() => listBoards.execute()).subscribe({
+      next: (boards) => {
+        this.boards = boards;
+      },
+      error: (e) => console.error(e),
+    });
     window.addEventListener("create-board", this._openCreateForm);
     this._boundKeydown = this._onKeyDown.bind(this);
     document.addEventListener("keydown", this._boundKeydown);
@@ -321,6 +329,8 @@ export class BoardListPage extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._boardsSub?.unsubscribe();
+    this._boardsSub = null;
     window.removeEventListener("create-board", this._openCreateForm);
     if (this._boundKeydown) {
       document.removeEventListener("keydown", this._boundKeydown);
@@ -330,11 +340,19 @@ export class BoardListPage extends LitElement {
 
   async onPageEnter(): Promise<void> {
     this.selectedIndex = -1;
-    await this.loadBoards();
+  }
+
+  protected updated(changedProperties: Map<PropertyKey, unknown>): void {
+    if (changedProperties.has("showCreateForm") && this.showCreateForm) {
+      (this.renderRoot.querySelector(
+        ".create-form input",
+      ) as HTMLInputElement)?.focus();
+    }
   }
 
   private _onKeyDown = (e: KeyboardEvent): void => {
     if (this.getAttribute("state") !== "active") return;
+    if (isEditableTarget(e)) return;
     const total = this.boards.length + 1;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -357,10 +375,6 @@ export class BoardListPage extends LitElement {
     }
   };
 
-  private async loadBoards(): Promise<void> {
-    this.boards = await listBoards.execute();
-  }
-
   private getCardColor(index: number): string {
     return BENTO_COLORS[index % BENTO_COLORS.length];
   }
@@ -371,9 +385,13 @@ export class BoardListPage extends LitElement {
       title: this.newTitle.trim(),
     });
     this.newTitle = "";
+    this._closeCreateForm();
+    this.pageController.navigate("board-detail", { id });
+  }
+
+  private _closeCreateForm(): void {
     this.showCreateForm = false;
     this.selectedIndex = -1;
-    this.pageController.navigate("board-detail", { id });
   }
 
   private async handleDelete(board: Board): Promise<void> {
@@ -384,7 +402,6 @@ export class BoardListPage extends LitElement {
     ) return;
     try {
       await deleteBoard.execute(board.id);
-      await this.loadBoards();
     } catch (e) {
       console.error(e);
     }
@@ -433,13 +450,16 @@ export class BoardListPage extends LitElement {
                 @input="${(e: Event) =>
                   this.newTitle = (e.target as HTMLInputElement).value}"
                 @keydown="${(e: KeyboardEvent) => {
-                  if (e.key === "Enter") this.handleCreate();
-                  if (e.key === "Escape") { this.showCreateForm = false; this.selectedIndex = -1; }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.handleCreate();
+                  }
+                  if (e.key === "Escape") this._closeCreateForm();
                 }}"
               />
               <div class="form-actions" style="margin-top:var(--space-sm)">
-                <button class="btn-create" @click="${this.handleCreate}">Create</button>
-                <button class="btn-cancel" @click="${() => { this.showCreateForm = false; this.selectedIndex = -1; }}">Cancel</button>
+                <button class="btn-create" @click="${this.handleCreate}">Create <keycap-el key="⌘↵"></keycap-el></button>
+                <button class="btn-cancel" @click="${this._closeCreateForm}">Cancel</button>
               </div>
             </div>
           `
