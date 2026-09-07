@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 
 export interface TimelineEntry {
   id: Id<"TimelineEntry">;

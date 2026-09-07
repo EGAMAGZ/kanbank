@@ -18,36 +18,36 @@ class ActivityStoreImpl {
   private maxEvents = 200;
 
   constructor() {
-    eventBus.subscribe("task.created", (event: any) => {
-      const t = event.payload || {};
+    eventBus.subscribe("task.created", (event) => {
+      const t = event.payload;
       this.add({
         id: crypto.randomUUID(),
         type: "created",
-        label: t.title || "untitled",
+        label: t.title,
         detail: t.description ? t.description.slice(0, 40) : "",
-        taskId: t.id || "",
-        boardId: t.boardId || "",
-        timestamp: event.timestamp || t.createdAt || new Date().toISOString(),
+        taskId: t.id,
+        boardId: t.boardId,
+        timestamp: event.timestamp,
       });
     });
 
-    eventBus.subscribe("task.moved", (event: any) => {
-      const p = event.payload || {};
+    eventBus.subscribe("task.moved", (event) => {
+      const p = event.payload;
       this.add({
         id: crypto.randomUUID(),
         type: "moved",
-        label: p.taskId || "",
+        label: p.taskId,
         detail: "moved",
-        taskId: p.taskId || "",
-        boardId: p.boardId || "",
-        fromStateId: p.fromStateId || "",
-        toStateId: p.toStateId || "",
-        timestamp: event.timestamp || new Date().toISOString(),
+        taskId: p.taskId,
+        boardId: "",
+        fromStateId: p.fromStateId,
+        toStateId: p.toStateId,
+        timestamp: event.timestamp,
       });
     });
 
-    eventBus.subscribe("task.updated", (event: any) => {
-      const p = event.payload || {};
+    eventBus.subscribe("task.updated", (event) => {
+      const p = event.payload;
       const label = p.title || "task";
       if (p.isGold !== undefined) {
         this.add({
@@ -55,10 +55,10 @@ class ActivityStoreImpl {
           type: "updated",
           label,
           detail: p.isGold ? "★ golden ticket" : "removed gold",
-          taskId: p.id || "",
-          boardId: p.boardId || "",
+          taskId: p.id,
+          boardId: p.boardId ?? "",
           isGold: p.isGold,
-          timestamp: event.timestamp || new Date().toISOString(),
+          timestamp: event.timestamp,
         });
       } else {
         this.add({
@@ -66,23 +66,23 @@ class ActivityStoreImpl {
           type: "updated",
           label,
           detail: p.description ? "description updated" : "updated",
-          taskId: p.id || "",
-          boardId: p.boardId || "",
-          timestamp: event.timestamp || new Date().toISOString(),
+          taskId: p.id,
+          boardId: p.boardId ?? "",
+          timestamp: event.timestamp,
         });
       }
     });
 
-    eventBus.subscribe("comment.created", (event: any) => {
-      const c = event.payload || {};
+    eventBus.subscribe("comment.created", (event) => {
+      const c = event.payload;
       this.add({
         id: crypto.randomUUID(),
         type: "commented",
         label: "comment",
         detail: c.markdown ? c.markdown.slice(0, 60) : "",
-        taskId: c.taskId || "",
+        taskId: c.taskId,
         boardId: "",
-        timestamp: event.timestamp || c.createdAt || new Date().toISOString(),
+        timestamp: event.timestamp,
       });
     });
   }

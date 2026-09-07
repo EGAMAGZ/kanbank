@@ -1,4 +1,5 @@
-import type { Id, Timestamped, WithOrder } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
+import type { Timestamped, WithOrder } from "../../shared/types/common.js";
 
 export interface State extends Timestamped, WithOrder {
   id: Id<"State">;

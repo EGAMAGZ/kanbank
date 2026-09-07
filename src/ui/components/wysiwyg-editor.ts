@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, property, query, state } from "lit/decorators.js";
 
 type Cmd = [string, string?, string?];
@@ -233,9 +234,10 @@ export class WysiwygEditor extends LitElement {
           html`
             ${spacer(i)}
             <button
-              class="toolbar-btn ${this.activeCmds.has(item.cmd[0])
-                ? "active"
-                : ""}"
+              class=${classMap({
+                "toolbar-btn": true,
+                active: this.activeCmds.has(item.cmd[0]),
+              })}
               @click="${() => this._execCmd(item.cmd)}"
               title="${item.title}${item.key ? ` (Ctrl+${item.key})` : ""}"
             >${item.icon}</button>

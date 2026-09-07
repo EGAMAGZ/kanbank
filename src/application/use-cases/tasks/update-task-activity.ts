@@ -1,8 +1,8 @@
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import { EntityNotFoundError } from "../../../domain/errors/domain-errors.js";
-import { toISODate } from "../../../shared/types/index.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 
 export class UpdateTaskActivityUseCase {
   constructor(private taskRepo: TaskRepository) {}

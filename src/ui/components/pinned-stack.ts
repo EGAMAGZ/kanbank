@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, state } from "lit/decorators.js";
 import { ElementController } from "@open-cells/element-controller";
 import { Subscription } from "rxjs";
@@ -344,11 +345,11 @@ export class PinnedStack extends LitElement {
     const boards = new Map<string, Board>();
     const states = new Map<string, State>();
     for (const id of boardIds) {
-      const b = await boardRepo.findById(id as any);
+      const b = await boardRepo.findById(id);
       if (b) boards.set(id, b);
     }
     for (const id of stateIds) {
-      const s = await stateRepo.findById(id as any);
+      const s = await stateRepo.findById(id);
       if (s) states.set(id, s);
     }
     this.boards = boards;
@@ -446,7 +447,7 @@ export class PinnedStack extends LitElement {
         ${preview.map((t, i) => {
           const state = this.states.get(t.stateId);
           return html`
-            <div class="mini-card ${t.isGold ? "gold" : ""}">
+            <div class=${classMap({ "mini-card": true, gold: t.isGold })}>
               ${state
                 ? html`<div class="mini-state-bar" style="background:${
                   getStateColor(state)
@@ -481,9 +482,11 @@ export class PinnedStack extends LitElement {
                 const state = this.states.get(task.stateId);
                 const isSelected = index === this.selectedIndex;
                 return html`
-                  <div class="pinned-item ${task.isGold
-                    ? "gold"
-                    : ""} ${isSelected ? "is-selected" : ""}" 
+                  <div class=${classMap({
+                    "pinned-item": true,
+                    gold: task.isGold,
+                    "is-selected": isSelected,
+                  })} 
                     @click="${() => this._navigate(task)}"
                     role="option"
                     aria-selected="${isSelected}">

@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { State } from "../entities/state.entity.js";
 
 export interface StateRepository {

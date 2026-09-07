@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, state } from "lit/decorators.js";
 import { ElementController } from "@open-cells/element-controller";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
@@ -499,9 +500,10 @@ export class JumpMenu extends LitElement {
                 const actualIndex = i;
                 return html`
                   <div
-                    class="jump-result ${actualIndex === this.selectedIndex
-                      ? "selected"
-                      : ""}"
+                    class=${classMap({
+                      "jump-result": true,
+                      selected: actualIndex === this.selectedIndex,
+                    })}
                     @click="${r.action}"
                     @mouseenter="${() => {
                       this.selectedIndex = actualIndex;

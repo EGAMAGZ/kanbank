@@ -1,4 +1,7 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { styleMap } from "lit/directives/style-map.js";
+import { when } from "lit/directives/when.js";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import {
@@ -24,11 +27,11 @@ import { DeleteBoardUseCase } from "../../application/use-cases/boards/delete-bo
 import { inactiveDays } from "../../shared/utils/dates.js";
 import type { Task } from "../../domain/entities/task.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
+import { CURRENT_USER } from "../../shared/constants/defaults.js";
 import "../../ui/components/done-stamp.js";
 import "../../ui/components/not-now-stamp.js";
 import "../../ui/components/keycap.js";
-import { CURRENT_USER } from "../../ui/components/task-card.js";
 import { isEditableTarget, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/activity-feed.js";
 
@@ -920,14 +923,14 @@ export class BoardDetailPage extends LitElement {
     if (!id) return;
     try {
       this.error = null;
-      this.detail = await getBoard.execute(id as any);
+      this.detail = await getBoard.execute(id as Id<"Board">);
       if (this.detail) {
         const discarded = await autoDiscardCheck.execute(
           this.detail.tasks,
           this.detail.states,
         );
         if (discarded > 0) {
-          this.detail = await getBoard.execute(id as any);
+          this.detail = await getBoard.execute(id as Id<"Board">);
         }
       }
     } catch (e) {
@@ -1069,7 +1072,7 @@ export class BoardDetailPage extends LitElement {
     return tasks[this.focusedTaskIdx] ?? null;
   }
 
-  private async _moveFocused(targetStateId: string): Promise<void> {
+  private async _moveFocused(targetStateId: Id<"State">): Promise<void> {
     const task = this._focusedTask();
     if (!task || !this.detail || task.stateId === targetStateId) return;
     const targetState = this.detail.states.find((s) => s.id === targetStateId);
@@ -1122,10 +1125,11 @@ export class BoardDetailPage extends LitElement {
     this.dragOverStateId = "";
   }
 
-  private async handleDrop(e: DragEvent, stateId: string): Promise<void> {
+  private async handleDrop(e: DragEvent, stateId: Id<"State">): Promise<void> {
     e.preventDefault();
     this.dragOverStateId = "";
-    const taskId = e.dataTransfer?.getData("text/plain");
+    const taskId = e.dataTransfer
+      ?.getData("text/plain") as Id<"Task">;
     if (!taskId || !this.detail) return;
     const targetState = this.detail.states.find((s) => s.id === stateId);
     const targetIsNotNow = targetState?.title === "Not now";
@@ -1238,7 +1242,7 @@ export class BoardDetailPage extends LitElement {
   }
 
   private async handleModalCreate(
-    stateId: string,
+    stateId: Id<"State">,
     mode: "close" | "another" | "duplicate",
   ): Promise<void> {
     if (!this.modalTitle.trim() || !this.detail) return;
@@ -1295,55 +1299,63 @@ export class BoardDetailPage extends LitElement {
       this.focusedTaskIdx === taskIdx;
     return html`
       <div
-        class="task-card ${task.isGold ? "gold" : ""} ${isFocused
-          ? "focused"
-          : ""}"
+        class=${classMap({
+          "task-card": true,
+          gold: task.isGold,
+          focused: isFocused,
+        })}
         tabindex="-1"
         draggable="true"
         @dragstart="${(e: DragEvent) => this.handleDragStart(e, task)}"
         @click="${() => this.selectTask(task)}"
       >
         <div class="state-bar" style="background:${colColor}"></div>
-        ${isDone
-          ? html`
+        ${when(
+          isDone,
+          () => html`
             <done-stamp date="${formatDate(
               task.updatedAt,
             )}" author="${CURRENT_USER.initials}"
               bg-color="#166534"></done-stamp>
-          `
-          : ""}
-        ${isNotNow
-          ? html`
+          `,
+        )}
+        ${when(
+          isNotNow,
+          () => html`
             <not-now-stamp date="${formatDate(
               task.notNowSince ?? task.updatedAt,
             )}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}"
               bg-color="#8C8C8C"></not-now-stamp>
-          `
-          : ""}
+          `,
+        )}
         <div class="card-meta">
           <span class="seq-num">#${String(task.seq).padStart(3, "0")}</span>
           <span class="tag-dot" style="background:${colColor}"></span>
         </div>
         <div class="card-title">${task.title}</div>
-        ${daysUntilAutoClose !== null && daysUntilAutoClose > 0 && !isNotNow &&
-            !isDone
-          ? html`
+        ${when(
+          daysUntilAutoClose !== null && daysUntilAutoClose > 0 && !isNotNow &&
+            !isDone,
+          () => html`
             <div
               style="font-family:var(--font-mono);font-size:9px;color:var(--color-text-3);margin-bottom:var(--space-xs);">→ Not now in ${daysUntilAutoClose}d</div>
-          `
-          : ""}
+          `,
+        )}
         <div class="card-footer">
           <div class="footer-left">
             <span class="avatar">${CURRENT_USER.initials}</span>
             <span class="card-date">${formatDate(task.createdAt)}</span>
           </div>
-          ${days > 3
-            ? html`<span class="card-inactive ${
-              days > 7 ? "stale" : ""
-            }">${days}d idle</span>`
-            : days > 0
-            ? html`<span class="card-inactive">${days}d idle</span>`
-            : ""}
+          ${when(days > 3, () =>
+            html`<span class=${classMap({
+              "card-inactive": true,
+              stale: days > 7,
+            })}>${days}d idle</span>`,
+            () =>
+              when(days > 0, () =>
+                html`<span class="card-inactive">${days}d idle</span>`,
+              ),
+          )}
         </div>
       </div>
     `;
@@ -1361,22 +1373,26 @@ export class BoardDetailPage extends LitElement {
 
     return html`
       <div
-        class="col-bar ${isActive
-          ? "active"
-          : ""} ${this.dragOverStateId === state.id ? "drag-over" : ""}"
+        class=${classMap({
+          "col-bar": true,
+          active: isActive,
+          "drag-over": this.dragOverStateId === state.id,
+        })}
         @click="${() => this.toggleColumn(state.id)}"
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
-        <div class="bar-fill" style="height: ${isNotNow
-          ? 100
-          : pct}%; background: ${isNotNow
-          ? "var(--color-notnow)"
-          : colColor}"></div>
+        <div
+          class="bar-fill"
+          style=${styleMap({
+            height: `${isNotNow ? 100 : pct}%`,
+            background: isNotNow ? "var(--color-notnow)" : colColor,
+          })}
+        ></div>
         <div class="bar-badge">${count}</div>
         <div class="bar-label">${state.title}</div>
-        ${!isNotNow ? html`<div class="bar-pct">${pct}%</div>` : ""}
+        ${when(!isNotNow, () => html`<div class="bar-pct">${pct}%</div>`)}
       </div>
     `;
   }
@@ -1392,17 +1408,17 @@ export class BoardDetailPage extends LitElement {
 
     return html`
       <div
-        class="col-expanded ${this.dragOverStateId === state.id
-          ? "drag-over"
-          : ""}"
+        class=${classMap({
+          "col-expanded": true,
+          "drag-over": this.dragOverStateId === state.id,
+        })}
         @dragover="${(e: DragEvent) => this.handleDragOver(e, state.id)}"
         @dragleave="${() => this.handleDragLeave()}"
         @drop="${(e: DragEvent) => this.handleDrop(e, state.id)}"
       >
         <div class="col-expanded-header" style="background:${colColor}">
           <div class="col-title-group">
-            ${this.editingStateId === state.id
-              ? html`
+            ${when(this.editingStateId === state.id, () => html`
                 <input class="state-edit-input" type="text" .value="${this
                   .editingStateTitle}"
                   @input="${(e: Event) => {
@@ -1421,9 +1437,9 @@ export class BoardDetailPage extends LitElement {
                       (e.target as HTMLInputElement).value;
                   }}"
                   @change="${() => this.saveEditState(state)}"
-                />
-              `
-              : html`<span class="col-title">${state.title}</span>`}
+                />`,
+              () => html`<span class="col-title">${state.title}</span>`,
+            )}
             <span class="col-count">${this.detail.taskCounts[state.id] ??
               0}</span>
           </div>
@@ -1532,9 +1548,9 @@ export class BoardDetailPage extends LitElement {
           `}
         <button class="add-column-btn" @click="${() =>
           this.handleAutoCreateState()}">+ ESTADO</button>
-        <button class="activity-toggle ${this.showActivity
-          ? "active"
-          : ""}" @click="${() => this.showActivity = !this.showActivity}">
+        <button
+          class=${classMap({ "activity-toggle": true, active: this.showActivity })}
+          @click="${() => this.showActivity = !this.showActivity}">
           ${this.showActivity ? "HIDE FEED" : "FEED"}
         </button>
       </div>

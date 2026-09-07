@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { Comment } from "../../domain/entities/comment.entity.js";
 import type { CommentRepository } from "../../domain/repositories/comment.repository.js";
 import { db } from "../database/dexie-db.js";

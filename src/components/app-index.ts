@@ -15,6 +15,7 @@ import { initApp } from "../infrastructure/initialization/app-init.js";
 import { initChannelBridge } from "../ui/events/channel-bridge.js";
 import "../ui/components/keycap.js";
 import "../ui/components/pinned-stack.js";
+import type { PinnedStack } from "../ui/components/pinned-stack.js";
 import "../ui/components/jump-menu.js";
 import { isEditableTarget, mod } from "../ui/helpers/shortcuts.js";
 
@@ -132,9 +133,9 @@ export class AppIndex extends LitElement {
   }
 
   private _openPinned(): void {
-    const pinned = document.querySelector("pinned-stack");
+    const pinned = document.querySelector("pinned-stack") as PinnedStack | null;
     if (pinned) {
-      (pinned as any)._toggle?.();
+      pinned.toggle();
     }
   }
 

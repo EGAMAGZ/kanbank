@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { idSchema } from "./id-schema.js";
+
+const taskId = idSchema<"Task">();
 
 export const CreateStepSchema = z.object({
-  taskId: z.string(),
+  taskId,
   text: z.string().min(1).max(1000),
   order: z.number().int().min(0),
 });

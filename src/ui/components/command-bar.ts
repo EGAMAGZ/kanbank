@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, state } from "lit/decorators.js";
 import { ElementController } from "@open-cells/element-controller";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
@@ -336,9 +337,10 @@ export class CommandBar extends LitElement {
                 (r, i) =>
                   html`
                     <div
-                      class="cmd-result ${i === this.selectedIndex
-                        ? "selected"
-                        : ""}"
+                      class=${classMap({
+                      "cmd-result": true,
+                      selected: i === this.selectedIndex,
+                    })}
                       @click="${r.action}"
                       @mouseenter="${() => {
                         this.selectedIndex = i;

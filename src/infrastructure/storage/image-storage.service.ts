@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { ImageRef } from "../../domain/value-objects/image-ref.js";
 import type { ImageRepository } from "../../domain/repositories/image.repository.js";
 import { db, type ImageRecord } from "../database/dexie-db.js";

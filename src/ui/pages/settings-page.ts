@@ -1,15 +1,17 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import { DexieBoardRepository } from "../../infrastructure/repositories/dexie-board.repository.js";
 import { ListBoardsUseCase } from "../../application/use-cases/boards/list-boards.js";
-import { UpdateBoardSettingsUseCase } from "../../application/use-cases/boards/update-board-settings.js";
+import { UpdateBoardUseCase } from "../../application/use-cases/boards/update-board.js";
 import type { Board } from "../../domain/entities/board.entity.js";
+import type { Id } from "../../shared/types/id.js";
 import "../../ui/components/auto-close-dial.js";
 
 const boardRepo = new DexieBoardRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
-const updateBoardSettings = new UpdateBoardSettingsUseCase(boardRepo);
+const updateBoard = new UpdateBoardUseCase(boardRepo);
 
 @customElement("settings-page")
 export class SettingsPage extends LitElement {
@@ -205,7 +207,7 @@ export class SettingsPage extends LitElement {
   private async _saveSettings(): Promise<void> {
     if (!this.selectedBoardId) return;
     try {
-      await updateBoardSettings.execute(this.selectedBoardId as any, {
+      await updateBoard.execute(this.selectedBoardId as Id<"Board">, {
         autoCloseDays: this.autoCloseDays,
         autoCloseEnabled: this.autoCloseEnabled,
       });
@@ -241,9 +243,10 @@ export class SettingsPage extends LitElement {
 
             <div class="toggle-row">
               <span class="toggle-label">Enable auto-close</span>
-              <div class="toggle-switch ${this.autoCloseEnabled
-                ? "active"
-                : ""}"
+              <div class=${classMap({
+                "toggle-switch": true,
+                active: this.autoCloseEnabled,
+              })}
                 @click="${() => {
                   this.autoCloseEnabled = !this.autoCloseEnabled;
                 }}">

@@ -1,3 +1,5 @@
+export const CURRENT_USER = { name: "Alex G.", initials: "AG" };
+
 export const MANDATORY_STATES = ["Not now", "Maybe?", "Done"] as const;
 
 export const LOCAL_STORAGE_KEYS = {

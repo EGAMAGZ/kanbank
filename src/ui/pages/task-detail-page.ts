@@ -1,4 +1,6 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { when } from "lit/directives/when.js";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import { DexieTaskRepository } from "../../infrastructure/repositories/dexie-task.repository.js";
@@ -27,9 +29,16 @@ import type { Step } from "../../domain/entities/step.entity.js";
 import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
 import type { State } from "../../domain/entities/state.entity.js";
 import type { Board } from "../../domain/entities/board.entity.js";
-import type { Id } from "../../shared/types/index.js";
-import { CURRENT_USER } from "../../ui/components/task-card.js";
+import type { Id } from "../../shared/types/id.js";
+import {
+  formatShortDate,
+  formatStampDate,
+  relativeTime,
+  inactiveDays,
+} from "../../shared/utils/dates.js";
+import { CURRENT_USER } from "../../shared/constants/defaults.js";
 import "../../ui/components/wysiwyg-editor.js";
+import type { WysiwygEditor } from "../../ui/components/wysiwyg-editor.js";
 import "../../ui/components/done-stamp.js";
 import "../../ui/components/not-now-stamp.js";
 import "../../ui/components/step-checklist.js";
@@ -763,7 +772,9 @@ export class TaskDetailPage extends LitElement {
     this.editDueDate = this.task.dueDate ?? "";
     this.editDescription = this.task.description ?? "";
     setTimeout(() => {
-      const editor = this.renderRoot.querySelector("#desc-editor") as any;
+      const editor = this.renderRoot.querySelector(
+        "#desc-editor",
+      ) as WysiwygEditor | null;
       if (editor && editor.setValue) {
         editor.setValue(this.editDescription);
       }
@@ -960,7 +971,7 @@ export class TaskDetailPage extends LitElement {
       this.comments = await commentRepo.findByTask(this.task.id);
       const editor = this.renderRoot.querySelector(
         "#new-comment-editor",
-      ) as any;
+      ) as WysiwygEditor | null;
       if (editor && editor.setValue) editor.setValue("");
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to add comment";
@@ -1042,38 +1053,6 @@ export class TaskDetailPage extends LitElement {
     await this._loadTask();
   }
 
-  private _formatDate(dateStr: string): string {
-    const date = dateStr.includes("T")
-      ? new Date(dateStr)
-      : new Date(dateStr + "T12:00:00");
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-
-  private _stampDate(dateStr: string): string {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
-      .format(new Date(dateStr));
-  }
-
-  private _relativeTime(dateStr: string): string {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const days = Math.floor(diff / 86400000);
-    if (days === 0) return "today";
-    if (days === 1) return "yesterday";
-    return `${days}d ago`;
-  }
-
-  private _inactiveDays(dateStr: string): number {
-    const now = new Date();
-    const d = new Date(dateStr);
-    return Math.floor((now.getTime() - d.getTime()) / 86400000);
-  }
-
   render() {
     if (this.error) {
       return html`
@@ -1089,7 +1068,7 @@ export class TaskDetailPage extends LitElement {
       `;
     }
 
-    const inactive = this._inactiveDays(this.task.lastActivityAt);
+    const inactive = inactiveDays(this.task.lastActivityAt);
     const autoCloseMsg = inactive > 0
       ? `Moves to 'Not Now' in ${
         Math.max(0, 7 - inactive)
@@ -1113,7 +1092,7 @@ export class TaskDetailPage extends LitElement {
           ? html`
             <div class="not-now-notice">
               <span style="font-size:14px;">📬</span>
-              Auto-moved to "Not now" on ${this._formatDate(
+              Auto-moved to "Not now" on ${formatShortDate(
                 this.task.notNowSince,
               )}
             </div>
@@ -1122,15 +1101,20 @@ export class TaskDetailPage extends LitElement {
 
         <!-- Header -->
         <div class="header">
-          <button class="corner-btn gold-btn ${this.task.isGold
-            ? "active"
-            : ""}" @click="${this.toggleGold}" title="${`${
+          <button class=${classMap({
+            "corner-btn": true,
+            "gold-btn": true,
+            active: this.task.isGold,
+          })} @click="${this.toggleGold}" title="${`${
               this.task.isGold ? "★ Golden ticket" : "Mark as gold"
             } (${keycapLabel("⇧G")})`}">
             ${this.task.isGold ? "★" : "☆"}
           </button>
           <div class="header-left">
-            <div class="title-block ${this.task.isGold ? "gold" : ""}">
+            <div class=${classMap({
+              "title-block": true,
+              gold: this.task.isGold,
+            })}>
               ${currentState
                 ? html`<div class="state-bar" style="background:${
                   getStateColor(currentState)
@@ -1138,12 +1122,12 @@ export class TaskDetailPage extends LitElement {
                 : ""}
               ${this._isDone
                 ? html`<done-stamp date="${
-                  this._stampDate(this.task.updatedAt)
+                  formatStampDate(this.task.updatedAt)
                 }" author="Auto" bg-color="#166534"></done-stamp>`
                 : ""}
               ${!this.editingTaskDesc && this._isNotNow
                 ? html`
-                  <not-now-stamp date="${this._stampDate(
+                  <not-now-stamp date="${formatStampDate(
                     this.task.updatedAt,
                   )}" author="Auto"
                     bg-color="#8C8C8C"></not-now-stamp>
@@ -1155,18 +1139,25 @@ export class TaskDetailPage extends LitElement {
                     <span class="meta-item">#${String(this.task.seq)
                       .padStart(3, "0")}</span>
                     <div class="board-btn-wrap">
-                      <button class="meta-item board-btn ${this.task.isGold ? "gold-bg" : ""}" ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
+                      <button class=${classMap({
+                          "meta-item": true,
+                          "board-btn": true,
+                          "gold-bg": this.task.isGold,
+                        })} ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
                         ${this.boards.find(b => b.id === this.task!.boardId)?.title ?? "?"} ▾
                       </button>
-                      ${this._showBoardDropdown ? html`
-                        <div class="board-dropdown ${this.task.isGold ? "gold" : ""}">
+                      ${when(this._showBoardDropdown, () => html`
+                        <div class=${classMap({
+                          "board-dropdown": true,
+                          gold: this.task!.isGold,
+                        })}>
                           ${this.boards.map(b => html`
                             <button class="board-dd-option" @click="${() => this.selectBoard(b.id)}" ?disabled="${b.id === this.task!.boardId}">
                               ${b.title}${b.id === this.task!.boardId ? " ✓" : ""}
                             </button>
                           `)}
                         </div>
-                      ` : ""}
+                      `)}
                     </div>
                     ${this.task.category
                       ? html`<span class="meta-item cat">${this.task.category}</span>`
@@ -1231,10 +1222,10 @@ export class TaskDetailPage extends LitElement {
               </div>
               <div class="meta-row" style="margin:0;">
                 <span class="meta-avatar">${CURRENT_USER.initials}</span>
-                <span class="meta-item">created ${this._relativeTime(
+                <span class="meta-item">created ${relativeTime(
                   this.task.createdAt,
                 )}</span>
-                <span class="meta-item">updated ${this._relativeTime(
+                <span class="meta-item">updated ${relativeTime(
                   this.task.updatedAt,
                 )}</span>
                 ${this.editingTaskDesc
@@ -1248,7 +1239,7 @@ export class TaskDetailPage extends LitElement {
                   `
                   : this.task.dueDate
                   ? html`<span class="meta-item">due ${
-                    this._formatDate(this.task.dueDate)
+                    formatShortDate(this.task.dueDate)
                   }</span>`
                   : ""}
               </div>
@@ -1262,9 +1253,11 @@ export class TaskDetailPage extends LitElement {
               ></quick-actions>
             </div>
           </div>
-          <button class="corner-btn pin-btn ${this.task.pinned
-            ? "active"
-            : ""}" @click="${this.togglePin}" title="${`${
+          <button class=${classMap({
+            "corner-btn": true,
+            "pin-btn": true,
+            active: this.task.pinned,
+          })} @click="${this.togglePin}" title="${`${
               this.task.pinned ? "📌 Pinned" : "Pin task"
             } (${keycapLabel("⇧P")})`}">
             ${this.task.pinned ? "📌" : "📍"}
@@ -1320,7 +1313,7 @@ export class TaskDetailPage extends LitElement {
                         <div class="comment-author">
                           <span class="comment-avatar">${CURRENT_USER
                             .initials}</span>
-                          <span class="comment-date">${this._relativeTime(
+                          <span class="comment-date">${relativeTime(
                             c.createdAt,
                           )}</span>
                         </div>
@@ -1398,8 +1391,9 @@ export class TaskDetailPage extends LitElement {
                         : "✎"}</span>
                       <div class="timeline-body">
                         <div class="timeline-msg">${entry.message}</div>
-                        <div class="timeline-meta">${entry.userName} · ${this
-                          ._relativeTime(entry.timestamp)}</div>
+                        <div class="timeline-meta">${entry.userName} · ${relativeTime(
+                          entry.timestamp,
+                        )}</div>
                       </div>
                     </div>
                   `,

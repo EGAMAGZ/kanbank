@@ -20,14 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: denoland/setup-deno@v2
+      - uses: actions/setup-node@v4
         with:
-          deno-version: v2.x
+          node-version: 22
+          cache: npm
 
       - name: Build
         run: |
-          deno install
-          deno task build
+          npm ci
+          npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:

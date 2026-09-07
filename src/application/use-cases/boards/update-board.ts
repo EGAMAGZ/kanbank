@@ -1,3 +1,4 @@
+import { parseOrThrow } from "../../validation.js";
 import type { BoardRepository } from "../../../domain/repositories/board.repository.js";
 import {
   type UpdateBoardInput,
@@ -5,22 +6,16 @@ import {
 } from "../../dto/board.dto.js";
 import {
   EntityNotFoundError,
-  ValidationError,
 } from "../../../domain/errors/domain-errors.js";
-import { toISODate } from "../../../shared/types/index.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 
 export class UpdateBoardUseCase {
   constructor(private boardRepo: BoardRepository) {}
 
   async execute(id: Id<"Board">, input: UpdateBoardInput): Promise<void> {
-    const parsed = UpdateBoardSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues.map((i) => i.message).join(", "),
-      );
-    }
+    const parsed = parseOrThrow(UpdateBoardSchema, input);
 
     const board = await this.boardRepo.findById(id);
     if (!board) {
@@ -28,10 +23,10 @@ export class UpdateBoardUseCase {
     }
 
     await this.boardRepo.update(id, {
-      ...parsed.data,
+      ...parsed,
       updatedAt: toISODate(),
     });
 
-    eventBus.publish("board.updated", { id, ...parsed.data });
+    eventBus.publish("board.updated", { id, ...parsed });
   }
 }

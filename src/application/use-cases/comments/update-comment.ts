@@ -1,3 +1,4 @@
+import { parseOrThrow } from "../../validation.js";
 import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import {
@@ -6,11 +7,10 @@ import {
 } from "../../dto/comment.dto.js";
 import {
   EntityNotFoundError,
-  ValidationError,
 } from "../../../domain/errors/domain-errors.js";
-import { toISODate } from "../../../shared/types/index.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 
 export class UpdateCommentUseCase {
   constructor(
@@ -19,12 +19,7 @@ export class UpdateCommentUseCase {
   ) {}
 
   async execute(id: Id<"Comment">, input: UpdateCommentInput): Promise<void> {
-    const parsed = UpdateCommentSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues.map((i) => i.message).join(", "),
-      );
-    }
+    const parsed = parseOrThrow(UpdateCommentSchema, input);
 
     const comment = await this.commentRepo.findById(id);
     if (!comment) {
@@ -33,7 +28,7 @@ export class UpdateCommentUseCase {
 
     const now = toISODate();
     await this.commentRepo.update(id, {
-      markdown: parsed.data.markdown,
+      markdown: parsed.markdown,
       updatedAt: now,
     });
 

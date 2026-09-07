@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { idSchema } from "./id-schema.js";
+
+const taskId = idSchema<"Task">();
 
 export const AddCommentSchema = z.object({
-  taskId: z.string(),
+  taskId,
   markdown: z.string().min(1).max(50000),
 });
 
