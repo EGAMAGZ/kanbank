@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { State } from "../../domain/entities/state.entity.js";
 
@@ -123,7 +124,7 @@ export class StateSelector extends LitElement {
           const color = getColor(state);
           return html`
             <div
-              class="state-item ${isActive ? "active" : ""}"
+              class=${classMap({ "state-item": true, active: isActive })}
               role="option"
               aria-selected="${isActive}"
               tabindex="${isActive ? "0" : "-1"}"

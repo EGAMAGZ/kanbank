@@ -5,7 +5,7 @@ import {
   EntityNotFoundError,
   ImageStorageError,
 } from "../../../domain/errors/domain-errors.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 import type { ImageRef } from "../../../domain/value-objects/image-ref.js";
 
 export class AttachImageUseCase {

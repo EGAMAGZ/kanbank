@@ -1,32 +1,28 @@
+import { parseOrThrow } from "../../validation.js";
 import {
   type CreateTimelineEntryInput,
   CreateTimelineEntrySchema,
 } from "../../dto/timeline.dto.js";
-import { ValidationError } from "../../../domain/errors/domain-errors.js";
 import type { TimelineRepository } from "../../../domain/repositories/timeline.repository.js";
 import { createTimelineEntry } from "../../../domain/entities/timeline-entry.entity.js";
-import { generateId, toISODate } from "../../../shared/types/index.js";
+import { generateId } from "../../../shared/types/id.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 
 export class AddTimelineEntryUseCase {
   constructor(private timelineRepo: TimelineRepository) {}
 
   async execute(input: CreateTimelineEntryInput): Promise<string> {
-    const parsed = CreateTimelineEntrySchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues.map((i) => i.message).join(", "),
-      );
-    }
+    const parsed = parseOrThrow(CreateTimelineEntrySchema, input);
     const entry = createTimelineEntry({
       id: generateId(),
-      taskId: parsed.data.taskId as any,
-      type: parsed.data.type,
-      fromStateId: parsed.data.fromStateId as any,
-      toStateId: parsed.data.toStateId as any,
-      userId: parsed.data.userId,
-      userName: parsed.data.userName,
-      message: parsed.data.message,
+      taskId: parsed.taskId,
+      type: parsed.type,
+      fromStateId: parsed.fromStateId,
+      toStateId: parsed.toStateId,
+      userId: parsed.userId,
+      userName: parsed.userName,
+      message: parsed.message,
       timestamp: toISODate(),
     });
     const id = await this.timelineRepo.create(entry);

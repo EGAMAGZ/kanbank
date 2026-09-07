@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
 import type { TimelineRepository } from "../../domain/repositories/timeline.repository.js";
 import { db } from "../database/dexie-db.js";

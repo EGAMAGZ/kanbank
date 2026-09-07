@@ -1,4 +1,5 @@
-import type { Id, Timestamped } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
+import type { Timestamped } from "../../shared/types/common.js";
 import type { ImageRef } from "../value-objects/image-ref.js";
 
 export interface Task extends Timestamped {

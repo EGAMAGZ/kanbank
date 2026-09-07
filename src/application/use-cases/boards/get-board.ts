@@ -2,7 +2,7 @@ import type { BoardRepository } from "../../../domain/repositories/board.reposit
 import type { StateRepository } from "../../../domain/repositories/state.repository.js";
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import { EntityNotFoundError } from "../../../domain/errors/domain-errors.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 import type { Board } from "../../../domain/entities/board.entity.js";
 import type { State } from "../../../domain/entities/state.entity.js";
 import type { Task } from "../../../domain/entities/task.entity.js";

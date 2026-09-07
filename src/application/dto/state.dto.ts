@@ -1,7 +1,11 @@
 import { z } from "zod";
+import { idSchema } from "./id-schema.js";
+
+const boardId = idSchema<"Board">();
+const stateId = idSchema<"State">();
 
 export const CreateStateSchema = z.object({
-  boardId: z.string(),
+  boardId,
   title: z.string().min(1).max(100),
   color: z.string().optional(),
   order: z.number().int().min(0).optional(),
@@ -18,8 +22,8 @@ export const UpdateStateSchema = z.object({
 export type UpdateStateInput = z.infer<typeof UpdateStateSchema>;
 
 export const ReorderStatesSchema = z.object({
-  boardId: z.string(),
-  stateIds: z.array(z.string()).min(1),
+  boardId,
+  stateIds: z.array(stateId).min(1),
 });
 
 export type ReorderStatesInput = z.infer<typeof ReorderStatesSchema>;

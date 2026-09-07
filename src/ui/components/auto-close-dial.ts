@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("auto-close-dial")
@@ -245,7 +246,7 @@ export class AutoCloseDial extends LitElement {
             (t) =>
               html`
                 <div
-                  class="tick ${t.major ? "major" : ""}"
+                  class=${classMap({ tick: true, major: t.major })}
                   style="transform: rotate(${t.deg}deg)"
                 ></div>
               `,
@@ -261,9 +262,10 @@ export class AutoCloseDial extends LitElement {
           : "Off"}</div>
         <div class="dial-toggle">
           <span class="toggle-label">Auto-close</span>
-          <div class="toggle-switch ${this.enabled
-            ? "active"
-            : ""}" @click="${this._toggle}">
+          <div class=${classMap({
+            "toggle-switch": true,
+            active: this.enabled,
+          })} @click="${this._toggle}">
             <div class="toggle-knob"></div>
           </div>
         </div>

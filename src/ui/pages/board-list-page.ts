@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
 import { liveQuery } from "dexie";
@@ -422,7 +423,10 @@ export class BoardListPage extends LitElement {
         ${this.boards.map((board, i) => {
           const color = this.getCardColor(i);
           return html`
-            <div class="board-card${this.selectedIndex === i ? " selected" : ""}"
+            <div class=${classMap({
+              "board-card": true,
+              selected: this.selectedIndex === i,
+            })}
               @click="${() => this.navigateToBoard(board.id)}">
               <div class="color-strip" style="background:${color}"></div>
               <button class="card-delete-btn"
@@ -464,7 +468,10 @@ export class BoardListPage extends LitElement {
             </div>
           `
           : html`
-            <div class="board-card--new${this.selectedIndex === this.boards.length ? " selected" : ""}"
+            <div class=${classMap({
+              "board-card--new": true,
+              selected: this.selectedIndex === this.boards.length,
+            })}
               @click="${() => { this.showCreateForm = true; this.selectedIndex = this.boards.length; }}">
               <span class="new-icon">+</span>
               <span class="new-label">New board</span>

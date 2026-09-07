@@ -5,8 +5,8 @@ import {
   InvalidStateTransitionError,
 } from "../../../domain/errors/domain-errors.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
-import { toISODate } from "../../../shared/types/index.js";
-import type { Id } from "../../../shared/types/index.js";
+import { toISODate } from "../../../shared/utils/dates.js";
+import type { Id } from "../../../shared/types/id.js";
 
 export class DeleteStateUseCase {
   constructor(

@@ -1,7 +1,11 @@
 import { z } from "zod";
+import { idSchema } from "./id-schema.js";
+
+const taskId = idSchema<"Task">();
+const stateId = idSchema<"State">();
 
 export const CreateTimelineEntrySchema = z.object({
-  taskId: z.string(),
+  taskId,
   type: z.enum([
     "created",
     "moved",
@@ -13,8 +17,8 @@ export const CreateTimelineEntrySchema = z.object({
     "pinned",
     "subscribed",
   ]),
-  fromStateId: z.string().optional(),
-  toStateId: z.string().optional(),
+  fromStateId: stateId.optional(),
+  toStateId: stateId.optional(),
   userId: z.string(),
   userName: z.string(),
   message: z.string(),

@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { Comment } from "../entities/comment.entity.js";
 
 export interface CommentRepository {

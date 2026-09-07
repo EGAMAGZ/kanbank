@@ -5,7 +5,7 @@ import type { StepRepository } from "../../../domain/repositories/step.repositor
 import type { TimelineRepository } from "../../../domain/repositories/timeline.repository.js";
 import { EntityNotFoundError } from "../../../domain/errors/domain-errors.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
-import type { Id } from "../../../shared/types/index.js";
+import type { Id } from "../../../shared/types/id.js";
 
 export class DeleteTaskUseCase {
   constructor(

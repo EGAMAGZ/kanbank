@@ -1,7 +1,9 @@
+import { parseOrThrow } from "../../validation.js";
 import type { CommentRepository } from "../../../domain/repositories/comment.repository.js";
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import { createComment } from "../../../domain/entities/comment.entity.js";
-import { generateId, toISODate } from "../../../shared/types/index.js";
+import { generateId } from "../../../shared/types/id.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 import {
   type AddCommentInput,
@@ -9,7 +11,6 @@ import {
 } from "../../dto/comment.dto.js";
 import {
   EntityNotFoundError,
-  ValidationError,
 } from "../../../domain/errors/domain-errors.js";
 
 export class AddCommentUseCase {
@@ -19,16 +20,11 @@ export class AddCommentUseCase {
   ) {}
 
   async execute(input: AddCommentInput): Promise<string> {
-    const parsed = AddCommentSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues.map((i) => i.message).join(", "),
-      );
-    }
+    const parsed = parseOrThrow(AddCommentSchema, input);
 
-    const task = await this.taskRepo.findById(parsed.data.taskId as any);
+    const task = await this.taskRepo.findById(parsed.taskId);
     if (!task) {
-      throw new EntityNotFoundError("Task", parsed.data.taskId);
+      throw new EntityNotFoundError("Task", parsed.taskId);
     }
 
     const now = toISODate();
@@ -36,15 +32,15 @@ export class AddCommentUseCase {
 
     const comment = createComment({
       id: commentId,
-      taskId: parsed.data.taskId as any,
-      markdown: parsed.data.markdown,
+      taskId: parsed.taskId,
+      markdown: parsed.markdown,
       createdAt: now,
       updatedAt: now,
     });
 
     await this.commentRepo.create(comment);
 
-    await this.taskRepo.update(parsed.data.taskId as any, {
+    await this.taskRepo.update(parsed.taskId, {
       lastActivityAt: now,
       updatedAt: now,
     });

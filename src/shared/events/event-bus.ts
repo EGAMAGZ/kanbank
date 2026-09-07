@@ -1,30 +1,36 @@
 import { Subject, Subscription } from "rxjs";
-import type { DomainEventName } from "../types/events.js";
+import type { DomainEventMap, DomainEventName } from "../types/events.js";
 
-export interface DomainEvent<T = unknown> {
-  name: DomainEventName;
-  payload: T;
+export interface DomainEvent<N extends DomainEventName> {
+  name: N;
+  payload: DomainEventMap[N];
   timestamp: string;
 }
 
-type EventHandler<T = unknown> = (event: DomainEvent<T>) => void;
-
 class DomainEventBusImpl {
-  private subjects = new Map<string, Subject<DomainEvent<unknown>>>();
+  private subjects = new Map<string, Subject<unknown>>();
 
-  publish<T>(name: DomainEventName, payload: T): void {
+  publish<N extends DomainEventName>(
+    name: N,
+    payload: DomainEventMap[N],
+  ): void {
     const subject = this.getOrCreate(name);
     subject.next({ name, payload, timestamp: new Date().toISOString() });
   }
 
-  subscribe<T>(name: DomainEventName, handler: EventHandler<T>): Subscription {
+  subscribe<N extends DomainEventName>(
+    name: N,
+    handler: (event: DomainEvent<N>) => void,
+  ): Subscription {
     const subject = this.getOrCreate(name);
-    return subject.subscribe(handler as EventHandler<unknown>);
+    return subject.subscribe((event) =>
+      handler(event as DomainEvent<N>),
+    );
   }
 
-  private getOrCreate(name: string): Subject<DomainEvent<unknown>> {
+  private getOrCreate(name: string): Subject<unknown> {
     if (!this.subjects.has(name)) {
-      this.subjects.set(name, new Subject<DomainEvent<unknown>>());
+      this.subjects.set(name, new Subject<unknown>());
     }
     return this.subjects.get(name)!;
   }

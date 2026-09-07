@@ -1,4 +1,4 @@
-import type { Id } from "../../shared/types/index.js";
+import type { Id } from "../../shared/types/id.js";
 import type { ImageRef } from "../value-objects/image-ref.js";
 
 export interface ImageRepository {

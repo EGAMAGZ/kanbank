@@ -1,10 +1,10 @@
+import { parseOrThrow } from "../../validation.js";
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
 import { type MoveTaskInput, MoveTaskSchema } from "../../dto/task.dto.js";
 import {
   EntityNotFoundError,
-  ValidationError,
 } from "../../../domain/errors/domain-errors.js";
-import { toISODate } from "../../../shared/types/index.js";
+import { toISODate } from "../../../shared/utils/dates.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 
 export interface MoveTaskOptions {
@@ -19,20 +19,15 @@ export class MoveTaskUseCase {
     input: MoveTaskInput,
     options?: MoveTaskOptions,
   ): Promise<void> {
-    const parsed = MoveTaskSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues.map((i) => i.message).join(", "),
-      );
-    }
+    const parsed = parseOrThrow(MoveTaskSchema, input);
 
-    const task = await this.taskRepo.findById(parsed.data.taskId as any);
+    const task = await this.taskRepo.findById(parsed.taskId);
     if (!task) {
-      throw new EntityNotFoundError("Task", parsed.data.taskId);
+      throw new EntityNotFoundError("Task", parsed.taskId);
     }
 
     const now = toISODate();
-    const stateChanged = parsed.data.newStateId !== task.stateId;
+    const stateChanged = parsed.newStateId !== task.stateId;
     const targetIsNotNow = options?.targetIsNotNow ?? false;
 
     const taskUpdate: Record<string, unknown> = {
@@ -47,18 +42,18 @@ export class MoveTaskUseCase {
     }
 
     await this.taskRepo.move(
-      parsed.data.taskId as any,
-      parsed.data.newStateId as any,
-      parsed.data.order,
+      parsed.taskId,
+      parsed.newStateId,
+      parsed.order,
     );
 
-    await this.taskRepo.update(parsed.data.taskId as any, taskUpdate);
+    await this.taskRepo.update(parsed.taskId, taskUpdate);
 
     eventBus.publish("task.moved", {
-      taskId: parsed.data.taskId,
+      taskId: parsed.taskId,
       fromStateId: task.stateId,
-      toStateId: parsed.data.newStateId,
-      order: parsed.data.order,
+      toStateId: parsed.newStateId,
+      order: parsed.order,
     });
   }
 }

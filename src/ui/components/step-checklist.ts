@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { Step } from "../../domain/entities/step.entity.js";
 
@@ -230,7 +231,10 @@ export class StepChecklist extends LitElement {
           : this.steps.map((step) =>
             html`
               <div class="step">
-                <div class="step-checkbox ${step.checked ? "checked" : ""}"
+                <div class=${classMap({
+                  "step-checkbox": true,
+                  checked: step.checked,
+                })}
                   data-id="${step.id}"
                   @click="${this._toggleStep}"
                 ></div>
@@ -244,7 +248,10 @@ export class StepChecklist extends LitElement {
                     <button class="edit-btn delete" data-id="${step.id}" @click="${this._deleteStep}">✕</button>
                   `
                   : html`
-                    <span class="step-text ${step.checked ? "done" : ""}"
+                    <span class=${classMap({
+                      "step-text": true,
+                      done: step.checked,
+                    })}
                       @click="${() => this._startEditStep(step.id)}">${step.text}</span>
                   `}
               </div>
