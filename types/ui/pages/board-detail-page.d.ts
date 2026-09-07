@@ -30,6 +30,7 @@ export declare class BoardDetailPage extends LitElement {
     private _handleCreateTaskShortcut;
     private handleAutoCreateState;
     onPageEnter(): Promise<void>;
+    protected updated(changedProperties: Map<PropertyKey, unknown>): void;
     private getMandatoryOrder;
     private getSortedStates;
     private getMaxTaskCount;

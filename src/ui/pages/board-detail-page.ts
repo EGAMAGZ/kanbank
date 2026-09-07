@@ -853,16 +853,8 @@ export class BoardDetailPage extends LitElement {
         stateIds: newStateIds,
       });
       await this.loadBoard();
-      const states = this.detail?.states ?? [];
-      const created = states.find((s) => s.id === newStateId);
-      if (created) {
-        this.startEditState(created);
-        await this.updateComplete;
-        const input = this.renderRoot.querySelector(
-          ".state-edit-input",
-        ) as HTMLInputElement;
-        if (input) input.focus();
-      }
+      const created = this.detail?.states.find((s) => s.id === newStateId);
+      if (created) this.startEditState(created);
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Failed to create state";
     }
@@ -872,6 +864,24 @@ export class BoardDetailPage extends LitElement {
     this.focusedColIdx = -1;
     this.focusedTaskIdx = -1;
     await this.loadBoard();
+  }
+
+  protected updated(changedProperties: Map<PropertyKey, unknown>): void {
+    if (changedProperties.has("showTaskModal") && this.showTaskModal) {
+      (this.renderRoot.querySelector(
+        "#modal-title",
+      ) as HTMLInputElement)?.focus();
+    }
+    if (changedProperties.has("editingBoardTitle") && this.editingBoardTitle) {
+      (this.renderRoot.querySelector(
+        ".header-title-input",
+      ) as HTMLInputElement)?.focus();
+    }
+    if (changedProperties.has("editingStateId") && this.editingStateId) {
+      (this.renderRoot.querySelector(
+        ".state-edit-input",
+      ) as HTMLInputElement)?.focus();
+    }
   }
 
   private getMandatoryOrder(): {
@@ -965,6 +975,7 @@ export class BoardDetailPage extends LitElement {
   }
 
   private handleKeydown(e: KeyboardEvent): void {
+    if (this.getAttribute("state") !== "active") return;
     if (!this.detail) return;
     if (isEditableTarget(e)) return;
 
@@ -1248,6 +1259,12 @@ export class BoardDetailPage extends LitElement {
       } else {
         this.modalTitle = "";
         this.modalDescription = description ?? "";
+      }
+      if (mode !== "close") {
+        await this.updateComplete;
+        (this.renderRoot.querySelector(
+          "#modal-title",
+        ) as HTMLInputElement)?.focus();
       }
       await this.loadBoard();
     } catch (e) {
@@ -1567,7 +1584,10 @@ export class BoardDetailPage extends LitElement {
                 @keydown="${(e: KeyboardEvent) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    this.handleModalCreate(maybeState.id, "close");
+                    this.handleModalCreate(
+                      maybeState.id,
+                      mod(e) && e.shiftKey ? "another" : "close",
+                    );
                   }
                   if (e.key === "Escape") this.closeTaskModal();
                 }}"
