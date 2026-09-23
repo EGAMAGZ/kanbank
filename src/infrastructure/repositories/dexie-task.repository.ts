@@ -45,6 +45,7 @@ export class DexieTaskRepository implements TaskRepository {
         | "stateId"
         | "images"
         | "lastActivityAt"
+        | "stateChangedAt"
         | "updatedAt"
         | "pinned"
         | "dueDate"

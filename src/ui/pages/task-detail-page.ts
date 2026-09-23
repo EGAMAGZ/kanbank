@@ -56,7 +56,7 @@ const stateRepo = new DexieStateRepository();
 const boardRepo = new DexieBoardRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
-const updateTask = new UpdateTaskUseCase(taskRepo);
+const updateTask = new UpdateTaskUseCase(taskRepo, stateRepo);
 const deleteTask = new DeleteTaskUseCase(
   taskRepo,
   commentRepo,
@@ -1122,13 +1122,13 @@ export class TaskDetailPage extends LitElement {
                 : ""}
               ${this._isDone
                 ? html`<done-stamp date="${
-                  formatStampDate(this.task.updatedAt)
+                  formatStampDate(this.task.stateChangedAt ?? this.task.updatedAt)
                 }" author="Auto" bg-color="#166534"></done-stamp>`
                 : ""}
               ${!this.editingTaskDesc && this._isNotNow
                 ? html`
                   <not-now-stamp date="${formatStampDate(
-                    this.task.updatedAt,
+                    this.task.stateChangedAt ?? this.task.updatedAt,
                   )}" author="Auto"
                     bg-color="#8C8C8C"></not-now-stamp>
                 `

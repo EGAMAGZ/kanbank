@@ -85,3 +85,11 @@ db.version(6).stores({
     await tx.table("tasks").update(t.id, { seq });
   }
 });
+
+db.version(7).stores({}).upgrade((tx) => {
+  return tx.table("tasks").toCollection().modify((t: any) => {
+    if (!t.stateChangedAt) {
+      t.stateChangedAt = t.updatedAt ?? t.createdAt ?? null;
+    }
+  });
+});

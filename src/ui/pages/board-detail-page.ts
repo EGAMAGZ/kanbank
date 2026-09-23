@@ -41,7 +41,7 @@ const taskRepo = new DexieTaskRepository();
 const timelineRepo = new DexieTimelineRepository();
 const getBoard = new GetBoardUseCase(boardRepo, stateRepo, taskRepo);
 const createTask = new CreateTaskUseCase(taskRepo, timelineRepo);
-const moveTask = new MoveTaskUseCase(taskRepo);
+const moveTask = new MoveTaskUseCase(taskRepo, stateRepo);
 const autoDiscardCheck = new AutoDiscardCheckUseCase(taskRepo, moveTask);
 const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
@@ -1314,7 +1314,7 @@ export class BoardDetailPage extends LitElement {
           isDone,
           () => html`
             <done-stamp date="${formatDate(
-              task.updatedAt,
+              task.stateChangedAt ?? task.updatedAt,
             )}" author="${CURRENT_USER.initials}"
               bg-color="#166534"></done-stamp>
           `,
@@ -1323,7 +1323,7 @@ export class BoardDetailPage extends LitElement {
           isNotNow,
           () => html`
             <not-now-stamp date="${formatDate(
-              task.notNowSince ?? task.updatedAt,
+              task.stateChangedAt ?? task.updatedAt,
             )}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}"
               bg-color="#8C8C8C"></not-now-stamp>
           `,

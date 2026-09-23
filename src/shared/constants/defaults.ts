@@ -2,6 +2,10 @@ export const CURRENT_USER = { name: "Alex G.", initials: "AG" };
 
 export const MANDATORY_STATES = ["Not now", "Maybe?", "Done"] as const;
 
+export function isUnpinState(title: string): boolean {
+  return title === "Not now" || title === "Done";
+}
+
 export const LOCAL_STORAGE_KEYS = {
   lastOpenedBoard: "kanbank:lastOpenedBoard",
   preferences: "kanbank:preferences",
