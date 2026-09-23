@@ -38,8 +38,9 @@ import "../../ui/components/activity-feed.js";
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
 const taskRepo = new DexieTaskRepository();
+const timelineRepo = new DexieTimelineRepository();
 const getBoard = new GetBoardUseCase(boardRepo, stateRepo, taskRepo);
-const createTask = new CreateTaskUseCase(taskRepo);
+const createTask = new CreateTaskUseCase(taskRepo, timelineRepo);
 const moveTask = new MoveTaskUseCase(taskRepo);
 const autoDiscardCheck = new AutoDiscardCheckUseCase(taskRepo, moveTask);
 const createState = new CreateStateUseCase(stateRepo);
@@ -49,7 +50,6 @@ const reorderStates = new ReorderStatesUseCase(stateRepo);
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
 const stepRepo = new DexieStepRepository();
-const timelineRepo = new DexieTimelineRepository();
 const updateBoard = new UpdateBoardUseCase(boardRepo);
 const deleteBoard = new DeleteBoardUseCase(
   boardRepo,

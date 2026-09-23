@@ -62,12 +62,14 @@ export class AppIndex extends LitElement {
     super.connectedCallback();
     document.addEventListener("keydown", this._handleGlobalKeydown);
     window.addEventListener("open-command-bar", this._handleOpenCmdBar);
+    window.addEventListener("toggle-pinned", this._handleTogglePinned);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener("keydown", this._handleGlobalKeydown);
     window.removeEventListener("open-command-bar", this._handleOpenCmdBar);
+    window.removeEventListener("toggle-pinned", this._handleTogglePinned);
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
@@ -81,6 +83,13 @@ export class AppIndex extends LitElement {
       return;
     }
 
+    const homeActive = document
+      .querySelector("board-list-page")
+      ?.getAttribute("state") === "active";
+    if (homeActive && ["KeyF", "KeyK", "KeyN", "KeyB"].includes(e.code)) {
+      return;
+    }
+
     if (e.code === "KeyK" && !e.shiftKey) {
       e.preventDefault();
       this._openCommandBar();
@@ -90,6 +99,12 @@ export class AppIndex extends LitElement {
     if (e.code === "KeyN" && !mod(e) && !e.shiftKey) {
       e.preventDefault();
       this.elementController.navigate("settings");
+      return;
+    }
+
+    if (e.code === "KeyF" && !mod(e) && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      this._openPinned();
       return;
     }
 
@@ -132,8 +147,14 @@ export class AppIndex extends LitElement {
     document.body.appendChild(this._jumpMenuEl);
   }
 
+  private _handleTogglePinned = (): void => {
+    this._openPinned();
+  };
+
   private _openPinned(): void {
-    const pinned = document.querySelector("pinned-stack") as PinnedStack | null;
+    const pinned = this.renderRoot.querySelector(
+      "pinned-stack",
+    ) as PinnedStack | null;
     if (pinned) {
       pinned.toggle();
     }
@@ -160,7 +181,7 @@ export class AppIndex extends LitElement {
               ._openJumpMenu}">Jump <keycap-el key="J"></keycap-el></span>
           <span class="cmd-hint"
             @click="${this
-              ._openPinned}">Pinned <keycap-el key="P"></keycap-el></span>
+              ._openPinned}">Pinned <keycap-el key="F"></keycap-el></span>
           <span class="cmd-hint"
             @click="${this
               ._openCommandBar}"><keycap-el key="K"></keycap-el></span>

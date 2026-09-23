@@ -721,7 +721,7 @@ export class TaskDetailPage extends LitElement {
       this.markAsDone();
       return;
     }
-    if (e.code === "KeyP" && e.shiftKey && !mod(e)) {
+    if (e.code === "KeyF" && e.shiftKey && !mod(e)) {
       e.preventDefault();
       this.togglePin();
       return;
@@ -1259,7 +1259,7 @@ export class TaskDetailPage extends LitElement {
             active: this.task.pinned,
           })} @click="${this.togglePin}" title="${`${
               this.task.pinned ? "📌 Pinned" : "Pin task"
-            } (${keycapLabel("⇧P")})`}">
+            } (${keycapLabel("⇧F")})`}">
             ${this.task.pinned ? "📌" : "📍"}
           </button>
         </div>
