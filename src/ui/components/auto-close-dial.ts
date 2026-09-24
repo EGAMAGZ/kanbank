@@ -110,48 +110,6 @@ export class AutoCloseDial extends LitElement {
       padding: var(--space-xs) var(--space-md);
       text-align: center;
     }
-
-    .dial-toggle {
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-    }
-
-    .toggle-label {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .toggle-switch {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      border: var(--line-thick) solid var(--color-black);
-      background: var(--color-white);
-      cursor: pointer;
-      transition: background var(--ease-brutal);
-    }
-
-    .toggle-switch.active {
-      background: var(--color-accent);
-    }
-
-    .toggle-knob {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 16px;
-      height: 16px;
-      background: var(--color-white);
-      border: 2px solid var(--color-black);
-      transition: left 0.15s ease-out;
-    }
-
-    .toggle-switch.active .toggle-knob {
-      left: 22px;
-    }
   `;
 
   private _maxValue = 30;
@@ -160,7 +118,6 @@ export class AutoCloseDial extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._buildTicks();
-    this._loadValue();
   }
 
   private _buildTicks(): void {
@@ -183,37 +140,6 @@ export class AutoCloseDial extends LitElement {
     return Math.max(0, Math.min(this._maxValue, val));
   }
 
-  private _loadValue(): void {
-    const raw = localStorage.getItem("kanbank:autoDiscardDays");
-    if (raw !== null) {
-      const n = Number(raw);
-      if (Number.isFinite(n) && n > 0) {
-        this.value = n;
-        this.enabled = true;
-        return;
-      }
-    }
-    this.value = 7;
-    this.enabled = false;
-  }
-
-  private _saveValue(): void {
-    if (this.enabled && this.value > 0) {
-      localStorage.setItem("kanbank:autoDiscardDays", String(this.value));
-    } else {
-      localStorage.removeItem("kanbank:autoDiscardDays");
-    }
-  }
-
-  private _toggle(): void {
-    this.enabled = !this.enabled;
-    if (!this.enabled) {
-      localStorage.removeItem("kanbank:autoDiscardDays");
-    } else {
-      this._saveValue();
-    }
-  }
-
   private _handleDialClick(e: MouseEvent): void {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
@@ -225,8 +151,6 @@ export class AutoCloseDial extends LitElement {
     if (deg > 135) deg = 135;
     const val = this._degToValue(deg);
     this.value = val;
-    this.enabled = true;
-    this._saveValue();
     this.dispatchEvent(
       new CustomEvent("dial-change", {
         detail: { value: val },
@@ -260,15 +184,6 @@ export class AutoCloseDial extends LitElement {
         <div class="dial-value">${this.enabled
           ? `${this.value} days`
           : "Off"}</div>
-        <div class="dial-toggle">
-          <span class="toggle-label">Auto-close</span>
-          <div class=${classMap({
-            "toggle-switch": true,
-            active: this.enabled,
-          })} @click="${this._toggle}">
-            <div class="toggle-knob"></div>
-          </div>
-        </div>
       </div>
     `;
   }

@@ -86,6 +86,7 @@ const deleteStep = new DeleteStepUseCase(stepRepo);
 const addTimeline = new AddTimelineEntryUseCase(timelineRepo);
 
 const STATE_COLORS: Record<string, string> = {
+  "Not now": "#8C8C8C",
   "Maybe?": "#FFFFFF",
 };
 
@@ -586,19 +587,6 @@ export class TaskDetailPage extends LitElement {
       background: var(--color-bg);
     }
 
-    .not-now-notice {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      border: 3px solid #555;
-      background: #eee;
-      padding: var(--space-sm);
-      margin-bottom: var(--space-md);
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-    }
-
     .task-card-wrapper {
       position: relative;
     }
@@ -1070,9 +1058,11 @@ export class TaskDetailPage extends LitElement {
     }
 
     const inactive = inactiveDays(this.task.lastActivityAt);
-    const autoCloseMsg = inactive > 0
+    const board = this.boards.find((b) => b.id === this.task!.boardId);
+    const autoCloseDays = board?.autoCloseEnabled ? board.autoCloseDays : null;
+    const autoCloseMsg = autoCloseDays !== null && inactive > 0
       ? `Moves to 'Not Now' in ${
-        Math.max(0, 7 - inactive)
+        Math.max(0, autoCloseDays - inactive)
       } days if there's no activity`
       : "";
     const currentState = this.states.find((s) => s.id === this.task!.stateId);
@@ -1086,18 +1076,6 @@ export class TaskDetailPage extends LitElement {
         <!-- Auto-close message -->
         ${autoCloseMsg
           ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>`
-          : ""}
-
-        <!-- Not now notice -->
-        ${this.task.notNowSince
-          ? html`
-            <div class="not-now-notice">
-              <span style="font-size:14px;">📬</span>
-              Auto-moved to "Not now" on ${formatShortDate(
-                this.task.notNowSince,
-              )}
-            </div>
-          `
           : ""}
 
         <!-- Header -->
