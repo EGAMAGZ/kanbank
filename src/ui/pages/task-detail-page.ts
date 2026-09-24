@@ -167,6 +167,9 @@ export class TaskDetailPage extends LitElement {
       display: block;
       height: 100%;
       overflow: hidden;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
     }
 
     .page-wrapper {
@@ -190,7 +193,7 @@ export class TaskDetailPage extends LitElement {
       font-family: var(--font-mono);
       font-size: var(--text-xs);
       font-weight: 700;
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       padding: var(--space-xs) var(--space-md);
       background: var(--color-white);
       transition: background var(--ease-brutal);
@@ -215,8 +218,8 @@ export class TaskDetailPage extends LitElement {
     .title-block {
       flex: 1;
       position: relative;
-      border: 4px solid var(--color-black);
-      box-shadow: 6px 6px 0 var(--color-black);
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
       padding: var(--space-lg);
       background: var(--color-white);
       min-width: 0;
@@ -239,7 +242,7 @@ export class TaskDetailPage extends LitElement {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 4px solid var(--color-black);
+      border: var(--line-thicker) solid var(--color-black);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -304,7 +307,7 @@ export class TaskDetailPage extends LitElement {
 
     .delete-task-btn {
       padding: var(--space-sm) var(--space-xl);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
       color: var(--color-error);
       cursor: pointer;
@@ -375,7 +378,7 @@ export class TaskDetailPage extends LitElement {
       align-items: center;
       gap: var(--space-sm);
       margin-bottom: var(--space-md);
-      border-bottom: 3px solid var(--color-black);
+      border-bottom: var(--line-thick) solid var(--color-black);
       padding-bottom: var(--space-xs);
     }
 
@@ -408,7 +411,7 @@ export class TaskDetailPage extends LitElement {
     .edit-form input {
       width: 100%;
       padding: var(--space-sm) var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       box-sizing: border-box;
       font-family: var(--font-body);
       font-size: var(--text-lg);
@@ -430,7 +433,7 @@ export class TaskDetailPage extends LitElement {
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
@@ -469,7 +472,7 @@ export class TaskDetailPage extends LitElement {
 
     .comment {
       padding: var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       margin-bottom: var(--space-md);
       background: var(--color-white);
       position: relative;
@@ -575,7 +578,7 @@ export class TaskDetailPage extends LitElement {
     }
 
     .add-comment-wrap {
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
     }
 
@@ -583,7 +586,7 @@ export class TaskDetailPage extends LitElement {
       display: flex;
       justify-content: flex-end;
       padding: var(--space-sm);
-      border-top: 3px solid var(--color-black);
+      border-top: var(--line-thick) solid var(--color-black);
       background: var(--color-bg);
     }
 
@@ -615,7 +618,7 @@ export class TaskDetailPage extends LitElement {
       left: 0;
       z-index: 100;
       min-width: 160px;
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
       box-shadow: 4px 4px 0 var(--color-black);
     }
@@ -1153,7 +1156,7 @@ export class TaskDetailPage extends LitElement {
                           if (e.key === "Enter") this.saveEditTask();
                           if (e.key === "Escape") this.cancelEditTask();
                         }}"
-                        style="width:100%;font-family:var(--font-display);font-weight:900;font-size:var(--text-2xl);border:3px solid var(--color-black);padding:var(--space-sm);margin-bottom:var(--space-sm);"
+                        style="width:100%;font-family:var(--font-display);font-weight:900;font-size:var(--text-2xl);border:var(--line-thick) solid var(--color-black);padding:var(--space-sm);margin-bottom:var(--space-sm);"
                       />
                     `
                     : html`
@@ -1211,7 +1214,7 @@ export class TaskDetailPage extends LitElement {
                   ? html`
                     <input type="date" .value="${this.editDueDate}"
                       @input="${(e: InputEvent) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
-                      style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-mono);font-size:var(--text-xs);"
+                      style="width:auto;padding:var(--space-xs) var(--space-sm);border:var(--line-thick) solid var(--color-black);font-family:var(--font-mono);font-size:var(--text-xs);"
                     />
                     <button class="btn btn-primary" @click="${this.saveEditTask}" style="margin-left:auto;">Save</button>
                     <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
@@ -1272,7 +1275,7 @@ export class TaskDetailPage extends LitElement {
                     ? html`
                       <div>
                         <textarea
-                          style="width:100%;min-height:80px;padding:var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
+                          style="width:100%;min-height:80px;padding:var(--space-sm);border:var(--line-thick) solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
                           .value="${this.editingCommentText}"
                           @input="${(e: InputEvent) => {
                             this.editingCommentText =
