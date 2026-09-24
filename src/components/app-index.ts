@@ -62,12 +62,14 @@ export class AppIndex extends LitElement {
     super.connectedCallback();
     document.addEventListener("keydown", this._handleGlobalKeydown);
     window.addEventListener("open-command-bar", this._handleOpenCmdBar);
+    window.addEventListener("toggle-pinned", this._handleTogglePinned);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener("keydown", this._handleGlobalKeydown);
     window.removeEventListener("open-command-bar", this._handleOpenCmdBar);
+    window.removeEventListener("toggle-pinned", this._handleTogglePinned);
   }
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
@@ -81,13 +83,14 @@ export class AppIndex extends LitElement {
       return;
     }
 
-    if (e.code === "KeyK" && !e.shiftKey) {
-      e.preventDefault();
-      this._openCommandBar();
+    const homeActive = document
+      .querySelector("board-list-page")
+      ?.getAttribute("state") === "active";
+    if (homeActive && e.code === "KeyB") {
       return;
     }
 
-    if (e.code === "KeyN" && !mod(e) && !e.shiftKey) {
+    if (e.code === "KeyS" && !mod(e) && !e.shiftKey) {
       e.preventDefault();
       this.elementController.navigate("settings");
       return;
@@ -132,8 +135,14 @@ export class AppIndex extends LitElement {
     document.body.appendChild(this._jumpMenuEl);
   }
 
+  private _handleTogglePinned = (): void => {
+    this._openPinned();
+  };
+
   private _openPinned(): void {
-    const pinned = document.querySelector("pinned-stack") as PinnedStack | null;
+    const pinned = this.renderRoot.querySelector(
+      "pinned-stack",
+    ) as PinnedStack | null;
     if (pinned) {
       pinned.toggle();
     }
@@ -153,17 +162,11 @@ export class AppIndex extends LitElement {
           @click="${() =>
             this.elementController.navigate(
               "settings",
-            )}">Settings <keycap-el key="N"></keycap-el></span>
+            )}">Settings <keycap-el key="S"></keycap-el></span>
         <div class="nav-right">
           <span class="cmd-hint"
             @click="${this
               ._openJumpMenu}">Jump <keycap-el key="J"></keycap-el></span>
-          <span class="cmd-hint"
-            @click="${this
-              ._openPinned}">Pinned <keycap-el key="P"></keycap-el></span>
-          <span class="cmd-hint"
-            @click="${this
-              ._openCommandBar}"><keycap-el key="K"></keycap-el></span>
         </div>
       </nav>
       <main role="main" tabindex="-1">

@@ -1,10 +1,12 @@
 import { parseOrThrow } from "../../validation.js";
 import type { TaskRepository } from "../../../domain/repositories/task.repository.js";
+import type { StateRepository } from "../../../domain/repositories/state.repository.js";
 import { type MoveTaskInput, MoveTaskSchema } from "../../dto/task.dto.js";
 import {
   EntityNotFoundError,
 } from "../../../domain/errors/domain-errors.js";
 import { toISODate } from "../../../shared/utils/dates.js";
+import { isUnpinState } from "../../../shared/constants/defaults.js";
 import { eventBus } from "../../../shared/events/event-bus.js";
 
 export interface MoveTaskOptions {
@@ -13,7 +15,10 @@ export interface MoveTaskOptions {
 }
 
 export class MoveTaskUseCase {
-  constructor(private taskRepo: TaskRepository) {}
+  constructor(
+    private taskRepo: TaskRepository,
+    private stateRepo: StateRepository,
+  ) {}
 
   async execute(
     input: MoveTaskInput,
@@ -30,10 +35,19 @@ export class MoveTaskUseCase {
     const stateChanged = parsed.newStateId !== task.stateId;
     const targetIsNotNow = options?.targetIsNotNow ?? false;
 
+    const targetState = await this.stateRepo.findById(parsed.newStateId);
+    const unpin = targetState ? isUnpinState(targetState.title) : false;
+
     const taskUpdate: Record<string, unknown> = {
       lastActivityAt: now,
       updatedAt: now,
     };
+    if (stateChanged) {
+      taskUpdate.stateChangedAt = now;
+    }
+    if (unpin && task.pinned) {
+      taskUpdate.pinned = false;
+    }
 
     if (stateChanged && targetIsNotNow && options?.autoDiscard) {
       taskUpdate.notNowSince = now;

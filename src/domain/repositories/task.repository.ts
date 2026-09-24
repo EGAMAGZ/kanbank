@@ -20,6 +20,7 @@ export interface TaskRepository {
         | "stateId"
         | "images"
         | "lastActivityAt"
+        | "stateChangedAt"
         | "updatedAt"
         | "pinned"
         | "dueDate"

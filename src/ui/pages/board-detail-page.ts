@@ -32,15 +32,17 @@ import { CURRENT_USER } from "../../shared/constants/defaults.js";
 import "../../ui/components/done-stamp.js";
 import "../../ui/components/not-now-stamp.js";
 import "../../ui/components/keycap.js";
+import "../components/bottom-bar.js";
 import { isEditableTarget, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/activity-feed.js";
 
 const boardRepo = new DexieBoardRepository();
 const stateRepo = new DexieStateRepository();
 const taskRepo = new DexieTaskRepository();
+const timelineRepo = new DexieTimelineRepository();
 const getBoard = new GetBoardUseCase(boardRepo, stateRepo, taskRepo);
-const createTask = new CreateTaskUseCase(taskRepo);
-const moveTask = new MoveTaskUseCase(taskRepo);
+const createTask = new CreateTaskUseCase(taskRepo, timelineRepo);
+const moveTask = new MoveTaskUseCase(taskRepo, stateRepo);
 const autoDiscardCheck = new AutoDiscardCheckUseCase(taskRepo, moveTask);
 const createState = new CreateStateUseCase(stateRepo);
 const updateState = new UpdateStateUseCase(stateRepo);
@@ -49,7 +51,6 @@ const reorderStates = new ReorderStatesUseCase(stateRepo);
 const commentRepo = new DexieCommentRepository();
 const imageRepo = new DexieImageRepository();
 const stepRepo = new DexieStepRepository();
-const timelineRepo = new DexieTimelineRepository();
 const updateBoard = new UpdateBoardUseCase(boardRepo);
 const deleteBoard = new DeleteBoardUseCase(
   boardRepo,
@@ -130,6 +131,9 @@ export class BoardDetailPage extends LitElement {
       display: block;
       height: 100%;
       overflow: hidden;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
     }
 
     .board-header {
@@ -262,7 +266,7 @@ export class BoardDetailPage extends LitElement {
 
     .col-bar:hover {
       transform: translate(-2px, -2px);
-      box-shadow: 5px 5px 0 var(--color-black);
+      box-shadow: var(--shadow-brutal);
     }
 
     .col-bar:active {
@@ -489,7 +493,7 @@ export class BoardDetailPage extends LitElement {
 
     .task-card.gold:hover {
       transform: rotate(-1deg) translate(-2px, -2px);
-      box-shadow: 10px 10px 0 var(--color-black);
+      box-shadow: var(--shadow-brutal-xl);
     }
 
     .task-card.focused {
@@ -656,11 +660,12 @@ export class BoardDetailPage extends LitElement {
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      z-index: 200;
+      padding-top: 15vh;
+      z-index: 1000;
     }
 
     .modal-card {
@@ -679,6 +684,8 @@ export class BoardDetailPage extends LitElement {
       font-size: var(--text-xl);
       font-weight: 900;
       letter-spacing: -0.03em;
+      border-bottom: var(--line-thicker) solid var(--color-black);
+      padding-bottom: var(--space-sm);
     }
 
     .modal-card label {
@@ -688,6 +695,7 @@ export class BoardDetailPage extends LitElement {
       margin-bottom: var(--space-xs);
       font-family: var(--font-mono);
       text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     .modal-card input,
@@ -1314,7 +1322,7 @@ export class BoardDetailPage extends LitElement {
           isDone,
           () => html`
             <done-stamp date="${formatDate(
-              task.updatedAt,
+              task.stateChangedAt ?? task.updatedAt,
             )}" author="${CURRENT_USER.initials}"
               bg-color="#166534"></done-stamp>
           `,
@@ -1323,7 +1331,7 @@ export class BoardDetailPage extends LitElement {
           isNotNow,
           () => html`
             <not-now-stamp date="${formatDate(
-              task.notNowSince ?? task.updatedAt,
+              task.stateChangedAt ?? task.updatedAt,
             )}" author="${task.notNowSince ? "System" : CURRENT_USER.initials}"
               bg-color="#8C8C8C"></not-now-stamp>
           `,
@@ -1647,6 +1655,7 @@ export class BoardDetailPage extends LitElement {
           </div>
         `
         : ""}
+      <bottom-bar></bottom-bar>
     `;
   }
 }

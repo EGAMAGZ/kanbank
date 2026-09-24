@@ -4,6 +4,13 @@ import type { TimelineRepository } from "../../domain/repositories/timeline.repo
 import { db } from "../database/dexie-db.js";
 
 export class DexieTimelineRepository implements TimelineRepository {
+  async findAll(): Promise<TimelineEntry[]> {
+    const entries = await db.timeline.toArray();
+    return entries.sort(
+      (a, b) => b.timestamp.localeCompare(a.timestamp),
+    );
+  }
+
   async findByTask(taskId: Id<"Task">): Promise<TimelineEntry[]> {
     return db.timeline.where("taskId").equals(taskId).reverse().sortBy(
       "timestamp",

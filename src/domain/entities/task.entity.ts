@@ -11,6 +11,7 @@ export interface Task extends Timestamped {
   description: string;
   images: ImageRef[];
   lastActivityAt: string;
+  stateChangedAt: string;
   pinned: boolean;
   dueDate: string | null;
   notNowSince: string | null;
@@ -28,6 +29,7 @@ export interface CreateTaskData {
   description?: string;
   images?: ImageRef[];
   lastActivityAt: string;
+  stateChangedAt?: string;
   createdAt: string;
   updatedAt: string;
   pinned?: boolean;
@@ -48,6 +50,7 @@ export function createTask(data: CreateTaskData): Task {
     description: data.description ?? "",
     images: data.images ?? [],
     lastActivityAt: data.lastActivityAt,
+    stateChangedAt: data.stateChangedAt ?? data.createdAt,
     pinned: data.pinned ?? false,
     dueDate: data.dueDate ?? null,
     notNowSince: data.notNowSince ?? null,

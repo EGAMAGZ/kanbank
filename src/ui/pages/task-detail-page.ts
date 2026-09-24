@@ -46,6 +46,7 @@ import "../../ui/components/attachment-list.js";
 import "../../ui/components/state-selector.js";
 import "../../ui/components/quick-actions.js";
 import "../../ui/components/keycap.js";
+import "../components/bottom-bar.js";
 import { isEditableTarget, keycapLabel, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/not-now-stamp.js";
 
@@ -56,7 +57,7 @@ const stateRepo = new DexieStateRepository();
 const boardRepo = new DexieBoardRepository();
 const stepRepo = new DexieStepRepository();
 const timelineRepo = new DexieTimelineRepository();
-const updateTask = new UpdateTaskUseCase(taskRepo);
+const updateTask = new UpdateTaskUseCase(taskRepo, stateRepo);
 const deleteTask = new DeleteTaskUseCase(
   taskRepo,
   commentRepo,
@@ -85,6 +86,7 @@ const deleteStep = new DeleteStepUseCase(stepRepo);
 const addTimeline = new AddTimelineEntryUseCase(timelineRepo);
 
 const STATE_COLORS: Record<string, string> = {
+  "Not now": "#8C8C8C",
   "Maybe?": "#FFFFFF",
 };
 
@@ -165,6 +167,9 @@ export class TaskDetailPage extends LitElement {
       display: block;
       height: 100%;
       overflow: hidden;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
     }
 
     .page-wrapper {
@@ -188,7 +193,7 @@ export class TaskDetailPage extends LitElement {
       font-family: var(--font-mono);
       font-size: var(--text-xs);
       font-weight: 700;
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       padding: var(--space-xs) var(--space-md);
       background: var(--color-white);
       transition: background var(--ease-brutal);
@@ -213,8 +218,8 @@ export class TaskDetailPage extends LitElement {
     .title-block {
       flex: 1;
       position: relative;
-      border: 4px solid var(--color-black);
-      box-shadow: 6px 6px 0 var(--color-black);
+      border: var(--line-thicker) solid var(--color-black);
+      box-shadow: var(--shadow-brutal-md);
       padding: var(--space-lg);
       background: var(--color-white);
       min-width: 0;
@@ -237,7 +242,7 @@ export class TaskDetailPage extends LitElement {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 4px solid var(--color-black);
+      border: var(--line-thicker) solid var(--color-black);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -302,7 +307,7 @@ export class TaskDetailPage extends LitElement {
 
     .delete-task-btn {
       padding: var(--space-sm) var(--space-xl);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
       color: var(--color-error);
       cursor: pointer;
@@ -373,7 +378,7 @@ export class TaskDetailPage extends LitElement {
       align-items: center;
       gap: var(--space-sm);
       margin-bottom: var(--space-md);
-      border-bottom: 3px solid var(--color-black);
+      border-bottom: var(--line-thick) solid var(--color-black);
       padding-bottom: var(--space-xs);
     }
 
@@ -406,7 +411,7 @@ export class TaskDetailPage extends LitElement {
     .edit-form input {
       width: 100%;
       padding: var(--space-sm) var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       box-sizing: border-box;
       font-family: var(--font-body);
       font-size: var(--text-lg);
@@ -428,7 +433,7 @@ export class TaskDetailPage extends LitElement {
 
     .btn {
       padding: var(--space-sm) var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       cursor: pointer;
       font-size: var(--text-sm);
       font-weight: 700;
@@ -467,7 +472,7 @@ export class TaskDetailPage extends LitElement {
 
     .comment {
       padding: var(--space-md);
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       margin-bottom: var(--space-md);
       background: var(--color-white);
       position: relative;
@@ -573,7 +578,7 @@ export class TaskDetailPage extends LitElement {
     }
 
     .add-comment-wrap {
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
     }
 
@@ -581,21 +586,8 @@ export class TaskDetailPage extends LitElement {
       display: flex;
       justify-content: flex-end;
       padding: var(--space-sm);
-      border-top: 3px solid var(--color-black);
+      border-top: var(--line-thick) solid var(--color-black);
       background: var(--color-bg);
-    }
-
-    .not-now-notice {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      border: 3px solid #555;
-      background: #eee;
-      padding: var(--space-sm);
-      margin-bottom: var(--space-md);
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
     }
 
     .task-card-wrapper {
@@ -626,7 +618,7 @@ export class TaskDetailPage extends LitElement {
       left: 0;
       z-index: 100;
       min-width: 160px;
-      border: 3px solid var(--color-black);
+      border: var(--line-thick) solid var(--color-black);
       background: var(--color-white);
       box-shadow: 4px 4px 0 var(--color-black);
     }
@@ -721,7 +713,7 @@ export class TaskDetailPage extends LitElement {
       this.markAsDone();
       return;
     }
-    if (e.code === "KeyP" && e.shiftKey && !mod(e)) {
+    if (e.code === "KeyF" && e.shiftKey && !mod(e)) {
       e.preventDefault();
       this.togglePin();
       return;
@@ -1069,9 +1061,11 @@ export class TaskDetailPage extends LitElement {
     }
 
     const inactive = inactiveDays(this.task.lastActivityAt);
-    const autoCloseMsg = inactive > 0
+    const board = this.boards.find((b) => b.id === this.task!.boardId);
+    const autoCloseDays = board?.autoCloseEnabled ? board.autoCloseDays : null;
+    const autoCloseMsg = autoCloseDays !== null && inactive > 0
       ? `Moves to 'Not Now' in ${
-        Math.max(0, 7 - inactive)
+        Math.max(0, autoCloseDays - inactive)
       } days if there's no activity`
       : "";
     const currentState = this.states.find((s) => s.id === this.task!.stateId);
@@ -1085,18 +1079,6 @@ export class TaskDetailPage extends LitElement {
         <!-- Auto-close message -->
         ${autoCloseMsg
           ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>`
-          : ""}
-
-        <!-- Not now notice -->
-        ${this.task.notNowSince
-          ? html`
-            <div class="not-now-notice">
-              <span style="font-size:14px;">📬</span>
-              Auto-moved to "Not now" on ${formatShortDate(
-                this.task.notNowSince,
-              )}
-            </div>
-          `
           : ""}
 
         <!-- Header -->
@@ -1122,13 +1104,13 @@ export class TaskDetailPage extends LitElement {
                 : ""}
               ${this._isDone
                 ? html`<done-stamp date="${
-                  formatStampDate(this.task.updatedAt)
+                  formatStampDate(this.task.stateChangedAt ?? this.task.updatedAt)
                 }" author="Auto" bg-color="#166534"></done-stamp>`
                 : ""}
               ${!this.editingTaskDesc && this._isNotNow
                 ? html`
                   <not-now-stamp date="${formatStampDate(
-                    this.task.updatedAt,
+                    this.task.stateChangedAt ?? this.task.updatedAt,
                   )}" author="Auto"
                     bg-color="#8C8C8C"></not-now-stamp>
                 `
@@ -1174,7 +1156,7 @@ export class TaskDetailPage extends LitElement {
                           if (e.key === "Enter") this.saveEditTask();
                           if (e.key === "Escape") this.cancelEditTask();
                         }}"
-                        style="width:100%;font-family:var(--font-display);font-weight:900;font-size:var(--text-2xl);border:3px solid var(--color-black);padding:var(--space-sm);margin-bottom:var(--space-sm);"
+                        style="width:100%;font-family:var(--font-display);font-weight:900;font-size:var(--text-2xl);border:var(--line-thick) solid var(--color-black);padding:var(--space-sm);margin-bottom:var(--space-sm);"
                       />
                     `
                     : html`
@@ -1232,7 +1214,7 @@ export class TaskDetailPage extends LitElement {
                   ? html`
                     <input type="date" .value="${this.editDueDate}"
                       @input="${(e: InputEvent) => { this.editDueDate = (e.target as HTMLInputElement).value; }}"
-                      style="width:auto;padding:var(--space-xs) var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-mono);font-size:var(--text-xs);"
+                      style="width:auto;padding:var(--space-xs) var(--space-sm);border:var(--line-thick) solid var(--color-black);font-family:var(--font-mono);font-size:var(--text-xs);"
                     />
                     <button class="btn btn-primary" @click="${this.saveEditTask}" style="margin-left:auto;">Save</button>
                     <button class="btn btn-cancel" @click="${this.cancelEditTask}">Cancel</button>
@@ -1259,7 +1241,7 @@ export class TaskDetailPage extends LitElement {
             active: this.task.pinned,
           })} @click="${this.togglePin}" title="${`${
               this.task.pinned ? "📌 Pinned" : "Pin task"
-            } (${keycapLabel("⇧P")})`}">
+            } (${keycapLabel("⇧F")})`}">
             ${this.task.pinned ? "📌" : "📍"}
           </button>
         </div>
@@ -1293,7 +1275,7 @@ export class TaskDetailPage extends LitElement {
                     ? html`
                       <div>
                         <textarea
-                          style="width:100%;min-height:80px;padding:var(--space-sm);border:3px solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
+                          style="width:100%;min-height:80px;padding:var(--space-sm);border:var(--line-thick) solid var(--color-black);font-family:var(--font-body);font-size:var(--text-sm);"
                           .value="${this.editingCommentText}"
                           @input="${(e: InputEvent) => {
                             this.editingCommentText =
@@ -1417,6 +1399,7 @@ export class TaskDetailPage extends LitElement {
           </div>
         </div>
       </div>
+      <bottom-bar></bottom-bar>
     `;
   }
 }

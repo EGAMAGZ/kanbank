@@ -8,6 +8,7 @@ import { UpdateBoardUseCase } from "../../application/use-cases/boards/update-bo
 import type { Board } from "../../domain/entities/board.entity.js";
 import type { Id } from "../../shared/types/id.js";
 import "../../ui/components/auto-close-dial.js";
+import "../components/bottom-bar.js";
 
 const boardRepo = new DexieBoardRepository();
 const listBoards = new ListBoardsUseCase(boardRepo);
@@ -275,6 +276,7 @@ export class SettingsPage extends LitElement {
             <p style="text-align:center;">No boards available. Create a board first.</p>
           </div>
         `}
+      <bottom-bar></bottom-bar>
     `;
   }
 }
