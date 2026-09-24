@@ -46,6 +46,7 @@ import "../../ui/components/attachment-list.js";
 import "../../ui/components/state-selector.js";
 import "../../ui/components/quick-actions.js";
 import "../../ui/components/keycap.js";
+import "../components/bottom-bar.js";
 import { isEditableTarget, keycapLabel, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/not-now-stamp.js";
 
@@ -1417,6 +1418,7 @@ export class TaskDetailPage extends LitElement {
           </div>
         </div>
       </div>
+      <bottom-bar></bottom-bar>
     `;
   }
 }

@@ -15,6 +15,7 @@ import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.
 import type { Id } from "../../shared/types/id.js";
 import { CURRENT_USER } from "../../shared/constants/defaults.js";
 import "../../ui/components/keycap.js";
+import "../components/bottom-bar.js";
 import { isEditableTarget } from "../helpers/shortcuts.js";
 
 const boardRepo = new DexieBoardRepository();
@@ -97,16 +98,10 @@ export class BoardListPage extends LitElement {
   private events: FeedEvent[] = [];
 
   @state()
-  private pinnedCount = 0;
-
-  @state()
   private selectedBoardId: string | null = null;
 
   @state()
   private showBoardSelector = false;
-
-  @state()
-  private showNotifications = false;
 
   @state()
   private activeIndex = 0;
@@ -515,52 +510,6 @@ export class BoardListPage extends LitElement {
       color: rgba(255, 255, 255, 0.7);
     }
 
-    .bottombar {
-      position: sticky;
-      bottom: var(--space-md);
-      display: flex;
-      gap: var(--space-sm);
-      justify-content: center;
-      padding-top: var(--space-md);
-      z-index: 3;
-    }
-
-    .bottom-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-sm);
-      background: var(--color-white);
-      border: var(--line-thick) solid var(--color-black);
-      box-shadow: var(--shadow-brutal);
-      color: var(--color-text);
-      font-size: var(--text-sm);
-      font-weight: 700;
-      padding: var(--space-xs) var(--space-md);
-      cursor: pointer;
-      transition: transform var(--ease-brutal), box-shadow var(--ease-brutal);
-      position: relative;
-    }
-
-    .bottom-btn:hover {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0 var(--color-black);
-      background: var(--color-accent);
-      color: var(--color-white);
-    }
-
-    .bottom-btn.dimmed {
-      opacity: 0.4;
-      box-shadow: none;
-    }
-
-    .bottom-btn.dimmed:hover {
-      opacity: 1;
-      background: var(--color-accent);
-      color: var(--color-white);
-      transform: none;
-      box-shadow: var(--shadow-brutal);
-    }
-
     /* ---- modals ---- */
 
     .modal-overlay {
@@ -664,14 +613,6 @@ export class BoardListPage extends LitElement {
       background: var(--color-accent);
     }
 
-    .notif-panel {
-      font-family: var(--font-mono);
-      font-size: var(--text-sm);
-      color: var(--color-text-3);
-      padding: var(--space-sm) var(--space-lg);
-      white-space: nowrap;
-    }
-
     @media (max-width: 900px) {
       .day-cols {
         grid-template-columns: 1fr;
@@ -717,7 +658,6 @@ export class BoardListPage extends LitElement {
 
   async onPageEnter(): Promise<void> {
     this.showBoardSelector = false;
-    this.showNotifications = false;
     this.activeIndex = 0;
   }
 
@@ -727,7 +667,6 @@ export class BoardListPage extends LitElement {
     boards: Board[],
   ): void {
     this.boards = boards;
-    this.pinnedCount = tasks.filter((t) => t.pinned).length;
 
     const taskById = new Map(tasks.map((t) => [t.id, t]));
     const boardById = new Map(boards.map((b) => [b.id, b]));
@@ -810,24 +749,10 @@ export class BoardListPage extends LitElement {
 
   private _openBoardSelector(): void {
     this.showBoardSelector = !this.showBoardSelector;
-    this.showNotifications = false;
   }
 
   private _selectBoard(boardId: string | null): void {
     this.selectedBoardId = boardId;
-    this.showBoardSelector = false;
-  }
-
-  private _togglePinned(): void {
-    window.dispatchEvent(new CustomEvent("toggle-pinned"));
-  }
-
-  private _openSearch(): void {
-    window.dispatchEvent(new CustomEvent("open-command-bar"));
-  }
-
-  private _toggleNotifications(): void {
-    this.showNotifications = !this.showNotifications;
     this.showBoardSelector = false;
   }
 
@@ -843,7 +768,6 @@ export class BoardListPage extends LitElement {
     this.boardTitle = "";
     this.showBoardModal = true;
     this.showBoardSelector = false;
-    this.showNotifications = false;
   }
 
   private _closeBoardModal(): void {
@@ -863,7 +787,6 @@ export class BoardListPage extends LitElement {
     this.cardBoardId = this.selectedBoardId ?? this.boards[0]?.id ?? null;
     this.showCardModal = true;
     this.showBoardSelector = false;
-    this.showNotifications = false;
   }
 
   private _closeCardModal(): void {
@@ -926,18 +849,6 @@ export class BoardListPage extends LitElement {
         e.preventDefault();
         this._openBoardModal();
         break;
-      case "KeyF":
-        e.preventDefault();
-        this._togglePinned();
-        break;
-      case "KeyK":
-        e.preventDefault();
-        this._openSearch();
-        break;
-      case "KeyN":
-        e.preventDefault();
-        this._toggleNotifications();
-        break;
       case "ArrowDown":
         this._selectActive(e, 1);
         break;
@@ -954,7 +865,6 @@ export class BoardListPage extends LitElement {
       }
       case "Escape":
         this.showBoardSelector = false;
-        this.showNotifications = false;
         if (this.showCardModal) this._closeCardModal();
         if (this.showBoardModal) this._closeBoardModal();
         break;
@@ -1139,29 +1049,7 @@ export class BoardListPage extends LitElement {
             : ""}
         </div>
 
-        <footer class="bottombar">
-          <button class=${classMap({
-            "bottom-btn": true,
-            dimmed: this.pinnedCount === 0,
-          })} @click="${this._togglePinned}">
-            Pinned <keycap-el key="F"></keycap-el>
-          </button>
-          <button class="bottom-btn" @click="${this._openSearch}">
-            Search <keycap-el key="K"></keycap-el>
-          </button>
-          <button class="bottom-btn" @click="${this._toggleNotifications}">
-            Notifications <keycap-el key="N"></keycap-el>
-            ${this.showNotifications
-              ? html`
-                <span style="position:relative;">
-                  <div class="popover" style="top:8px;right:0;left:auto;">
-                    <div class="notif-panel">You're all caught up</div>
-                  </div>
-                </span>
-              `
-              : ""}
-          </button>
-        </footer>
+        <bottom-bar></bottom-bar>
 
         ${this.showCardModal
           ? html`

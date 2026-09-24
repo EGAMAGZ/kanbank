@@ -86,25 +86,13 @@ export class AppIndex extends LitElement {
     const homeActive = document
       .querySelector("board-list-page")
       ?.getAttribute("state") === "active";
-    if (homeActive && ["KeyF", "KeyK", "KeyN", "KeyB"].includes(e.code)) {
+    if (homeActive && e.code === "KeyB") {
       return;
     }
 
-    if (e.code === "KeyK" && !e.shiftKey) {
-      e.preventDefault();
-      this._openCommandBar();
-      return;
-    }
-
-    if (e.code === "KeyN" && !mod(e) && !e.shiftKey) {
+    if (e.code === "KeyS" && !mod(e) && !e.shiftKey) {
       e.preventDefault();
       this.elementController.navigate("settings");
-      return;
-    }
-
-    if (e.code === "KeyF" && !mod(e) && !e.shiftKey && !e.altKey) {
-      e.preventDefault();
-      this._openPinned();
       return;
     }
 
@@ -174,17 +162,11 @@ export class AppIndex extends LitElement {
           @click="${() =>
             this.elementController.navigate(
               "settings",
-            )}">Settings <keycap-el key="N"></keycap-el></span>
+            )}">Settings <keycap-el key="S"></keycap-el></span>
         <div class="nav-right">
           <span class="cmd-hint"
             @click="${this
               ._openJumpMenu}">Jump <keycap-el key="J"></keycap-el></span>
-          <span class="cmd-hint"
-            @click="${this
-              ._openPinned}">Pinned <keycap-el key="F"></keycap-el></span>
-          <span class="cmd-hint"
-            @click="${this
-              ._openCommandBar}"><keycap-el key="K"></keycap-el></span>
         </div>
       </nav>
       <main role="main" tabindex="-1">

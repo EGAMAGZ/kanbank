@@ -32,6 +32,7 @@ import { CURRENT_USER } from "../../shared/constants/defaults.js";
 import "../../ui/components/done-stamp.js";
 import "../../ui/components/not-now-stamp.js";
 import "../../ui/components/keycap.js";
+import "../components/bottom-bar.js";
 import { isEditableTarget, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/activity-feed.js";
 
@@ -1647,6 +1648,7 @@ export class BoardDetailPage extends LitElement {
           </div>
         `
         : ""}
+      <bottom-bar></bottom-bar>
     `;
   }
 }
