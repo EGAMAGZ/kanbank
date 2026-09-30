@@ -17,6 +17,7 @@ import "../ui/components/keycap.js";
 import "../ui/components/pinned-stack.js";
 import type { PinnedStack } from "../ui/components/pinned-stack.js";
 import "../ui/components/jump-menu.js";
+import "../ui/components/watch-stack.js";
 import { isEditableTarget, mod } from "../ui/helpers/shortcuts.js";
 
 const boardRepo = new DexieBoardRepository();
@@ -63,6 +64,10 @@ export class AppIndex extends LitElement {
     document.addEventListener("keydown", this._handleGlobalKeydown);
     window.addEventListener("open-command-bar", this._handleOpenCmdBar);
     window.addEventListener("toggle-pinned", this._handleTogglePinned);
+    navigator.serviceWorker?.addEventListener(
+      "message",
+      this._handleServiceWorkerMessage,
+    );
   }
 
   disconnectedCallback(): void {
@@ -70,7 +75,16 @@ export class AppIndex extends LitElement {
     document.removeEventListener("keydown", this._handleGlobalKeydown);
     window.removeEventListener("open-command-bar", this._handleOpenCmdBar);
     window.removeEventListener("toggle-pinned", this._handleTogglePinned);
+    navigator.serviceWorker?.removeEventListener(
+      "message",
+      this._handleServiceWorkerMessage,
+    );
   }
+
+  private _handleServiceWorkerMessage = (e: MessageEvent): void => {
+    if (e.data?.type !== "open-task" || !e.data.id) return;
+    this.elementController.navigate("task-detail", { id: e.data.id });
+  };
 
   private _handleGlobalKeydown = (e: KeyboardEvent): void => {
     if (isEditableTarget(e)) return;
@@ -173,6 +187,7 @@ export class AppIndex extends LitElement {
         <slot></slot>
       </main>
       <pinned-stack></pinned-stack>
+      <watch-stack></watch-stack>
     `;
   }
 }

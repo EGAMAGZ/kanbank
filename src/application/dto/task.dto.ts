@@ -21,6 +21,7 @@ export const UpdateTaskSchema = z.object({
   stateId: stateId.optional(),
   boardId: boardId.optional(),
   pinned: z.boolean().optional(),
+  watch: z.boolean().optional(),
   dueDate: z.string().nullable().optional(),
   notNowSince: z.string().nullable().optional(),
   isGold: z.boolean().optional(),

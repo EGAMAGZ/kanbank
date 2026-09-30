@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { when } from "lit/directives/when.js";
 import { PageController } from "@open-cells/page-controller";
@@ -47,6 +48,7 @@ import "../../ui/components/state-selector.js";
 import "../../ui/components/quick-actions.js";
 import "../../ui/components/keycap.js";
 import "../components/bottom-bar.js";
+import type { WatchStack } from "../components/watch-stack.js";
 import { isEditableTarget, keycapLabel, mod } from "../helpers/shortcuts.js";
 import "../../ui/components/not-now-stamp.js";
 
@@ -162,7 +164,7 @@ export class TaskDetailPage extends LitElement {
     }
   };
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
       height: 100%;
@@ -274,6 +276,25 @@ export class TaskDetailPage extends LitElement {
 
     .corner-btn.pin-btn.active {
       background: var(--color-black);
+      color: var(--color-white);
+    }
+
+    .corner-btn.watch-btn.active {
+      background: var(--color-accent-2);
+      color: var(--color-white);
+    }
+
+    .corner-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .corner-stack .corner-btn {
+      margin-top: 0;
+      align-self: center;
     }
 
     .title-block .state-bar {
@@ -302,7 +323,7 @@ export class TaskDetailPage extends LitElement {
       display: flex;
       justify-content: center;
       margin-top: var(--space-lg);
-      padding-bottom: var(--space-2xl);
+      margin-bottom: var(--space-lg);
     }
 
     .delete-task-btn {
@@ -538,6 +559,8 @@ export class TaskDetailPage extends LitElement {
 
     .timeline {
       position: relative;
+      /* clears the fixed bottom-bar so the last entries stay reachable */
+      padding-bottom: var(--space-3xl);
     }
 
     .timeline-item {
@@ -713,9 +736,14 @@ export class TaskDetailPage extends LitElement {
       this.markAsDone();
       return;
     }
-    if (e.code === "KeyF" && e.shiftKey && !mod(e)) {
+    if (e.code === "KeyF" && mod(e) && !e.shiftKey) {
       e.preventDefault();
       this.togglePin();
+      return;
+    }
+    if (e.code === "KeyW" && !mod(e) && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      this.toggleWatch();
       return;
     }
     if (e.code === "KeyG" && e.shiftKey && !mod(e)) {
@@ -923,6 +951,29 @@ export class TaskDetailPage extends LitElement {
     window.dispatchEvent(new CustomEvent("pinned-changed"));
   }
 
+  private async toggleWatch(): Promise<void> {
+    if (!this.task) return;
+    const watch = !this.task.watch;
+    await updateTask.execute(this.task.id, { watch });
+    await addTimeline.execute({
+      taskId: this.task.id,
+      type: "updated",
+      userId: CURRENT_USER.initials,
+      userName: CURRENT_USER.name,
+      message: watch ? "started watching" : "stopped watching",
+    });
+    await this._loadTask();
+    window.dispatchEvent(new CustomEvent("watch-changed"));
+    if (watch) {
+      const stack = document
+        .querySelector("app-index")
+        ?.shadowRoot?.querySelector("watch-stack");
+      if (stack && "requestPermission" in stack) {
+        void (stack as WatchStack).requestPermission();
+      }
+    }
+  }
+
   private async handleStateChange(e: Event): Promise<void> {
     if (!this.task) return;
     const { stateId } = (e as CustomEvent).detail;
@@ -1073,12 +1124,12 @@ export class TaskDetailPage extends LitElement {
       <div class="page-wrapper">
         <!-- Back button -->
         <div class="back" @click="${this.goBack}">
-          ← Back to board <keycap-el key="Esc"></keycap-el>
+          ${icon("arrow_back")} Back to board <keycap-el key="Esc"></keycap-el>
         </div>
 
         <!-- Auto-close message -->
         ${autoCloseMsg
-          ? html`<div class="auto-close-msg">⏳ ${autoCloseMsg}</div>`
+          ? html`<div class="auto-close-msg">${icon("hourglass_empty")} ${autoCloseMsg}</div>`
           : ""}
 
         <!-- Header -->
@@ -1088,9 +1139,9 @@ export class TaskDetailPage extends LitElement {
             "gold-btn": true,
             active: this.task.isGold,
           })} @click="${this.toggleGold}" title="${`${
-              this.task.isGold ? "★ Golden ticket" : "Mark as gold"
+              this.task.isGold ? "Golden ticket" : "Mark as gold"
             } (${keycapLabel("⇧G")})`}">
-            ${this.task.isGold ? "★" : "☆"}
+            ${this.task.isGold ? icon("star") : icon("star_border")}
           </button>
           <div class="header-left">
             <div class=${classMap({
@@ -1126,7 +1177,7 @@ export class TaskDetailPage extends LitElement {
                           "board-btn": true,
                           "gold-bg": this.task.isGold,
                         })} ?disabled="${this._isDone}" @click="${this.toggleBoardDropdown}">
-                        ${this.boards.find(b => b.id === this.task!.boardId)?.title ?? "?"} ▾
+                        ${this.boards.find(b => b.id === this.task!.boardId)?.title ?? "?"} ${icon("arrow_drop_down")}
                       </button>
                       ${when(this._showBoardDropdown, () => html`
                         <div class=${classMap({
@@ -1135,7 +1186,7 @@ export class TaskDetailPage extends LitElement {
                         })}>
                           ${this.boards.map(b => html`
                             <button class="board-dd-option" @click="${() => this.selectBoard(b.id)}" ?disabled="${b.id === this.task!.boardId}">
-                              ${b.title}${b.id === this.task!.boardId ? " ✓" : ""}
+                              ${b.title}${b.id === this.task!.boardId ? icon("check") : ""}
                             </button>
                           `)}
                         </div>
@@ -1235,15 +1286,26 @@ export class TaskDetailPage extends LitElement {
               ></quick-actions>
             </div>
           </div>
-          <button class=${classMap({
-            "corner-btn": true,
-            "pin-btn": true,
-            active: this.task.pinned,
-          })} @click="${this.togglePin}" title="${`${
-              this.task.pinned ? "📌 Pinned" : "Pin task"
-            } (${keycapLabel("⇧F")})`}">
-            ${this.task.pinned ? "📌" : "📍"}
-          </button>
+          <div class="corner-stack">
+            <button class=${classMap({
+              "corner-btn": true,
+              "watch-btn": true,
+              active: this.task.watch,
+            })} @click="${this.toggleWatch}" title="${`${
+              this.task.watch ? "Watching" : "Watch this task"
+            } (${keycapLabel("W")})`}">
+              ${this.task.watch ? icon("visibility") : icon("visibility_off")}
+            </button>
+            <button class=${classMap({
+              "corner-btn": true,
+              "pin-btn": true,
+              active: this.task.pinned,
+            })} @click="${this.togglePin}" title="${`${
+              this.task.pinned ? "Pinned" : "Pin task"
+            } (${keycapLabel("⌘F")})`}">
+              ${this.task.pinned ? icon("push_pin") : icon("location_on")}
+            </button>
+          </div>
         </div>
 
         <div class="main-content">
@@ -1341,6 +1403,12 @@ export class TaskDetailPage extends LitElement {
               : ""}
           </div>
 
+          <!-- Delete task -->
+          <div class="delete-task-wrapper">
+            <button class="delete-task-btn" @click="${this
+              .handleDeleteTask}">Delete this task</button>
+          </div>
+
           <!-- Full History Timeline -->
           <div class="section">
             <div class="section-header">
@@ -1359,18 +1427,18 @@ export class TaskDetailPage extends LitElement {
                   html`
                     <div class="timeline-item">
                       <span class="timeline-icon">${entry.type === "created"
-                        ? "+"
+                        ? icon("add")
                         : entry.type === "moved"
-                        ? "→"
+                        ? icon("arrow_right_alt")
                         : entry.type === "commented"
-                        ? "💬"
+                        ? icon("chat_bubble")
                         : entry.type === "completed"
-                        ? "✓"
+                        ? icon("check")
                         : entry.type === "auto-closed"
-                        ? "📬"
+                        ? icon("mark_email_unread")
                         : entry.type === "gold-toggled"
-                        ? "★"
-                        : "✎"}</span>
+                        ? icon("star")
+                        : icon("edit")}</span>
                       <div class="timeline-body">
                         <div class="timeline-msg">${entry.message}</div>
                         <div class="timeline-meta">${entry.userName} · ${relativeTime(
@@ -1391,11 +1459,6 @@ export class TaskDetailPage extends LitElement {
                 `
                 : ""}
             </div>
-          </div>
-
-          <div class="delete-task-wrapper">
-            <button class="delete-task-btn" @click="${this
-              .handleDeleteTask}">Delete this task</button>
           </div>
         </div>
       </div>

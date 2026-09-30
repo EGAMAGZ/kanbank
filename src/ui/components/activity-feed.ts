@@ -1,4 +1,5 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, type TemplateResult } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { customElement, property, state } from "lit/decorators.js";
 import {
   type ActivityEvent,
@@ -31,12 +32,12 @@ function groupByDate(events: ActivityEvent[]): Map<string, ActivityEvent[]> {
   return groups;
 }
 
-const TYPE_ICON: Record<string, string> = {
-  created: "+",
-  moved: "→",
-  updated: "✎",
-  commented: "💬",
-  completed: "✓",
+const TYPE_ICON: Record<string, TemplateResult> = {
+  created: icon("add"),
+  moved: icon("arrow_right_alt"),
+  updated: icon("edit"),
+  commented: icon("chat_bubble"),
+  completed: icon("check"),
 };
 
 @customElement("activity-feed")
@@ -52,7 +53,7 @@ export class ActivityFeed extends LitElement {
 
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: flex;
       flex-direction: column;
@@ -247,8 +248,7 @@ export class ActivityFeed extends LitElement {
                 const { label, detail } = this._formatEvent(ev);
                 return html`
                   <div class="event">
-                    <span class="event-icon ${ev.type}">${TYPE_ICON[ev.type] ||
-                      "•"}</span>
+                    <span class="event-icon ${ev.type}">${TYPE_ICON[ev.type] || icon("circle")}</span>
                     <div class="event-body">
                       <div class="event-label" title="${label}">${label}</div>
                       <div class="event-detail">${detail}</div>

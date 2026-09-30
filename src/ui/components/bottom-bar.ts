@@ -75,6 +75,9 @@ export class BottomBar extends LitElement {
     super.connectedCallback();
     this.boundKeydown = this.handleKeydown.bind(this);
     document.addEventListener("keydown", this.boundKeydown);
+    window.addEventListener("close-notif-panel", () => {
+      this.showNotifications = false;
+    });
   }
 
   disconnectedCallback(): void {
@@ -131,7 +134,7 @@ export class BottomBar extends LitElement {
     return html`
       <footer class="bottombar">
         <button class="bottom-btn" @click="${this.openPinned}">
-          Pinned <keycap-el key="F"></keycap-el>
+          Pinned <keycap-el key="⌘F"></keycap-el>
         </button>
         <button class="bottom-btn" @click="${this.openSearch}">
           Search <keycap-el key="K"></keycap-el>

@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { ImageRef } from "../../domain/value-objects/image-ref.js";
 import { DexieImageRepository } from "../../infrastructure/storage/image-storage.service.js";
@@ -16,7 +17,7 @@ export class AttachmentList extends LitElement {
   @state()
   private blobs: Map<string, string> = new Map();
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
     }
@@ -241,7 +242,7 @@ export class AttachmentList extends LitElement {
                 </div>
                 ${this.deletable
                   ? html`<button class="polaroid-delete" @click="${() =>
-                    this._handleDelete(img)}">✕</button>`
+                    this._handleDelete(img)}">${icon("close")}</button>`
                   : ""}
               </div>
             `;

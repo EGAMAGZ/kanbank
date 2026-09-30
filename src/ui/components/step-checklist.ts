@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { Step } from "../../domain/entities/step.entity.js";
@@ -20,7 +21,7 @@ export class StepChecklist extends LitElement {
   @state()
   private editingStepText = "";
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
     }
@@ -244,8 +245,8 @@ export class StepChecklist extends LitElement {
                       @input="${(e: InputEvent) => { this.editingStepText = (e.target as HTMLInputElement).value; }}"
                       @keydown="${this._handleEditKeydown}"
                     />
-                    <button class="edit-btn save" @click="${this._saveEditStep}">✓</button>
-                    <button class="edit-btn delete" data-id="${step.id}" @click="${this._deleteStep}">✕</button>
+                    <button class="edit-btn save" @click="${this._saveEditStep}">${icon("check")}</button>
+                    <button class="edit-btn delete" data-id="${step.id}" @click="${this._deleteStep}">${icon("close")}</button>
                   `
                   : html`
                     <span class=${classMap({

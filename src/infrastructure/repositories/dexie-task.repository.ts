@@ -24,6 +24,10 @@ export class DexieTaskRepository implements TaskRepository {
     return db.tasks.filter((t) => t.pinned === true).toArray();
   }
 
+  async findWatched(): Promise<Task[]> {
+    return db.tasks.filter((t) => t.watch === true).toArray();
+  }
+
   async getNextSeq(): Promise<number> {
     const last = await db.tasks.orderBy("seq").last();
     return (last?.seq ?? 0) + 1;
@@ -48,6 +52,7 @@ export class DexieTaskRepository implements TaskRepository {
         | "stateChangedAt"
         | "updatedAt"
         | "pinned"
+        | "watch"
         | "dueDate"
         | "notNowSince"
         | "isGold"
