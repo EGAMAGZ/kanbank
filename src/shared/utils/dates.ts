@@ -33,3 +33,18 @@ export function relativeTime(dateStr: string): string {
   if (days === 1) return "yesterday";
   return `${days}d ago`;
 }
+
+/**
+ * One calendar month back, clamped so Mar 31 -> Feb 28 instead of overflowing
+ * into Mar 3 (which setMonth does on its own).
+ */
+export function monthAgo(now: Date = new Date()): Date {
+  const d = new Date(now);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  d.setDate(
+    Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()),
+  );
+  return d;
+}

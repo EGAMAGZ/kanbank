@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { customElement, state } from "lit/decorators.js";
 import { ElementController } from "@open-cells/element-controller";
@@ -33,7 +34,7 @@ export class JumpMenu extends LitElement {
   @state()
   private boards: Board[] = [];
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       position: fixed;
       inset: 0;
@@ -459,7 +460,7 @@ export class JumpMenu extends LitElement {
         <div class="jump-container" @click="${(e: Event) =>
           e.stopPropagation()}">
           <div class="jump-input-wrap">
-            <span class="jump-prompt">⌂</span>
+            <span class="jump-prompt">${icon("home")}</span>
             <input
               class="jump-input"
               type="text"

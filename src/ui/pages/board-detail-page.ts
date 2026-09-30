@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
@@ -126,7 +127,7 @@ export class BoardDetailPage extends LitElement {
 
   private boundKeydown: ((e: KeyboardEvent) => void) | null = null;
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
       height: 100%;
@@ -1453,20 +1454,20 @@ export class BoardDetailPage extends LitElement {
           </div>
           <div class="col-actions">
             <button @click="${() =>
-              this.startEditState(state)}" title="Edit">✎</button>
+              this.startEditState(state)}" title="Edit">${icon("edit")}</button>
             ${!isMandatory
               ? html`
                 <button @click="${() =>
-                  this.handleDeleteState(state)}" title="Delete">✕</button>
+                  this.handleDeleteState(state)}" title="Delete">${icon("close")}</button>
                 ${(() => {
                   const { left, right } = this.canMoveState(state);
                   return html`
                     <button ?disabled="${!left}" @click="${() =>
                       this.moveStateLeft(state)}"
-                      title="Move left">◀</button>
+                      title="Move left">${icon("chevron_left")}</button>
                     <button ?disabled="${!right}" @click="${() =>
                       this.moveStateRight(state)}"
-                      title="Move right">▶</button>
+                      title="Move right">${icon("chevron_right")}</button>
                   `;
                 })()}
               `
@@ -1474,7 +1475,7 @@ export class BoardDetailPage extends LitElement {
             ${state.id !== mandatory.maybe
               ? html`<button @click="${() => {
                 this.expandedColumnId = null;
-              }}" title="Collapse">▶</button>`
+              }}" title="Collapse">${icon("chevron_right")}</button>`
               : ""}
           </div>
         </div>
@@ -1525,7 +1526,7 @@ export class BoardDetailPage extends LitElement {
     return html`
       <div class="board-header">
         <span class="back" @click="${() =>
-          this.pageController.navigate("home")}">← <keycap-el key="Esc"></keycap-el></span>
+          this.pageController.navigate("home")}">${icon("arrow_back")} <keycap-el key="Esc"></keycap-el></span>
         ${this.editingBoardTitle
           ? html`
             <div class="title-edit-group">
@@ -1541,18 +1542,18 @@ export class BoardDetailPage extends LitElement {
                 }}"
               />
               <button class="header-action" @click="${this
-                .handleSaveBoardTitle}" title="Save">✓</button>
+                .handleSaveBoardTitle}" title="Save">${icon("check")}</button>
               <button class="header-action" @click="${this
-                .handleCancelBoardTitle}" title="Cancel">✕</button>
+                .handleCancelBoardTitle}" title="Cancel">${icon("close")}</button>
             </div>
           `
           : html`
             <h1>${board.title}</h1>
             <button class="header-action" @click="${() =>
-              this.handleEditBoardTitle()}" title="Edit title">✎</button>
+              this.handleEditBoardTitle()}" title="Edit title">${icon("edit")}</button>
             <button class="header-action header-action--delete" @click="${() =>
               this.handleDeleteBoard()}"
-              title="Delete board">🗑</button>
+              title="Delete board">${icon("delete")}</button>
           `}
         <button class="add-column-btn" @click="${() =>
           this.handleAutoCreateState()}">+ ESTADO</button>

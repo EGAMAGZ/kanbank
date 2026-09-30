@@ -93,3 +93,14 @@ db.version(7).stores({}).upgrade((tx) => {
     }
   });
 });
+
+db.version(8)
+  .stores({
+    tasks:
+      "++id, seq, boardId, stateId, lastActivityAt, pinned, watch, [boardId+stateId]",
+  })
+  .upgrade((tx) => {
+    return tx.table("tasks").toCollection().modify((t: any) => {
+      t.watch = false;
+    });
+  });

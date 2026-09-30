@@ -1,32 +1,33 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, type TemplateResult } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { customElement, property, query, state } from "lit/decorators.js";
 
 type Cmd = [string, string?, string?];
 
-const TOOLBAR_ITEMS: { icon: string; title: string; cmd: Cmd; key?: string }[] =
+const TOOLBAR_ITEMS: { icon: TemplateResult; title: string; cmd: Cmd; key?: string }[] =
   [
-    { icon: "B", title: "Bold", cmd: ["bold"], key: "B" },
-    { icon: "I", title: "Italic", cmd: ["italic"], key: "I" },
-    { icon: "S", title: "Strikethrough", cmd: ["strikeThrough"] },
-    { icon: "U", title: "Underline", cmd: ["underline"], key: "U" },
-    { icon: "H", title: "Highlight", cmd: ["hiliteColor", "#FFE600"] },
-    { icon: "🔗", title: "Link", cmd: ["createLink", ""] },
-    { icon: "❝", title: "Blockquote", cmd: ["formatBlock", "<blockquote>"] },
-    { icon: "</>", title: "Code block", cmd: ["formatBlock", "<pre>"] },
-    { icon: "•", title: "Bullet list", cmd: ["insertUnorderedList"] },
-    { icon: "1.", title: "Numbered list", cmd: ["insertOrderedList"] },
+    { icon: icon("format_bold"), title: "Bold", cmd: ["bold"], key: "B" },
+    { icon: icon("format_italic"), title: "Italic", cmd: ["italic"], key: "I" },
+    { icon: icon("format_strikethrough"), title: "Strikethrough", cmd: ["strikeThrough"] },
+    { icon: icon("format_underlined"), title: "Underline", cmd: ["underline"], key: "U" },
+    { icon: icon("highlight"), title: "Highlight", cmd: ["hiliteColor", "#FFE600"] },
+    { icon: icon("link"), title: "Link", cmd: ["createLink", ""] },
+    { icon: icon("format_quote"), title: "Blockquote", cmd: ["formatBlock", "<blockquote>"] },
+    { icon: icon("code"), title: "Code block", cmd: ["formatBlock", "<pre>"] },
+    { icon: icon("format_list_bulleted"), title: "Bullet list", cmd: ["insertUnorderedList"] },
+    { icon: icon("format_list_numbered"), title: "Numbered list", cmd: ["insertOrderedList"] },
     {
-      icon: "⊞",
+      icon: icon("border_all"),
       title: "Table",
       cmd: [
         "insertHTML",
         "<table border='1'><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table>",
       ],
     },
-    { icon: "◀", title: "Align left", cmd: ["justifyLeft"] },
-    { icon: "≡", title: "Align center", cmd: ["justifyCenter"] },
-    { icon: "▶", title: "Align right", cmd: ["justifyRight"] },
+    { icon: icon("format_align_left"), title: "Align left", cmd: ["justifyLeft"] },
+    { icon: icon("format_align_center"), title: "Align center", cmd: ["justifyCenter"] },
+    { icon: icon("format_align_right"), title: "Align right", cmd: ["justifyRight"] },
   ];
 
 @customElement("wysiwyg-editor")
@@ -46,7 +47,7 @@ export class WysiwygEditor extends LitElement {
   @query(".editor-content")
   private editorEl!: HTMLElement;
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
       border: 4px solid var(--color-black);

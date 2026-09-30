@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "node src/shared/utils/watch.check.ts && node src/shared/utils/dates.check.ts",
     "preview": "npm run build && vite preview"
   },
   "dependencies": {

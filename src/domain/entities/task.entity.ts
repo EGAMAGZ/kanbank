@@ -13,6 +13,7 @@ export interface Task extends Timestamped {
   lastActivityAt: string;
   stateChangedAt: string;
   pinned: boolean;
+  watch: boolean;
   dueDate: string | null;
   notNowSince: string | null;
   isGold: boolean;
@@ -33,6 +34,7 @@ export interface CreateTaskData {
   createdAt: string;
   updatedAt: string;
   pinned?: boolean;
+  watch?: boolean;
   dueDate?: string | null;
   notNowSince?: string | null;
   isGold?: boolean;
@@ -52,6 +54,7 @@ export function createTask(data: CreateTaskData): Task {
     lastActivityAt: data.lastActivityAt,
     stateChangedAt: data.stateChangedAt ?? data.createdAt,
     pinned: data.pinned ?? false,
+    watch: data.watch ?? false,
     dueDate: data.dueDate ?? null,
     notNowSince: data.notNowSince ?? null,
     isGold: data.isGold ?? false,

@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import { icon, iconStyle } from "../helpers/icon.js";
 import { classMap } from "lit/directives/class-map.js";
 import { PageController } from "@open-cells/page-controller";
 import { customElement, state } from "lit/decorators.js";
@@ -14,6 +15,7 @@ import type { Task } from "../../domain/entities/task.entity.js";
 import type { TimelineEntry } from "../../domain/entities/timeline-entry.entity.js";
 import type { Id } from "../../shared/types/id.js";
 import { CURRENT_USER } from "../../shared/constants/defaults.js";
+import { monthAgo } from "../../shared/utils/dates.js";
 import "../../ui/components/keycap.js";
 import "../components/bottom-bar.js";
 import { isEditableTarget } from "../helpers/shortcuts.js";
@@ -127,7 +129,7 @@ export class BoardListPage extends LitElement {
   private _streamSub: { unsubscribe(): void } | null = null;
   private _boundKeydown?: (e: KeyboardEvent) => void;
 
-  static styles = css`
+  static styles = css`${iconStyle}
     :host {
       display: block;
       height: 100%;
@@ -671,8 +673,12 @@ export class BoardListPage extends LitElement {
     const taskById = new Map(tasks.map((t) => [t.id, t]));
     const boardById = new Map(boards.map((b) => [b.id, b]));
 
+    const cutoff = monthAgo();
+    cutoff.setHours(0, 0, 0, 0);
+
     const events: FeedEvent[] = [];
     for (const entry of entries) {
+      if (new Date(entry.timestamp) < cutoff) continue;
       const task = taskById.get(entry.taskId);
       if (!task) continue;
       const board = boardById.get(task.boardId);
@@ -973,7 +979,7 @@ export class BoardListPage extends LitElement {
             ? html`
               Latest Activity
               <span class="filter-chip" @click="${this._openBoardSelector}">
-                ${selectedBoard.title} ▾
+                ${selectedBoard.title} ${icon("arrow_drop_down")}
                 ${this.showBoardSelector
                   ? html`
                     <div class="popover" style="top:24px;left:0;">
